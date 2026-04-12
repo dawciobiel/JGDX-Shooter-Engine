@@ -36,11 +36,18 @@
 - [x] Kamera podążająca za graczem
 - [x] `MapSystem`: ograniczanie ruchu do granic mapy
 
-## Etap 7: Nowe Funkcjonalności (W TRAKCIE)
+## Etap 7: Rozszerzona Mechanika i UI (ZAKOŃCZONE)
 - [x] Różne rodzaje broni (Pistol, Shotgun, Machine Gun)
-- [x] Paski zdrowia (Health Bars) nad głowami encji
-- [x] System ładowania Assetów (`AssetService`)
-- [ ] **Menu główne i stany gry** (Scene2D buttons)
-- [ ] **UI/HUD** (Licznik punktów na stałe na ekranie)
-- [ ] **System Animacji** (Obracanie tekstur, klatki animacji)
-- [ ] **Dźwięki** (Integracja `AudioService` z systemami)
+- [x] Paski zdrowia (Health Bars) nad głowami encji i w HUD
+- [x] System ładowania Assetów (`AssetService` i `AudioService`)
+- [x] **Menu główne i stany gry** (Scene2D buttons, Game Over, Restart)
+- [x] **UI/HUD** (Licznik punktów, Kills, Wave, Ammo, Reload Bar)
+- [x] **System Animacji** (Dynamiczny, Data-Driven, Sprite Sheets & Files)
+- [x] **Dźwięki** (Integracja audio z walką, amunicją i śmiercią)
+
+## Etap 8: Nowe Wyzwania (W TRAKCIE)
+- [ ] **System Przeszkód i Terenu** (Spowolnienie w wodzie/błocie) - (PODSTAWY ZROBIONE)
+- [ ] **Różne typy przeciwników** (Szybsi biegacze, pancerni wrogowie)
+- [ ] **Dropy przedmiotów** (Apteczki, ulepszenia broni)
+- [ ] **Zapisywanie Wyników** (Highscores do pliku)
+- [ ] **Efekty cząsteczkowe** (Krew przy trafieniu, łuski pocisków)
