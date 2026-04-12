@@ -1,12 +1,11 @@
 package pl.shooter.engine.ecs.systems;
 
-import com.badlogic.gdx.math.Vector2;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
-import pl.shooter.engine.events.DamageEvent;
 import pl.shooter.engine.events.EventBus;
+import pl.shooter.events.HitEvent;
 
 import java.util.List;
 
@@ -56,8 +55,8 @@ public class CollisionSystem extends GameSystem {
         ProjectileComponent p1 = entityManager.getComponent(e1, ProjectileComponent.class);
         ProjectileComponent p2 = entityManager.getComponent(e2, ProjectileComponent.class);
 
-        if (p1 != null) handleProjectileHit(e1, p1, e2);
-        else if (p2 != null) handleProjectileHit(e2, p2, e1);
+        if (p1 != null) handleProjectileHit(e1, e2);
+        else if (p2 != null) handleProjectileHit(e2, e1);
 
         // Player vs Ammo Pickup collisions
         PlayerComponent player1 = entityManager.getComponent(e1, PlayerComponent.class);
@@ -69,13 +68,13 @@ public class CollisionSystem extends GameSystem {
         else if (player2 != null && ammo1 != null) handleAmmoPickup(e2, e1, ammo1);
     }
 
-    private void handleProjectileHit(Entity projectile, ProjectileComponent pComp, Entity target) {
-        if (pComp.ownerId == target.getId()) return; // Don't hit self
+    private void handleProjectileHit(Entity projectile, Entity target) {
+        ProjectileComponent pComp = entityManager.getComponent(projectile, ProjectileComponent.class);
+        if (pComp != null && pComp.ownerId == target.getId()) return; // Don't hit self
 
         HealthComponent health = entityManager.getComponent(target, HealthComponent.class);
         if (health != null) {
-            eventBus.publish(new DamageEvent(target, 10f, pComp.ownerId));
-            entityManager.destroyEntity(projectile);
+            eventBus.publish(new HitEvent(projectile, target));
         }
     }
 
@@ -83,7 +82,7 @@ public class CollisionSystem extends GameSystem {
         WeaponComponent weapon = entityManager.getComponent(player, WeaponComponent.class);
         if (weapon != null) {
             weapon.currentAmmo = Math.min(weapon.maxAmmo, weapon.currentAmmo + ammoComp.amount);
-            entityManager.destroyEntity(pickup);
+            entityManager.removeEntity(pickup);
         }
     }
 }
