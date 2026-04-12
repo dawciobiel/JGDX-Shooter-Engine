@@ -2,7 +2,6 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
@@ -11,7 +10,7 @@ import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
 
 /**
- * Handles combat logic, including weapon types and firing patterns.
+ * Handles combat logic, including weapon types, firing patterns, and ammo consumption.
  */
 public class CombatSystem extends GameSystem {
     private float totalTime = 0;
@@ -33,12 +32,22 @@ public class CombatSystem extends GameSystem {
 
         if (weapon == null || shooterTransform == null) return;
 
-        // Cooldown check
+        // 1. Cooldown check
         if (totalTime - weapon.lastShotTime < weapon.fireRate) {
             return;
         }
 
+        // 2. Ammo check
+        if (!weapon.hasInfiniteAmmo && weapon.currentAmmo <= 0) {
+            // TODO: Play "no ammo" sound
+            return;
+        }
+
+        // 3. Firing logic
         weapon.lastShotTime = totalTime;
+        if (!weapon.hasInfiniteAmmo) {
+            weapon.currentAmmo--;
+        }
 
         // Base angle to target
         float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
