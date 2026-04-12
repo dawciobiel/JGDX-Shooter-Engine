@@ -8,6 +8,7 @@ import pl.shooter.engine.ecs.components.SoundComponent;
 import pl.shooter.engine.events.BulletFiredEvent;
 import pl.shooter.engine.events.EmptyWeaponEvent;
 import pl.shooter.engine.events.EventBus;
+import pl.shooter.engine.events.PickupEvent;
 import pl.shooter.events.HitEvent;
 
 /**
@@ -24,6 +25,7 @@ public class SoundSystem extends GameSystem {
         eventBus.subscribe(BulletFiredEvent.class, this::handleBulletFired);
         eventBus.subscribe(HitEvent.class, this::handleHitSound);
         eventBus.subscribe(EmptyWeaponEvent.class, this::handleEmptyClick);
+        eventBus.subscribe(PickupEvent.class, this::handlePickupSound);
     }
 
     private void handleBulletFired(BulletFiredEvent event) {
@@ -36,6 +38,10 @@ public class SoundSystem extends GameSystem {
 
     private void handleEmptyClick(EmptyWeaponEvent event) {
         playSoundForEntity(event.entity, SoundComponent.Action.EMPTY_CLICK, 0.3f);
+    }
+
+    private void handlePickupSound(PickupEvent event) {
+        playSoundForEntity(event.entity, SoundComponent.Action.PICKUP, 0.5f);
     }
 
     private void playSoundForEntity(Entity entity, SoundComponent.Action action, float volume) {

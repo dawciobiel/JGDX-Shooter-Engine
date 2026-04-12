@@ -51,6 +51,7 @@ public class EntityFactory {
         componentAliases.put("Projectile", ProjectileComponent.class);
         componentAliases.put("Collider", ColliderComponent.class);
         componentAliases.put("AmmoPickup", AmmoPickupComponent.class);
+        componentAliases.put("HealthPickup", HealthPickupComponent.class);
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {
@@ -61,7 +62,7 @@ public class EntityFactory {
             JsonNode root = objectMapper.readTree(file.read());
             Entity entity = entityManager.createEntity();
 
-            // 1. Process regular components
+            // 1. Components
             JsonNode componentsNode = root.get("components");
             if (componentsNode != null && componentsNode.isObject()) {
                 Iterator<Map.Entry<String, JsonNode>> fields = componentsNode.fields();
@@ -81,14 +82,14 @@ public class EntityFactory {
                 }
             }
 
-            // 2. Process data-driven animations
+            // 2. Animations
             JsonNode animNode = root.get("animations");
             if (animNode != null) {
                 AnimationConfig animConfig = objectMapper.treeToValue(animNode, AnimationConfig.class);
                 setupAnimationsFromConfig(entity, animConfig);
             }
 
-            // 3. Process data-driven sounds
+            // 3. Sounds
             JsonNode soundsNode = root.get("sounds");
             if (soundsNode != null && soundsNode.isObject()) {
                 SoundComponent soundComp = new SoundComponent();
@@ -145,6 +146,15 @@ public class EntityFactory {
         entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
         entityManager.addComponent(pickup, new ColliderComponent(8f));
         entityManager.addComponent(pickup, new AmmoPickupComponent(amount));
+        return pickup;
+    }
+
+    public Entity createHealthPickup(float x, float y, float amount) {
+        Entity pickup = entityManager.createEntity();
+        entityManager.addComponent(pickup, new TransformComponent(x, y));
+        entityManager.addComponent(pickup, new RenderComponent(Color.GREEN, 8f, true));
+        entityManager.addComponent(pickup, new ColliderComponent(8f));
+        entityManager.addComponent(pickup, new HealthPickupComponent(amount));
         return pickup;
     }
 

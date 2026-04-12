@@ -14,7 +14,7 @@ import pl.shooter.events.HitEvent;
 import java.util.List;
 
 /**
- * Handles damage calculation, death, and item drops when a HitEvent is received.
+ * Handles health reduction, death, scoring, and item drops.
  */
 public class DamageSystem extends GameSystem {
     private final EntityFactory factory;
@@ -54,7 +54,7 @@ public class DamageSystem extends GameSystem {
         if (entityManager.hasComponent(victim, PlayerComponent.class)) {
             entityManager.removeEntity(victim);
         } else {
-            // Enemy death: Add score and increment kills for player
+            // Enemy death: Score and Drops
             List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, ScoreComponent.class);
             if (!players.isEmpty()) {
                 ScoreComponent score = entityManager.getComponent(players.get(0), ScoreComponent.class);
@@ -64,8 +64,14 @@ public class DamageSystem extends GameSystem {
             
             eventBus.publish(new ScoreEvent(100));
             
-            if (MathUtils.random() < 0.3f) {
+            // Random drops logic
+            float roll = MathUtils.random();
+            if (roll < 0.20f) {
+                // 20% Ammo drop
                 factory.createAmmoPickup(x, y, MathUtils.random(5, 15));
+            } else if (roll < 0.30f) {
+                // 10% Health drop (if roll between 0.20 and 0.30)
+                factory.createHealthPickup(x, y, 20f);
             }
             
             entityManager.removeEntity(victim);

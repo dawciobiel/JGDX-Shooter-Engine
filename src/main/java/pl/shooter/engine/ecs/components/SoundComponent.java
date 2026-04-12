@@ -14,7 +14,8 @@ public class SoundComponent implements Component {
         HIT,
         DIE,
         WALK,
-        EMPTY_CLICK // Added for out-of-ammo sound
+        EMPTY_CLICK,
+        PICKUP // New action for collecting items
     }
 
     public Map<Action, String> soundPaths = new HashMap<>();

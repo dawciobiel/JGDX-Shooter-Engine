@@ -13,10 +13,10 @@
       "projectileSpeed": 600.0,
       "spread": 15.0,
       "projectilesPerShot": 5,
-      "maxAmmo": 5,
-      "currentAmmo": 5,
-      "magazineSize": 2,
-      "magazineAmmo": 2,
+      "maxAmmo": 20,
+      "currentAmmo": 20,
+      "magazineSize": 4,
+      "magazineAmmo": 4,
       "reloadTime": 1.5
     }
   },
@@ -44,6 +44,7 @@
     "SHOOT": "assets/sfx/shotgun.wav",
     "HIT": "assets/sfx/hit.wav",
     "DIE": "assets/sfx/death.wav",
-    "EMPTY_CLICK": "assets/sfx/empty_click.wav"
+    "EMPTY_CLICK": "assets/sfx/empty_click.wav",
+    "PICKUP": "assets/sfx/pickup.wav"
   }
 }
