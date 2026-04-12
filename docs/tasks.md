@@ -12,7 +12,7 @@
 - [x] `InputSystem`: sterowanie WASD
 - [x] `RenderSystem`: podstawowe rysowanie
 
-## Etap 3: System Walki (Combat & Projectiles) (ZAKOŃCZONE)
+## Etap 3: Walka i System Pocisków (ZAKOŃCZONE)
 - [x] Komponent `Weapon`: cooldown, prędkość pocisku
 - [x] Komponent `Projectile`: czas życia
 - [x] `CombatSystem`: tworzenie pocisków
@@ -40,7 +40,7 @@
 - [x] Różne rodzaje broni (Pistol, Shotgun, Machine Gun)
 - [x] Paski zdrowia (Health Bars) nad głowami encji
 - [x] System ładowania Assetów (`AssetService`)
-- [ ] **Menu główne i stany gry** (Poprawa przejść)
-- [ ] **UI/HUD** (Pełny interfejs Scene2D)
+- [ ] **Menu główne i stany gry** (Scene2D buttons)
+- [ ] **UI/HUD** (Licznik punktów na stałe na ekranie)
 - [ ] **System Animacji** (Obracanie tekstur, klatki animacji)
 - [ ] **Dźwięki** (Integracja `AudioService` z systemami)
