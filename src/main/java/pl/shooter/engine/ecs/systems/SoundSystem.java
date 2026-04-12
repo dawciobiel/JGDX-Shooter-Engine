@@ -5,9 +5,9 @@ import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.SoundComponent;
+import pl.shooter.engine.events.BulletFiredEvent;
 import pl.shooter.engine.events.EmptyWeaponEvent;
 import pl.shooter.engine.events.EventBus;
-import pl.shooter.engine.events.ShootEvent;
 import pl.shooter.events.HitEvent;
 
 /**
@@ -21,12 +21,12 @@ public class SoundSystem extends GameSystem {
         this.audioService = audioService;
 
         // Subscribe to events
-        eventBus.subscribe(ShootEvent.class, this::handleShootSound);
+        eventBus.subscribe(BulletFiredEvent.class, this::handleBulletFired);
         eventBus.subscribe(HitEvent.class, this::handleHitSound);
         eventBus.subscribe(EmptyWeaponEvent.class, this::handleEmptyClick);
     }
 
-    private void handleShootSound(ShootEvent event) {
+    private void handleBulletFired(BulletFiredEvent event) {
         playSoundForEntity(event.shooter, SoundComponent.Action.SHOOT, 0.4f);
     }
 

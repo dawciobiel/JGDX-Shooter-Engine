@@ -6,6 +6,7 @@ import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
+import pl.shooter.engine.events.BulletFiredEvent;
 import pl.shooter.engine.events.EmptyWeaponEvent;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
@@ -51,37 +52,33 @@ public class CombatSystem extends GameSystem {
         if (weapon == null || shooterTransform == null) return;
 
         // 1. Reloading check
-        if (weapon.isReloading) {
-            return;
-        }
+        if (weapon.isReloading) return;
 
         // 2. Cooldown check
-        if (totalTime - weapon.lastShotTime < weapon.fireRate) {
-            return;
-        }
+        if (totalTime - weapon.lastShotTime < weapon.fireRate) return;
 
         // 3. Ammo/Magazine check
         if (weapon.magazineSize > 0 && weapon.magazineAmmo <= 0) {
             if (weapon.currentAmmo <= 0 && !weapon.hasInfiniteAmmo) {
-                // Out of ammo completely - trigger empty click sound
                 eventBus.publish(new EmptyWeaponEvent(shooter));
-                weapon.lastShotTime = totalTime; // Add cooldown to click sound
+                weapon.lastShotTime = totalTime; // Anti-spam for click sound
             } else {
                 startReload(weapon);
             }
             return;
         }
 
-        // 4. Firing logic
+        // 4. Firing logic (Successful shot)
         weapon.lastShotTime = totalTime;
         if (weapon.magazineSize > 0) {
             weapon.magazineAmmo--;
         }
 
-        // Base angle to target
+        // Trigger successful shot sound/effects
+        eventBus.publish(new BulletFiredEvent(shooter));
+
         float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
 
-        // Fire multiple projectiles if weapon allows
         for (int i = 0; i < weapon.projectilesPerShot; i++) {
             float finalAngle = baseAngle;
             if (weapon.spread > 0) {
