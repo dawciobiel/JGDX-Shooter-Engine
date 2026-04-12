@@ -11,7 +11,16 @@
     "Collider": { "radius": 20 },
     "AI": { "behavior": "CHASE", "detectRange": 350 },
     "Velocity": { "vx": 0, "vy": 0 },
-    "Weapon": { "type": "PISTOL", "fireRate": 1.5, "projectileSpeed": 250, "spread": 5, "projectilesPerShot": 1 }
+    "Weapon": {
+      "type": "PISTOL",
+      "fireRate": 1.5,
+      "projectileSpeed": 250,
+      "spread": 5,
+      "projectilesPerShot": 1,
+      "magazineSize": 10,
+      "magazineAmmo": 10,
+      "hasInfiniteAmmo": true
+    }
   },
   "animations": {
     "width": 50.0,
@@ -36,5 +45,10 @@
         "frameDuration": 0.08
       }
     }
+  },
+  "sounds": {
+    "SHOOT": "assets/sfx/zombie_attack.wav",
+    "HIT": "assets/sfx/zombie_hit.wav",
+    "DIE": "assets/sfx/death.wav"
   }
 }

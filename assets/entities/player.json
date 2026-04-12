@@ -9,7 +9,7 @@
     "Score": {},
     "Weapon": {
       "type": "SHOTGUN",
-      "fireRate": 0.4,
+      "fireRate": 0.5,
       "projectileSpeed": 600.0,
       "spread": 15.0,
       "projectilesPerShot": 5,
@@ -41,7 +41,8 @@
     }
   },
   "sounds": {
-    "SHOOT": "assets/sfx/shoot.wav",
-    "HIT": "assets/sfx/hit.wav"
+    "SHOOT": "assets/sfx/shotgun.wav",
+    "HIT": "assets/sfx/hit.wav",
+    "DIE": "assets/sfx/death.wav"
   }
 }

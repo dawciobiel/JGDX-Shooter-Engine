@@ -34,8 +34,8 @@ public class CombatSystem extends GameSystem {
                 if (weapon.reloadTimer >= weapon.reloadTime) {
                     finishReload(weapon);
                 }
-            } else if (weapon.magazineAmmo <= 0 && (weapon.currentAmmo > 0 || weapon.hasInfiniteAmmo)) {
-                // Auto-reload if empty and ammo is available
+            } else if (weapon.magazineSize > 0 && weapon.magazineAmmo <= 0 && (weapon.currentAmmo > 0 || weapon.hasInfiniteAmmo)) {
+                // Auto-reload if empty, ammo available, and magazine size is defined
                 startReload(weapon);
             }
         }
@@ -58,15 +58,17 @@ public class CombatSystem extends GameSystem {
             return;
         }
 
-        // 3. Magazine check
-        if (weapon.magazineAmmo <= 0) {
+        // 3. Magazine check (Skip if magazineSize is 0 - treat as non-mag weapon)
+        if (weapon.magazineSize > 0 && weapon.magazineAmmo <= 0) {
             startReload(weapon);
             return;
         }
 
         // 4. Firing logic
         weapon.lastShotTime = totalTime;
-        weapon.magazineAmmo--;
+        if (weapon.magazineSize > 0) {
+            weapon.magazineAmmo--;
+        }
 
         // Base angle to target
         float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
