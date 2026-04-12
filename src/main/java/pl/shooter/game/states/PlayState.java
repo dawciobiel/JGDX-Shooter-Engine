@@ -34,8 +34,6 @@ public class PlayState extends GameState {
         this.isGameOver = false;
 
         init();
-        
-        // Initial resize fix - ensures viewports are updated on start
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
@@ -51,8 +49,9 @@ public class PlayState extends GameState {
         }
         assetService.finishLoading();
 
-        audioService.loadSound("assets/sfx/shoot.wav");
+        audioService.loadSound("assets/sfx/shotgun.wav");
         audioService.loadSound("assets/sfx/hit.wav");
+        audioService.loadSound("assets/sfx/shoot.wav");
 
         // --- 2. Setup Systems ---
         ProceduralMap map = new ProceduralMap();
@@ -70,19 +69,19 @@ public class PlayState extends GameState {
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
         engine.addSystem(new AnimationSystem(engine.getEntityManager()));
+        engine.addSystem(new WaveSystem(engine.getEntityManager(), entityFactory)); // --- NEW ---
         engine.addSystem(renderSystem);
         engine.addSystem(new UISystem(engine.getEntityManager()));
 
         // --- 3. Spawn Initial Entities ---
         entityFactory.loadFromJson("assets/entities/player.json", 400, 300);
+        // Only 1 initial zombie now, more will spawn over time
         entityFactory.loadFromJson("assets/entities/zombie.json", 100, 100);
-        entityFactory.loadFromJson("assets/entities/zombie.json", 700, 500);
     }
 
     @Override
     public void update(float deltaTime) {
         if (isGameOver) {
-            // Only update render and UI systems when dead, keep the world static
             engine.getSystems().forEach(system -> {
                 if (system instanceof RenderSystem || system instanceof UISystem) {
                     system.update(deltaTime);
@@ -97,7 +96,6 @@ public class PlayState extends GameState {
 
         engine.update(deltaTime);
 
-        // Check for Game Over (all players dead)
         if (engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class).isEmpty()) {
             isGameOver = true;
         }
