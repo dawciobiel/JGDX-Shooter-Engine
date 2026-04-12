@@ -3,8 +3,12 @@ package pl.shooter.engine.ecs;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.ecs.components.*;
 
 import java.util.HashMap;
@@ -13,16 +17,22 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Creates entities from external JSON definitions with support for aliases.
+ * Creates entities from external JSON definitions with support for dynamic animations.
  */
 public class EntityFactory {
     private final EntityManager entityManager;
+    private final AssetService assetService;
     private final ObjectMapper objectMapper;
     private final Map<String, Class<? extends Component>> componentAliases = new HashMap<>();
     private final Random random = new Random();
 
     public EntityFactory(EntityManager entityManager) {
+        this(entityManager, null);
+    }
+
+    public EntityFactory(EntityManager entityManager, AssetService assetService) {
         this.entityManager = entityManager;
+        this.assetService = assetService;
         this.objectMapper = new ObjectMapper();
         registerDefaultAliases();
     }
@@ -53,20 +63,17 @@ public class EntityFactory {
             
             JsonNode root = objectMapper.readTree(file.read());
             Entity entity = entityManager.createEntity();
-            JsonNode componentsNode = root.get("components");
 
+            // 1. Process regular components
+            JsonNode componentsNode = root.get("components");
             if (componentsNode != null && componentsNode.isObject()) {
                 Iterator<Map.Entry<String, JsonNode>> fields = componentsNode.fields();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> entry = fields.next();
                     String alias = entry.getKey();
                     JsonNode data = entry.getValue();
-
                     Class<? extends Component> clazz = componentAliases.get(alias);
-                    if (clazz == null) {
-                        Gdx.app.error("EntityFactory", "Unknown component alias: " + alias);
-                        continue;
-                    }
+                    if (clazz == null) continue;
 
                     Component component = objectMapper.treeToValue(data, clazz);
                     if (component instanceof TransformComponent tc) {
@@ -76,11 +83,45 @@ public class EntityFactory {
                     entityManager.addComponent(entity, component);
                 }
             }
+
+            // 2. Process data-driven animations
+            JsonNode animNode = root.get("animations");
+            if (animNode != null) {
+                AnimationConfig animConfig = objectMapper.treeToValue(animNode, AnimationConfig.class);
+                setupAnimationsFromConfig(entity, animConfig);
+            }
+
             return entity;
         } catch (Exception e) {
             Gdx.app.error("EntityFactory", "Failed to load entity from " + internalPath, e);
             return null;
         }
+    }
+
+    private void setupAnimationsFromConfig(Entity entity, AnimationConfig config) {
+        if (assetService == null) return;
+        AnimationComponent animComp = new AnimationComponent(config.width, config.height);
+
+        for (Map.Entry<String, AnimationConfig.StateConfig> entry : config.states.entrySet()) {
+            try {
+                AnimationComponent.State state = AnimationComponent.State.valueOf(entry.getKey());
+                AnimationConfig.StateConfig stateConfig = entry.getValue();
+                
+                Animation<TextureRegion> anim;
+                if ("SHEET".equals(stateConfig.type)) {
+                    anim = createAnimationFromSheet(stateConfig.path, stateConfig.rows, stateConfig.cols, stateConfig.frameDuration);
+                } else {
+                    anim = createAnimationFromFiles(stateConfig.path, stateConfig.count, stateConfig.frameDuration);
+                }
+                
+                if (anim != null) {
+                    animComp.addAnimation(state, anim);
+                }
+            } catch (IllegalArgumentException e) {
+                Gdx.app.error("EntityFactory", "Invalid animation state in JSON: " + entry.getKey());
+            }
+        }
+        entityManager.addComponent(entity, animComp);
     }
 
     public void createExplosion(float x, float y, Color color) {
@@ -95,20 +136,6 @@ public class EntityFactory {
         }
     }
 
-    public Entity createPlayer(float x, float y) {
-        Entity player = entityManager.createEntity();
-        entityManager.addComponent(player, new PlayerComponent(200f));
-        // Parameters: Type, FireRate, ProjSpeed, Spread, ProjsPerShot, TotalAmmo, MagSize, ReloadTime
-        entityManager.addComponent(player, new WeaponComponent(WeaponComponent.Type.SHOTGUN, 0.4f, 600f, 15f, 5, 20, 4, 1.5f));
-        entityManager.addComponent(player, new TransformComponent(x, y));
-        entityManager.addComponent(player, new VelocityComponent(0, 0));
-        entityManager.addComponent(player, new RenderComponent(Color.GREEN, 15f, true));
-        entityManager.addComponent(player, new ColliderComponent(15f));
-        entityManager.addComponent(player, new HealthComponent(100));
-        entityManager.addComponent(player, new ScoreComponent());
-        return player;
-    }
-
     public Entity createAmmoPickup(float x, float y, int amount) {
         Entity pickup = entityManager.createEntity();
         entityManager.addComponent(pickup, new TransformComponent(x, y));
@@ -116,5 +143,34 @@ public class EntityFactory {
         entityManager.addComponent(pickup, new ColliderComponent(8f));
         entityManager.addComponent(pickup, new AmmoPickupComponent(amount));
         return pickup;
+    }
+
+    private Animation<TextureRegion> createAnimationFromSheet(String path, int rows, int cols, float frameDuration) {
+        Texture texture = assetService.getTexture(path);
+        if (texture == null) return null;
+        int tileWidth = texture.getWidth() / cols;
+        int tileHeight = texture.getHeight() / rows;
+        TextureRegion[][] temp = TextureRegion.split(texture, tileWidth, tileHeight);
+        TextureRegion[] frames = new TextureRegion[rows * cols];
+        int index = 0;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                frames[index++] = temp[i][j];
+            }
+        }
+        return new Animation<>(frameDuration, frames);
+    }
+
+    private Animation<TextureRegion> createAnimationFromFiles(String prefix, int count, float frameDuration) {
+        TextureRegion[] frames = new TextureRegion[count + 1];
+        boolean foundAny = false;
+        for (int i = 0; i <= count; i++) {
+            Texture tex = assetService.getTexture(prefix + i + ".png");
+            if (tex != null) {
+                frames[i] = new TextureRegion(tex);
+                foundAny = true;
+            }
+        }
+        return foundAny ? new Animation<>(frameDuration, frames) : null;
     }
 }

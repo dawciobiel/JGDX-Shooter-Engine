@@ -8,6 +8,7 @@ import pl.shooter.engine.ecs.Component;
 public class PlayerComponent implements Component {
     public float speed;
 
+    public PlayerComponent() {} // Required for Jackson JSON deserialization
     public PlayerComponent(float speed) {
         this.speed = speed;
     }

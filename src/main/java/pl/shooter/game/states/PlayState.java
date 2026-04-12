@@ -5,7 +5,6 @@ import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
 import pl.shooter.engine.ecs.EntityFactory;
-import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.systems.*;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
@@ -22,12 +21,24 @@ public class PlayState extends GameState {
         this.engine = new Engine();
         this.assetService = new AssetService();
         this.audioService = new AudioService();
-        this.entityFactory = new EntityFactory(engine.getEntityManager());
+        this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService);
 
         init();
     }
 
     private void init() {
+        // --- 1. Load Player Assets ---
+        assetService.loadTexture("assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png");
+
+        // --- 2. Load Zombie Assets ---
+        for (int i = 0; i <= 16; i++) {
+            assetService.loadTexture("assets/tds_zombie/skeleton-idle_" + i + ".png");
+            assetService.loadTexture("assets/tds_zombie/skeleton-move_" + i + ".png");
+        }
+        for (int i = 0; i <= 8; i++) {
+            assetService.loadTexture("assets/tds_zombie/skeleton-attack_" + i + ".png");
+        }
+
         assetService.finishLoading();
 
         try {
@@ -51,11 +62,12 @@ public class PlayState extends GameState {
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
+        engine.addSystem(new AnimationSystem(engine.getEntityManager()));
         engine.addSystem(renderSystem);
         engine.addSystem(new UISystem(engine.getEntityManager()));
 
-        // --- SPAWN ---
-        entityFactory.createPlayer(400, 300);
+        // --- SPAWN DATA-DRIVEN ---
+        entityFactory.loadFromJson("assets/entities/player.json", 400, 300);
         entityFactory.loadFromJson("assets/entities/zombie.json", 100, 100);
         entityFactory.loadFromJson("assets/entities/zombie.json", 700, 500);
     }
@@ -66,13 +78,11 @@ public class PlayState extends GameState {
     }
 
     @Override
-    public void render() {
-        // Engine handles rendering via systems
-    }
+    public void render() {}
 
     @Override
     public void resize(int width, int height) {
-        engine.getSystems().forEach(system -> system.resize(width, height));
+        engine.resize(width, height);
     }
 
     @Override

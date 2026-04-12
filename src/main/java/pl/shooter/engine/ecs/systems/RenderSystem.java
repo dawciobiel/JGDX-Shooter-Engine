@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
@@ -34,7 +35,6 @@ public class RenderSystem extends GameSystem {
         this.shapeRenderer = new ShapeRenderer();
         this.spriteBatch = new SpriteBatch();
         this.camera = new OrthographicCamera();
-        // Use ExtendViewport for game world to see more when window is larger
         this.viewport = new ExtendViewport(800, 600, camera);
     }
 
@@ -62,6 +62,7 @@ public class RenderSystem extends GameSystem {
         spriteBatch.setProjectionMatrix(camera.combined);
         spriteBatch.begin();
         renderTexturedEntities();
+        renderAnimatedEntities(); // --- New: Animated entities ---
         spriteBatch.end();
         
         Gdx.gl.glDisable(GL20.GL_BLEND);
@@ -70,7 +71,9 @@ public class RenderSystem extends GameSystem {
     private void renderPrimitiveEntities() {
         List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, RenderComponent.class);
         for (Entity entity : entities) {
-            if (entityManager.hasComponent(entity, TextureComponent.class)) continue;
+            if (entityManager.hasComponent(entity, TextureComponent.class) || 
+                entityManager.hasComponent(entity, AnimationComponent.class)) continue;
+
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             RenderComponent r = entityManager.getComponent(entity, RenderComponent.class);
             shapeRenderer.setColor(r.color);
@@ -85,9 +88,33 @@ public class RenderSystem extends GameSystem {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             TextureComponent tex = entityManager.getComponent(entity, TextureComponent.class);
             Texture texture = assetService.getTexture(tex.assetPath);
+
             if (texture != null) {
                 spriteBatch.setColor(Color.WHITE);
-                spriteBatch.draw(texture, t.x - tex.width / 2, t.y - tex.height / 2, tex.width / 2, tex.height / 2, tex.width, tex.height, 1, 1, t.rotation, 0, 0, texture.getWidth(), texture.getHeight(), false, false);
+                spriteBatch.draw(texture, 
+                    t.x - tex.width / 2, t.y - tex.height / 2, 
+                    tex.width / 2, tex.height / 2, 
+                    tex.width, tex.height, 
+                    1, 1, t.rotation, 
+                    0, 0, texture.getWidth(), texture.getHeight(), 
+                    false, false);
+            }
+        }
+    }
+
+    private void renderAnimatedEntities() {
+        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, AnimationComponent.class);
+        for (Entity entity : entities) {
+            TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
+            AnimationComponent anim = entityManager.getComponent(entity, AnimationComponent.class);
+            
+            TextureRegion frame = anim.getCurrentKeyFrame();
+            if (frame != null) {
+                spriteBatch.draw(frame, 
+                    t.x - anim.width / 2, t.y - anim.height / 2, 
+                    anim.width / 2, anim.height / 2, 
+                    anim.width, anim.height, 
+                    1, 1, t.rotation);
             }
         }
     }
@@ -100,6 +127,8 @@ public class RenderSystem extends GameSystem {
             float radius = 20f;
             if (entityManager.hasComponent(entity, RenderComponent.class)) {
                 radius = entityManager.getComponent(entity, RenderComponent.class).radius;
+            } else if (entityManager.hasComponent(entity, AnimationComponent.class)) {
+                radius = entityManager.getComponent(entity, AnimationComponent.class).width / 2;
             }
             drawHealthBar(t.x, t.y + radius + 10, radius * 2, h);
         }
