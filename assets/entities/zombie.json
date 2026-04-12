@@ -8,6 +8,7 @@
       "isCircle": false
     },
     "Health": { "hp": 50, "maxHp": 50 },
+    "Collider": { "radius": 20 },
     "AI": { "behavior": "CHASE", "detectRange": 350 },
     "Velocity": { "vx": 0, "vy": 0 },
     "Weapon": { "type": "PISTOL", "fireRate": 1.5, "projectileSpeed": 250, "spread": 5, "projectilesPerShot": 1 }
