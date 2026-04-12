@@ -27,3 +27,5 @@ A professional-grade, modular 2D top-down shooter engine built with **Java 17+**
 1. Clone the repository.
 2. Run the game using Gradle:
    
+## 📝 Documentation
+Detailed technical documentation can be found in the docs/ folder.
