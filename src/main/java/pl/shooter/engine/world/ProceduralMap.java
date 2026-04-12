@@ -14,7 +14,7 @@ public class ProceduralMap implements GameMap {
 
     @Override
     public float getWidth() {
-        return Float.MAX_VALUE; // Theoretically infinite
+        return Float.MAX_VALUE;
     }
 
     @Override
@@ -24,6 +24,17 @@ public class ProceduralMap implements GameMap {
 
     @Override
     public boolean isWalkable(float x, float y) {
+        Tile tile = getTileAt(x, y);
+        return tile != null && tile.walkable;
+    }
+
+    @Override
+    public float getSpeedMultiplier(float x, float y) {
+        Tile tile = getTileAt(x, y);
+        return (tile != null) ? tile.speedMultiplier : 1.0f;
+    }
+
+    private Tile getTileAt(float x, float y) {
         int cx = (int) Math.floor(x / CHUNK_PIXEL_SIZE);
         int cy = (int) Math.floor(y / CHUNK_PIXEL_SIZE);
         
@@ -34,7 +45,8 @@ public class ProceduralMap implements GameMap {
         if (tx < 0) tx += Chunk.SIZE;
         if (ty < 0) ty += Chunk.SIZE;
 
-        return getChunk(cx, cy).getTile(tx, ty).walkable;
+        Chunk chunk = getChunk(cx, cy);
+        return chunk != null ? chunk.getTile(tx, ty) : null;
     }
 
     public Chunk getChunk(int cx, int cy) {

@@ -12,7 +12,7 @@ import pl.shooter.engine.world.GameMap;
 import java.util.List;
 
 /**
- * Handles collisions between entities and the game map (walls).
+ * Handles collisions between entities and the game map (walls) and applies terrain speed modifiers.
  */
 public class MapSystem extends GameSystem {
     private final GameMap currentMap;
@@ -26,42 +26,53 @@ public class MapSystem extends GameSystem {
     public void update(float deltaTime) {
         if (currentMap == null) return;
 
-        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class);
+        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, VelocityComponent.class);
 
         for (Entity entity : entities) {
             TransformComponent transform = entityManager.getComponent(entity, TransformComponent.class);
+            VelocityComponent velocity = entityManager.getComponent(entity, VelocityComponent.class);
             ColliderComponent collider = entityManager.getComponent(entity, ColliderComponent.class);
             
             float radius = (collider != null) ? collider.radius : 0f;
 
-            // Check 4 points around the entity based on its radius
-            if (!isAreaWalkable(transform.x, transform.y, radius)) {
-                
-                // If it's a projectile - destroy it on impact with wall
-                if (entityManager.hasComponent(entity, ProjectileComponent.class)) {
+            // 1. Terrain Speed Modification
+            // Calculate speed multiplier based on the tile at entity's center
+            float terrainMultiplier = currentMap.getSpeedMultiplier(transform.x, transform.y);
+            
+            // 2. Projectile handling
+            if (entityManager.hasComponent(entity, ProjectileComponent.class)) {
+                if (!isAreaWalkable(transform.x, transform.y, radius)) {
                     entityManager.removeEntity(entity);
-                    continue;
                 }
+                continue;
+            }
 
-                // If it's a living entity - push it back (very simple logic: revert movement)
-                VelocityComponent velocity = entityManager.getComponent(entity, VelocityComponent.class);
-                if (velocity != null) {
-                    transform.x -= velocity.vx * deltaTime;
-                    transform.y -= velocity.vy * deltaTime;
-                }
+            // 3. Character Sliding Logic & Velocity Apply
+            // Apply terrain multiplier to the step
+            float stepX = (velocity.vx * terrainMultiplier) * deltaTime;
+            float nextX = transform.x + stepX;
+            if (isAreaWalkable(nextX, transform.y, radius)) {
+                transform.x = nextX;
+            }
+
+            float stepY = (velocity.vy * terrainMultiplier) * deltaTime;
+            float nextY = transform.y + stepY;
+            if (isAreaWalkable(transform.x, nextY, radius)) {
+                transform.y = nextY;
             }
         }
     }
 
-    /**
-     * Checks if the circular area of an entity is clear of walls.
-     */
     private boolean isAreaWalkable(float x, float y, float radius) {
-        // Check center, top, bottom, left, right
+        float offset = radius * 0.707f;
         return currentMap.isWalkable(x, y) &&
                currentMap.isWalkable(x + radius, y) &&
                currentMap.isWalkable(x - radius, y) &&
                currentMap.isWalkable(x, y + radius) &&
-               currentMap.isWalkable(x, y - radius);
+               currentMap.isWalkable(x, y - radius) &&
+               currentMap.isWalkable(x + offset, y + offset) &&
+               currentMap.isWalkable(x - offset, y + offset) &&
+               currentMap.isWalkable(x + offset, y - offset) &&
+               currentMap.isWalkable(x - offset, y - offset);
     }
 }

@@ -15,6 +15,7 @@ import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.world.GameMap;
 import pl.shooter.engine.world.ProceduralMap;
+import pl.shooter.engine.world.Tile;
 
 import java.util.List;
 
@@ -41,7 +42,7 @@ public class RenderSystem extends GameSystem {
     @Override
     public void update(float deltaTime) {
         updateCamera();
-        ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1);
+        ScreenUtils.clear(0.05f, 0.05f, 0.05f, 1);
 
         // Enable transparency
         Gdx.gl.glEnable(GL20.GL_BLEND);
@@ -53,7 +54,7 @@ public class RenderSystem extends GameSystem {
             renderProceduralMap(pMap);
         }
         renderPrimitiveEntities();
-        renderHealthBars(); // Moved here to share shapeRenderer session
+        renderHealthBars();
         shapeRenderer.end();
 
         spriteBatch.setProjectionMatrix(camera.combined);
@@ -85,7 +86,7 @@ public class RenderSystem extends GameSystem {
             Texture texture = assetService.getTexture(tex.assetPath);
 
             if (texture != null) {
-                spriteBatch.setColor(Color.WHITE); // Default
+                spriteBatch.setColor(Color.WHITE);
                 spriteBatch.draw(texture, 
                     t.x - tex.width / 2, t.y - tex.height / 2, 
                     tex.width / 2, tex.height / 2, 
@@ -115,9 +116,9 @@ public class RenderSystem extends GameSystem {
     private void drawHealthBar(float x, float y, float width, HealthComponent health) {
         float barHeight = 4f;
         float halfWidth = width / 1.2f;
-        shapeRenderer.setColor(1, 0, 0, 0.7f); // Transparent red
+        shapeRenderer.setColor(1, 0, 0, 0.7f);
         shapeRenderer.rect(x - halfWidth, y, halfWidth * 2, barHeight);
-        shapeRenderer.setColor(0, 1, 0, 0.8f); // Transparent green
+        shapeRenderer.setColor(0, 1, 0, 0.8f);
         shapeRenderer.rect(x - halfWidth, y, halfWidth * 2 * (health.hp / health.maxHp), barHeight);
     }
 
@@ -140,13 +141,22 @@ public class RenderSystem extends GameSystem {
             for (float y = startY; y < endY; y += ProceduralMap.TILE_SIZE) {
                 float gridX = (float) Math.floor(x / ProceduralMap.TILE_SIZE) * ProceduralMap.TILE_SIZE;
                 float gridY = (float) Math.floor(y / ProceduralMap.TILE_SIZE) * ProceduralMap.TILE_SIZE;
-                if (!map.isWalkable(gridX, gridY)) {
-                    shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 1);
-                    shapeRenderer.rect(gridX, gridY, ProceduralMap.TILE_SIZE, ProceduralMap.TILE_SIZE);
+                
+                // Get terrain multiplier to determine color
+                float speed = map.getSpeedMultiplier(gridX + 1, gridY + 1);
+                boolean isWalkable = map.isWalkable(gridX, gridY);
+
+                if (!isWalkable) {
+                    shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 1); // Wall
+                } else if (speed < 0.4f) {
+                    shapeRenderer.setColor(0.1f, 0.2f, 0.4f, 1); // Water (very slow)
+                } else if (speed < 0.7f) {
+                    shapeRenderer.setColor(0.25f, 0.15f, 0.05f, 1); // Mud (slow)
                 } else {
-                    shapeRenderer.setColor(0.15f, 0.15f, 0.15f, 1);
-                    shapeRenderer.rect(gridX + 1, gridY + 1, ProceduralMap.TILE_SIZE - 2, ProceduralMap.TILE_SIZE - 2);
+                    shapeRenderer.setColor(0.15f, 0.15f, 0.15f, 1); // Ground
                 }
+                
+                shapeRenderer.rect(gridX, gridY, ProceduralMap.TILE_SIZE, ProceduralMap.TILE_SIZE);
             }
         }
     }
