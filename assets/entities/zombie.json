@@ -12,5 +12,29 @@
     "AI": { "behavior": "CHASE", "detectRange": 350 },
     "Velocity": { "vx": 0, "vy": 0 },
     "Weapon": { "type": "PISTOL", "fireRate": 1.5, "projectileSpeed": 250, "spread": 5, "projectilesPerShot": 1 }
+  },
+  "animations": {
+    "width": 50.0,
+    "height": 50.0,
+    "states": {
+      "IDLE": {
+        "type": "FILES",
+        "path": "assets/tds_zombie/skeleton-idle_",
+        "count": 16,
+        "frameDuration": 0.05
+      },
+      "WALK": {
+        "type": "FILES",
+        "path": "assets/tds_zombie/skeleton-move_",
+        "count": 16,
+        "frameDuration": 0.05
+      },
+      "SHOOT": {
+        "type": "FILES",
+        "path": "assets/tds_zombie/skeleton-attack_",
+        "count": 8,
+        "frameDuration": 0.08
+      }
+    }
   }
 }

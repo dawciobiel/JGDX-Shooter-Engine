@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Creates entities from external JSON definitions with support for aliases and animations.
+ * Creates entities from external JSON definitions with support for dynamic animations.
  */
 public class EntityFactory {
     private final EntityManager entityManager;
@@ -56,19 +56,22 @@ public class EntityFactory {
     public Entity loadFromJson(String internalPath, float x, float y) {
         try {
             FileHandle file = Gdx.files.internal(internalPath);
-            if (!file.exists()) return null;
+            if (!file.exists()) {
+                Gdx.app.error("EntityFactory", "File not found: " + internalPath);
+                return null;
+            }
             
             JsonNode root = objectMapper.readTree(file.read());
             Entity entity = entityManager.createEntity();
-            JsonNode componentsNode = root.get("components");
 
+            // 1. Process regular components
+            JsonNode componentsNode = root.get("components");
             if (componentsNode != null && componentsNode.isObject()) {
                 Iterator<Map.Entry<String, JsonNode>> fields = componentsNode.fields();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> entry = fields.next();
                     String alias = entry.getKey();
                     JsonNode data = entry.getValue();
-
                     Class<? extends Component> clazz = componentAliases.get(alias);
                     if (clazz == null) continue;
 
@@ -81,28 +84,44 @@ public class EntityFactory {
                 }
             }
 
-            if (internalPath.contains("zombie")) {
-                setupZombieAnimations(entity);
+            // 2. Process data-driven animations
+            JsonNode animNode = root.get("animations");
+            if (animNode != null) {
+                AnimationConfig animConfig = objectMapper.treeToValue(animNode, AnimationConfig.class);
+                setupAnimationsFromConfig(entity, animConfig);
             }
 
             return entity;
         } catch (Exception e) {
-            Gdx.app.error("EntityFactory", "Failed to load entity", e);
+            Gdx.app.error("EntityFactory", "Failed to load entity from " + internalPath, e);
             return null;
         }
     }
 
-    private void setupZombieAnimations(Entity entity) {
+    private void setupAnimationsFromConfig(Entity entity, AnimationConfig config) {
         if (assetService == null) return;
-        AnimationComponent anim = new AnimationComponent(50f, 50f);
-        Animation<TextureRegion> idle = createAnimationFromFiles("assets/tds_zombie/skeleton-idle_", 16, 0.05f);
-        Animation<TextureRegion> move = createAnimationFromFiles("assets/tds_zombie/skeleton-move_", 16, 0.05f);
-        Animation<TextureRegion> attack = createAnimationFromFiles("assets/tds_zombie/skeleton-attack_", 8, 0.08f);
+        AnimationComponent animComp = new AnimationComponent(config.width, config.height);
 
-        if (idle != null) anim.addAnimation(AnimationComponent.State.IDLE, idle);
-        if (move != null) anim.addAnimation(AnimationComponent.State.WALK, move);
-        if (attack != null) anim.addAnimation(AnimationComponent.State.SHOOT, attack);
-        entityManager.addComponent(entity, anim);
+        for (Map.Entry<String, AnimationConfig.StateConfig> entry : config.states.entrySet()) {
+            try {
+                AnimationComponent.State state = AnimationComponent.State.valueOf(entry.getKey());
+                AnimationConfig.StateConfig stateConfig = entry.getValue();
+                
+                Animation<TextureRegion> anim;
+                if ("SHEET".equals(stateConfig.type)) {
+                    anim = createAnimationFromSheet(stateConfig.path, stateConfig.rows, stateConfig.cols, stateConfig.frameDuration);
+                } else {
+                    anim = createAnimationFromFiles(stateConfig.path, stateConfig.count, stateConfig.frameDuration);
+                }
+                
+                if (anim != null) {
+                    animComp.addAnimation(state, anim);
+                }
+            } catch (IllegalArgumentException e) {
+                Gdx.app.error("EntityFactory", "Invalid animation state in JSON: " + entry.getKey());
+            }
+        }
+        entityManager.addComponent(entity, animComp);
     }
 
     public void createExplosion(float x, float y, Color color) {
@@ -115,31 +134,6 @@ public class EntityFactory {
             entityManager.addComponent(p, new RenderComponent(new Color(color.r, color.g, color.b, 1.0f), 2f + random.nextFloat() * 4f, true));
             entityManager.addComponent(p, new ParticleComponent(1.5f, 2.0f));
         }
-    }
-
-    public Entity createPlayer(float x, float y) {
-        Entity player = entityManager.createEntity();
-        entityManager.addComponent(player, new PlayerComponent(200f));
-        entityManager.addComponent(player, new WeaponComponent(WeaponComponent.Type.SHOTGUN, 0.4f, 600f, 15f, 5, 20, 4, 1.5f));
-        entityManager.addComponent(player, new TransformComponent(x, y));
-        entityManager.addComponent(player, new VelocityComponent(0, 0));
-        entityManager.addComponent(player, new ColliderComponent(15f));
-        entityManager.addComponent(player, new HealthComponent(100));
-        entityManager.addComponent(player, new ScoreComponent());
-
-        if (assetService != null) {
-            AnimationComponent anim = new AnimationComponent(40f, 40f);
-            Animation<TextureRegion> walkAnim = createAnimationFromSheet(
-                "assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png", 
-                1, 4, 0.1f
-            );
-            if (walkAnim != null) {
-                anim.addAnimation(AnimationComponent.State.WALK, walkAnim);
-                anim.addAnimation(AnimationComponent.State.IDLE, walkAnim);
-            }
-            entityManager.addComponent(player, anim);
-        }
-        return player;
     }
 
     public Entity createAmmoPickup(float x, float y, int amount) {

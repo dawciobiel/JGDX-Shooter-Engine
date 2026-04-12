@@ -5,7 +5,6 @@ import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
 import pl.shooter.engine.ecs.EntityFactory;
-import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.systems.*;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
@@ -36,7 +35,6 @@ public class PlayState extends GameState {
             assetService.loadTexture("assets/tds_zombie/skeleton-idle_" + i + ".png");
             assetService.loadTexture("assets/tds_zombie/skeleton-move_" + i + ".png");
         }
-        // Attack: 0-8
         for (int i = 0; i <= 8; i++) {
             assetService.loadTexture("assets/tds_zombie/skeleton-attack_" + i + ".png");
         }
@@ -68,8 +66,8 @@ public class PlayState extends GameState {
         engine.addSystem(renderSystem);
         engine.addSystem(new UISystem(engine.getEntityManager()));
 
-        // --- SPAWN ---
-        entityFactory.createPlayer(400, 300);
+        // --- SPAWN DATA-DRIVEN ---
+        entityFactory.loadFromJson("assets/entities/player.json", 400, 300);
         entityFactory.loadFromJson("assets/entities/zombie.json", 100, 100);
         entityFactory.loadFromJson("assets/entities/zombie.json", 700, 500);
     }

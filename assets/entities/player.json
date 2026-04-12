@@ -1,0 +1,43 @@
+{
+  "type": "Player",
+  "components": {
+    "Player": { "speed": 200.0 },
+    "Transform": { "x": 0, "y": 0 },
+    "Velocity": { "vx": 0, "vy": 0 },
+    "Collider": { "radius": 15.0 },
+    "Health": { "hp": 100.0, "maxHp": 100.0 },
+    "Score": {},
+    "Weapon": {
+      "type": "SHOTGUN",
+      "fireRate": 0.4,
+      "projectileSpeed": 600.0,
+      "spread": 15.0,
+      "projectilesPerShot": 5,
+      "maxAmmo": 20,
+      "currentAmmo": 20,
+      "magazineSize": 4,
+      "magazineAmmo": 4,
+      "reloadTime": 1.5
+    }
+  },
+  "animations": {
+    "width": 40.0,
+    "height": 40.0,
+    "states": {
+      "WALK": {
+        "type": "SHEET",
+        "path": "assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png",
+        "rows": 1,
+        "cols": 4,
+        "frameDuration": 0.1
+      },
+      "IDLE": {
+        "type": "SHEET",
+        "path": "assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png",
+        "rows": 1,
+        "cols": 4,
+        "frameDuration": 0.1
+      }
+    }
+  }
+}
