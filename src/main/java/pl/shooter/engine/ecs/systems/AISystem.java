@@ -7,14 +7,16 @@ import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
+import pl.shooter.events.HitEvent;
 
 import java.util.List;
 
 /**
- * Controls AI-driven entities with animation state awareness.
+ * Controls AI-driven entities with animation state awareness and melee attacks.
  */
 public class AISystem extends GameSystem {
     private final EventBus eventBus;
+    private float meleeTimer = 0;
 
     public AISystem(EntityManager entityManager, EventBus eventBus) {
         super(entityManager);
@@ -23,6 +25,7 @@ public class AISystem extends GameSystem {
 
     @Override
     public void update(float deltaTime) {
+        meleeTimer += deltaTime;
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, TransformComponent.class);
         if (players.isEmpty()) return;
         
@@ -46,16 +49,26 @@ public class AISystem extends GameSystem {
                 direction.nor();
                 enemyTrans.rotation = direction.angleDeg();
 
-                // If in attack range (e.g. 50px), stop and play attack animation
-                if (distance < 60f && anim != null) {
+                // Melee / Attack Range
+                if (distance < 65f) {
                     enemyVel.vx = 0;
                     enemyVel.vy = 0;
-                    if (anim.currentState != AnimationComponent.State.SHOOT) {
+                    
+                    if (anim != null && anim.currentState != AnimationComponent.State.SHOOT) {
                         anim.currentState = AnimationComponent.State.SHOOT;
                         anim.stateTime = 0;
                     }
-                    // Trigger shooting event
-                    eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
+                    
+                    // Deal damage periodically during attack animation
+                    if (meleeTimer > 1.0f) { 
+                        eventBus.publish(new HitEvent(enemy, player));
+                        meleeTimer = 0;
+                    }
+                    
+                    // Also trigger the shoot event if zombie has a weapon
+                    if (entityManager.hasComponent(enemy, WeaponComponent.class)) {
+                        eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
+                    }
                 } else if (ai.behavior == AIComponent.Behavior.CHASE) {
                     enemyVel.vx = direction.x * 100f;
                     enemyVel.vy = direction.y * 100f;

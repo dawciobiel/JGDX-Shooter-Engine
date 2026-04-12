@@ -1,35 +1,47 @@
 package pl.shooter.game.states;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
 import pl.shooter.engine.ecs.EntityFactory;
+import pl.shooter.engine.ecs.components.PlayerComponent;
 import pl.shooter.engine.ecs.systems.*;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 import pl.shooter.engine.world.ProceduralMap;
 
 public class PlayState extends GameState {
-    private final Engine engine;
-    private final AssetService assetService;
-    private final AudioService audioService;
-    private final EntityFactory entityFactory;
+    private Engine engine;
+    private AssetService assetService;
+    private AudioService audioService;
+    private EntityFactory entityFactory;
+    private boolean isGameOver = false;
 
     public PlayState(GameStateManager gsm) {
         super(gsm);
+        resetState();
+    }
+
+    private void resetState() {
+        if (engine != null) dispose();
+
         this.engine = new Engine();
         this.assetService = new AssetService();
         this.audioService = new AudioService();
         this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService);
+        this.isGameOver = false;
 
         init();
+        
+        // Initial resize fix - ensures viewports are updated on start
+        resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     private void init() {
-        // --- 1. Load Player Assets ---
+        // --- 1. Load Assets ---
         assetService.loadTexture("assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png");
-
-        // --- 2. Load Zombie Assets ---
         for (int i = 0; i <= 16; i++) {
             assetService.loadTexture("assets/tds_zombie/skeleton-idle_" + i + ".png");
             assetService.loadTexture("assets/tds_zombie/skeleton-move_" + i + ".png");
@@ -37,13 +49,12 @@ public class PlayState extends GameState {
         for (int i = 0; i <= 8; i++) {
             assetService.loadTexture("assets/tds_zombie/skeleton-attack_" + i + ".png");
         }
-
         assetService.finishLoading();
 
-        // Audio is now loaded lazily, but we can pre-load to avoid lag
         audioService.loadSound("assets/sfx/shoot.wav");
         audioService.loadSound("assets/sfx/hit.wav");
 
+        // --- 2. Setup Systems ---
         ProceduralMap map = new ProceduralMap();
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
         renderSystem.setMap(map);
@@ -62,7 +73,7 @@ public class PlayState extends GameState {
         engine.addSystem(renderSystem);
         engine.addSystem(new UISystem(engine.getEntityManager()));
 
-        // --- SPAWN DATA-DRIVEN ---
+        // --- 3. Spawn Initial Entities ---
         entityFactory.loadFromJson("assets/entities/player.json", 400, 300);
         entityFactory.loadFromJson("assets/entities/zombie.json", 100, 100);
         entityFactory.loadFromJson("assets/entities/zombie.json", 700, 500);
@@ -70,7 +81,26 @@ public class PlayState extends GameState {
 
     @Override
     public void update(float deltaTime) {
+        if (isGameOver) {
+            // Only update render and UI systems when dead, keep the world static
+            engine.getSystems().forEach(system -> {
+                if (system instanceof RenderSystem || system instanceof UISystem) {
+                    system.update(deltaTime);
+                }
+            });
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+                resetState();
+            }
+            return;
+        }
+
         engine.update(deltaTime);
+
+        // Check for Game Over (all players dead)
+        if (engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class).isEmpty()) {
+            isGameOver = true;
+        }
     }
 
     @Override
@@ -78,13 +108,13 @@ public class PlayState extends GameState {
 
     @Override
     public void resize(int width, int height) {
-        engine.resize(width, height);
+        if (engine != null) engine.resize(width, height);
     }
 
     @Override
     public void dispose() {
-        engine.dispose();
-        assetService.dispose();
-        audioService.dispose();
+        if (engine != null) engine.dispose();
+        if (assetService != null) assetService.dispose();
+        if (audioService != null) audioService.dispose();
     }
 }
