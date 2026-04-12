@@ -97,7 +97,8 @@ public class EntityFactory {
     public Entity createPlayer(float x, float y) {
         Entity player = entityManager.createEntity();
         entityManager.addComponent(player, new PlayerComponent(200f));
-        entityManager.addComponent(player, new WeaponComponent(WeaponComponent.Type.SHOTGUN, 0.2f, 600f, 10f, 3));
+        // Fixed: added max ammo (e.g. 50) for shotgun
+        entityManager.addComponent(player, new WeaponComponent(WeaponComponent.Type.SHOTGUN, 0.2f, 600f, 10f, 3, 50));
         entityManager.addComponent(player, new TransformComponent(x, y));
         entityManager.addComponent(player, new VelocityComponent(0, 0));
         entityManager.addComponent(player, new RenderComponent(Color.GREEN, 15f, true));
