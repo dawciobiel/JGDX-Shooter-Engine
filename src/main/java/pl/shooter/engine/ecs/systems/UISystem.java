@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Handles the On-Screen Display (HUD).
- * Uses a separate viewport to ensure correct scaling on resize.
+ * Renders player health, score, kills, wave, and weapon info.
  */
 public class UISystem extends GameSystem {
     private final SpriteBatch batch;
@@ -32,8 +32,7 @@ public class UISystem extends GameSystem {
         this.batch = new SpriteBatch();
         this.shapeRenderer = new ShapeRenderer();
         this.font = new BitmapFont();
-        this.font.getData().setScale(1.2f);
-        // Fixed internal UI resolution: 800x600
+        this.font.getData().setScale(1.1f);
         this.viewport = new FitViewport(800, 600);
     }
 
@@ -57,7 +56,7 @@ public class UISystem extends GameSystem {
 
     private void renderHUD(HealthComponent health, ScoreComponent score, WeaponComponent weapon) {
         float x = 20;
-        float y = 600 - 40; // Use fixed virtual height
+        float y = 600 - 40;
         float barWidth = 200;
         float barHeight = 20;
 
@@ -81,14 +80,14 @@ public class UISystem extends GameSystem {
 
         // 2. Reload Bar
         if (weapon != null && weapon.isReloading) {
-            float ry = y - 40;
+            float ry = y - 35;
             float reloadPercent = Math.min(1, weapon.reloadTimer / weapon.reloadTime);
             shapeRenderer.setColor(Color.BLACK);
-            shapeRenderer.rect(x - 2, ry - 2, barWidth + 4, 14);
+            shapeRenderer.rect(x - 2, ry - 2, barWidth + 4, 12);
             shapeRenderer.setColor(Color.GRAY);
-            shapeRenderer.rect(x, ry, barWidth, 10);
+            shapeRenderer.rect(x, ry, barWidth, 8);
             shapeRenderer.setColor(Color.CYAN);
-            shapeRenderer.rect(x, ry, barWidth * reloadPercent, 10);
+            shapeRenderer.rect(x, ry, barWidth * reloadPercent, 8);
         }
         shapeRenderer.end();
 
@@ -96,12 +95,16 @@ public class UISystem extends GameSystem {
         batch.begin();
         if (health != null) {
             font.setColor(Color.WHITE);
-            font.draw(batch, "HEALTH: " + (int)health.hp, x, y + barHeight + 20);
+            font.draw(batch, "HEALTH: " + (int)health.hp, x, y + barHeight + 15);
         }
 
         if (score != null) {
             font.setColor(Color.YELLOW);
-            font.draw(batch, "SCORE: " + score.score, x, y - 15);
+            font.draw(batch, "SCORE: " + score.score, x, y - 45);
+            font.setColor(Color.RED);
+            font.draw(batch, "KILLS: " + score.kills, x, y - 65);
+            font.setColor(Color.WHITE);
+            font.draw(batch, "WAVE: " + score.wave, 400 - 40, 600 - 20);
         }
 
         if (weapon != null) {
@@ -110,10 +113,10 @@ public class UISystem extends GameSystem {
             
             if (weapon.isReloading) {
                 font.setColor(Color.ORANGE);
-                font.draw(batch, "RELOADING...", 800 - 200, 600 - 20);
+                font.draw(batch, "RELOADING...", 800 - 180, 600 - 20);
             } else {
                 font.draw(batch, "WEAPON: " + weapon.type + " [" + ammoText + "]", 
-                         800 - 350, 600 - 20);
+                         800 - 320, 600 - 20);
             }
         }
         batch.end();
@@ -123,9 +126,11 @@ public class UISystem extends GameSystem {
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
         font.setColor(Color.RED);
-        font.draw(batch, "GAME OVER", 400 - 60, 300 + 20);
+        font.getData().setScale(2.5f);
+        font.draw(batch, "GAME OVER", 400 - 140, 350);
+        font.getData().setScale(1.1f);
         font.setColor(Color.WHITE);
-        font.draw(batch, "Press any key to restart", 400 - 110, 300 - 10);
+        font.draw(batch, "PRESS R OR SPACE TO RESTART", 400 - 160, 280);
         batch.end();
     }
 

@@ -11,6 +11,8 @@ import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ScoreEvent;
 import pl.shooter.events.HitEvent;
 
+import java.util.List;
+
 /**
  * Handles damage calculation, death, and item drops when a HitEvent is received.
  */
@@ -29,7 +31,6 @@ public class DamageSystem extends GameSystem {
     public void update(float deltaTime) {}
 
     private void handleHit(HitEvent event) {
-        // Projectiles are removed immediately upon hitting something
         if (entityManager.hasComponent(event.attacker, ProjectileComponent.class)) {
             entityManager.removeEntity(event.attacker);
         }
@@ -38,10 +39,7 @@ public class DamageSystem extends GameSystem {
         TransformComponent trans = entityManager.getComponent(event.victim, TransformComponent.class);
 
         if (health != null && trans != null) {
-            // Apply damage
             health.hp -= 10;
-            
-            // Visual feedback
             factory.createExplosion(trans.x, trans.y, Color.ORANGE);
 
             if (health.hp <= 0) {
@@ -53,16 +51,19 @@ public class DamageSystem extends GameSystem {
     private void onEntityDeath(Entity victim, float x, float y) {
         factory.createExplosion(x, y, Color.RED);
         
-        // Handle logic based on who died
         if (entityManager.hasComponent(victim, PlayerComponent.class)) {
-            // Player death - potentially handle game over here or in UISystem
-            // For now, just remove player entity
             entityManager.removeEntity(victim);
         } else {
-            // Enemy death
+            // Enemy death: Add score and increment kills for player
+            List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, ScoreComponent.class);
+            if (!players.isEmpty()) {
+                ScoreComponent score = entityManager.getComponent(players.get(0), ScoreComponent.class);
+                score.score += 100;
+                score.kills += 1;
+            }
+            
             eventBus.publish(new ScoreEvent(100));
             
-            // 30% chance to drop ammo
             if (MathUtils.random() < 0.3f) {
                 factory.createAmmoPickup(x, y, MathUtils.random(5, 15));
             }
