@@ -43,6 +43,7 @@
   "sounds": {
     "SHOOT": "assets/sfx/shotgun.wav",
     "HIT": "assets/sfx/hit.wav",
-    "DIE": "assets/sfx/death.wav"
+    "DIE": "assets/sfx/death.wav",
+    "EMPTY_CLICK": "assets/sfx/empty_click.wav"
   }
 }

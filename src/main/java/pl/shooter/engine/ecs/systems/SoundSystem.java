@@ -5,6 +5,7 @@ import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.SoundComponent;
+import pl.shooter.engine.events.EmptyWeaponEvent;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
 import pl.shooter.events.HitEvent;
@@ -22,6 +23,7 @@ public class SoundSystem extends GameSystem {
         // Subscribe to events
         eventBus.subscribe(ShootEvent.class, this::handleShootSound);
         eventBus.subscribe(HitEvent.class, this::handleHitSound);
+        eventBus.subscribe(EmptyWeaponEvent.class, this::handleEmptyClick);
     }
 
     private void handleShootSound(ShootEvent event) {
@@ -30,6 +32,10 @@ public class SoundSystem extends GameSystem {
 
     private void handleHitSound(HitEvent event) {
         playSoundForEntity(event.victim, SoundComponent.Action.HIT, 0.6f);
+    }
+
+    private void handleEmptyClick(EmptyWeaponEvent event) {
+        playSoundForEntity(event.entity, SoundComponent.Action.EMPTY_CLICK, 0.3f);
     }
 
     private void playSoundForEntity(Entity entity, SoundComponent.Action action, float volume) {

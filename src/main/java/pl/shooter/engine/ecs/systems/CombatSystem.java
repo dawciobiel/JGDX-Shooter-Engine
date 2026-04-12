@@ -6,6 +6,7 @@ import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
+import pl.shooter.engine.events.EmptyWeaponEvent;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
 
@@ -13,10 +14,12 @@ import pl.shooter.engine.events.ShootEvent;
  * Handles combat logic, including weapon types, firing patterns, ammo consumption, and reloading.
  */
 public class CombatSystem extends GameSystem {
+    private final EventBus eventBus;
     private float totalTime = 0;
 
     public CombatSystem(EntityManager entityManager, EventBus eventBus) {
         super(entityManager);
+        this.eventBus = eventBus;
         eventBus.subscribe(ShootEvent.class, this::handleShoot);
     }
 
@@ -35,7 +38,6 @@ public class CombatSystem extends GameSystem {
                     finishReload(weapon);
                 }
             } else if (weapon.magazineSize > 0 && weapon.magazineAmmo <= 0 && (weapon.currentAmmo > 0 || weapon.hasInfiniteAmmo)) {
-                // Auto-reload if empty, ammo available, and magazine size is defined
                 startReload(weapon);
             }
         }
@@ -58,9 +60,15 @@ public class CombatSystem extends GameSystem {
             return;
         }
 
-        // 3. Magazine check (Skip if magazineSize is 0 - treat as non-mag weapon)
+        // 3. Ammo/Magazine check
         if (weapon.magazineSize > 0 && weapon.magazineAmmo <= 0) {
-            startReload(weapon);
+            if (weapon.currentAmmo <= 0 && !weapon.hasInfiniteAmmo) {
+                // Out of ammo completely - trigger empty click sound
+                eventBus.publish(new EmptyWeaponEvent(shooter));
+                weapon.lastShotTime = totalTime; // Add cooldown to click sound
+            } else {
+                startReload(weapon);
+            }
             return;
         }
 
@@ -73,7 +81,7 @@ public class CombatSystem extends GameSystem {
         // Base angle to target
         float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
 
-        // Fire multiple projectiles if weapon allows (e.g. Shotgun)
+        // Fire multiple projectiles if weapon allows
         for (int i = 0; i < weapon.projectilesPerShot; i++) {
             float finalAngle = baseAngle;
             if (weapon.spread > 0) {
@@ -92,9 +100,7 @@ public class CombatSystem extends GameSystem {
 
     private void finishReload(WeaponComponent weapon) {
         if (!weapon.isReloading) return;
-
         int needed = weapon.magazineSize - weapon.magazineAmmo;
-        
         if (weapon.hasInfiniteAmmo) {
             weapon.magazineAmmo = weapon.magazineSize;
         } else {
@@ -102,7 +108,6 @@ public class CombatSystem extends GameSystem {
             weapon.currentAmmo -= toTransfer;
             weapon.magazineAmmo += toTransfer;
         }
-
         weapon.isReloading = false;
         weapon.reloadTimer = 0;
     }

@@ -13,7 +13,8 @@ public class SoundComponent implements Component {
         SHOOT,
         HIT,
         DIE,
-        WALK
+        WALK,
+        EMPTY_CLICK // Added for out-of-ammo sound
     }
 
     public Map<Action, String> soundPaths = new HashMap<>();
