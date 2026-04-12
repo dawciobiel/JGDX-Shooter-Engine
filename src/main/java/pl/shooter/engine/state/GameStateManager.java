@@ -24,7 +24,9 @@ public class GameStateManager {
     }
 
     public void setState(GameState state) {
-        pop();
+        if (!states.isEmpty()) {
+            states.pop().dispose();
+        }
         push(state);
     }
 
@@ -37,6 +39,12 @@ public class GameStateManager {
     public void render() {
         if (!states.isEmpty()) {
             states.peek().render();
+        }
+    }
+
+    public void resize(int width, int height) {
+        if (!states.isEmpty()) {
+            states.peek().resize(width, height);
         }
     }
 

@@ -4,10 +4,8 @@ import com.badlogic.gdx.Gdx;
 import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
-import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
-import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.ecs.systems.*;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
@@ -18,12 +16,10 @@ public class PlayState extends GameState {
     private final AssetService assetService;
     private final AudioService audioService;
     private final EntityFactory entityFactory;
-    private final EntityManager entityManager;
 
     public PlayState(GameStateManager gsm) {
         super(gsm);
         this.engine = new Engine();
-        this.entityManager = engine.getEntityManager();
         this.assetService = new AssetService();
         this.audioService = new AudioService();
         this.entityFactory = new EntityFactory(engine.getEntityManager());
@@ -60,8 +56,6 @@ public class PlayState extends GameState {
 
         // --- SPAWN ---
         entityFactory.createPlayer(400, 300);
-        
-        // Use full path from project root
         entityFactory.loadFromJson("assets/entities/zombie.json", 100, 100);
         entityFactory.loadFromJson("assets/entities/zombie.json", 700, 500);
     }
@@ -73,6 +67,12 @@ public class PlayState extends GameState {
 
     @Override
     public void render() {
+        // Engine handles rendering via systems
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        engine.getSystems().forEach(system -> system.resize(width, height));
     }
 
     @Override

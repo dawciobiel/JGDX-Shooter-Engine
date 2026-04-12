@@ -13,7 +13,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 
@@ -23,7 +23,8 @@ public class MenuState extends GameState {
 
     public MenuState(GameStateManager gsm) {
         super(gsm);
-        this.stage = new Stage(new ScreenViewport());
+        // Use FitViewport to maintain 800x600 ratio regardless of screen size
+        this.stage = new Stage(new FitViewport(800, 600));
         this.skin = createBasicSkin();
         Gdx.input.setInputProcessor(stage);
 
@@ -35,13 +36,11 @@ public class MenuState extends GameState {
         BitmapFont font = new BitmapFont();
         newSkin.add("default", font);
 
-        // Create a white texture for button background
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
         newSkin.add("white", new Texture(pixmap));
 
-        // Create Button Style
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.up = newSkin.newDrawable("white", Color.DARK_GRAY);
         buttonStyle.down = newSkin.newDrawable("white", Color.GRAY);
@@ -49,7 +48,6 @@ public class MenuState extends GameState {
         buttonStyle.font = newSkin.getFont("default");
         newSkin.add("default", buttonStyle);
 
-        // Create Label Style
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = newSkin.getFont("default");
         labelStyle.fontColor = Color.YELLOW;
@@ -63,12 +61,10 @@ public class MenuState extends GameState {
         table.setFillParent(true);
         stage.addActor(table);
 
-        // Title
         Label title = new Label("SHOOTER ENGINE", skin);
         title.setFontScale(2.5f);
         table.add(title).padBottom(50).row();
 
-        // Start Button
         TextButton playButton = new TextButton("START GAME", skin);
         playButton.addListener(new ClickListener() {
             @Override
@@ -78,7 +74,6 @@ public class MenuState extends GameState {
         });
         table.add(playButton).width(200).height(50).padBottom(10).row();
 
-        // Exit Button
         TextButton exitButton = new TextButton("EXIT", skin);
         exitButton.addListener(new ClickListener() {
             @Override
@@ -98,6 +93,11 @@ public class MenuState extends GameState {
     public void render() {
         ScreenUtils.clear(0.1f, 0.1f, 0.15f, 1);
         stage.draw();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        stage.getViewport().update(width, height, true);
     }
 
     @Override

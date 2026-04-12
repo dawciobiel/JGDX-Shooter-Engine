@@ -25,6 +25,11 @@ public class ShooterGame extends ApplicationAdapter {
     }
 
     @Override
+    public void resize(int width, int height) {
+        gsm.resize(width, height);
+    }
+
+    @Override
     public void dispose() {
         gsm.dispose();
     }

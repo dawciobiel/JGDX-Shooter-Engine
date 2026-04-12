@@ -22,4 +22,11 @@ public abstract class GameSystem {
     public void dispose() {
         // Default implementation does nothing
     }
+
+    /**
+     * Optional reaction to window resize.
+     */
+    public void resize(int width, int height) {
+        // Default implementation does nothing
+    }
 }

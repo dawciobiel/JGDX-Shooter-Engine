@@ -5,6 +5,7 @@ import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.events.EventBus;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -41,6 +42,15 @@ public class Engine {
     }
 
     /**
+     * Resize all systems.
+     */
+    public void resize(int width, int height) {
+        for (GameSystem system : systems) {
+            system.resize(width, height);
+        }
+    }
+
+    /**
      * Clean up all system resources.
      */
     public void dispose() {
@@ -55,5 +65,9 @@ public class Engine {
 
     public EventBus getEventBus() {
         return eventBus;
+    }
+
+    public List<GameSystem> getSystems() {
+        return Collections.unmodifiableList(systems);
     }
 }

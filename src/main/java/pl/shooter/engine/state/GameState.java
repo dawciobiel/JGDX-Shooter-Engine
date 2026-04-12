@@ -13,4 +13,9 @@ public abstract class GameState {
     public abstract void update(float deltaTime);
     public abstract void render();
     public abstract void dispose();
+    
+    /**
+     * Called when the window is resized.
+     */
+    public void resize(int width, int height) {}
 }
