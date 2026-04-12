@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Handles the On-Screen Display (HUD).
- * Renders player health, score, and weapon/ammo info.
+ * Renders player health, score, weapon, and reload progress.
  */
 public class UISystem extends GameSystem {
     private final SpriteBatch batch;
@@ -28,13 +28,12 @@ public class UISystem extends GameSystem {
         super(entityManager);
         this.batch = new SpriteBatch();
         this.shapeRenderer = new ShapeRenderer();
-        this.font = new BitmapFont(); // Default LibGDX font
+        this.font = new BitmapFont();
         this.font.getData().setScale(1.2f);
     }
 
     @Override
     public void update(float deltaTime) {
-        // UI rendering should not be affected by game camera
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class);
         
         if (players.isEmpty()) {
@@ -51,7 +50,6 @@ public class UISystem extends GameSystem {
     }
 
     private void renderHUD(HealthComponent health, ScoreComponent score, WeaponComponent weapon) {
-        // 1. Draw Health Bar
         float x = 20;
         float y = Gdx.graphics.getHeight() - 40;
         float barWidth = 200;
@@ -59,29 +57,40 @@ public class UISystem extends GameSystem {
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         
-        // Background
+        // 1. Health Bar
         shapeRenderer.setColor(Color.BLACK);
         shapeRenderer.rect(x - 2, y - 2, barWidth + 4, barHeight + 4);
         shapeRenderer.setColor(Color.DARK_GRAY);
         shapeRenderer.rect(x, y, barWidth, barHeight);
 
-        // Fill
         if (health != null) {
             float healthPercent = Math.max(0, Math.min(1, health.hp / health.maxHp));
             Color healthColor = Color.GREEN;
             if (healthPercent < 0.6f) healthColor = Color.YELLOW;
             if (healthPercent < 0.3f) healthColor = Color.RED;
-            
             shapeRenderer.setColor(healthColor);
             shapeRenderer.rect(x, y, barWidth * healthPercent, barHeight);
         }
+
+        // 2. Reload Bar (if reloading)
+        if (weapon != null && weapon.isReloading) {
+            float ry = y - 40;
+            float reloadPercent = Math.min(1, weapon.reloadTimer / weapon.reloadTime);
+            shapeRenderer.setColor(Color.BLACK);
+            shapeRenderer.rect(x - 2, ry - 2, barWidth + 4, 10 + 4);
+            shapeRenderer.setColor(Color.GRAY);
+            shapeRenderer.rect(x, ry, barWidth, 10);
+            shapeRenderer.setColor(Color.CYAN);
+            shapeRenderer.rect(x, ry, barWidth * reloadPercent, 10);
+        }
+
         shapeRenderer.end();
 
-        // 2. Draw Text Info
+        // 3. Text Info
         batch.begin();
         if (health != null) {
             font.setColor(Color.WHITE);
-            font.draw(batch, "HEALTH: " + (int)health.hp + " / " + (int)health.maxHp, x, y + barHeight + 20);
+            font.draw(batch, "HEALTH: " + (int)health.hp, x, y + barHeight + 20);
         }
 
         if (score != null) {
@@ -91,9 +100,20 @@ public class UISystem extends GameSystem {
 
         if (weapon != null) {
             font.setColor(Color.CYAN);
-            String ammoText = weapon.hasInfiniteAmmo ? "INF" : weapon.currentAmmo + " / " + weapon.maxAmmo;
-            font.draw(batch, "WEAPON: " + weapon.type + " [" + ammoText + "]", 
-                     Gdx.graphics.getWidth() - 300, Gdx.graphics.getHeight() - 20);
+            String ammoText;
+            if (weapon.hasInfiniteAmmo) {
+                ammoText = weapon.magazineAmmo + " / INF";
+            } else {
+                ammoText = weapon.magazineAmmo + " / " + weapon.currentAmmo;
+            }
+            
+            if (weapon.isReloading) {
+                font.setColor(Color.ORANGE);
+                font.draw(batch, "RELOADING...", Gdx.graphics.getWidth() - 300, Gdx.graphics.getHeight() - 20);
+            } else {
+                font.draw(batch, "WEAPON: " + weapon.type + " [" + ammoText + "]", 
+                         Gdx.graphics.getWidth() - 350, Gdx.graphics.getHeight() - 20);
+            }
         }
         batch.end();
     }

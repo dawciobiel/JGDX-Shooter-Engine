@@ -4,14 +4,15 @@ import com.badlogic.gdx.math.Vector2;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
-import pl.shooter.engine.ecs.components.ColliderComponent;
-import pl.shooter.engine.ecs.components.ProjectileComponent;
-import pl.shooter.engine.ecs.components.TransformComponent;
+import pl.shooter.engine.ecs.components.*;
+import pl.shooter.engine.events.DamageEvent;
 import pl.shooter.engine.events.EventBus;
-import pl.shooter.events.HitEvent;
 
 import java.util.List;
 
+/**
+ * Handles basic circular collision detection between entities.
+ */
 public class CollisionSystem extends GameSystem {
     private final EventBus eventBus;
 
@@ -22,45 +23,67 @@ public class CollisionSystem extends GameSystem {
 
     @Override
     public void update(float deltaTime) {
-        List<Entity> projectiles = entityManager.getEntitiesWithComponents(
-                ProjectileComponent.class, TransformComponent.class, ColliderComponent.class
-        );
-        
-        List<Entity> potentialVictims = entityManager.getEntitiesWithComponents(
-                TransformComponent.class, ColliderComponent.class
-        );
+        List<Entity> collidables = entityManager.getEntitiesWithComponents(ColliderComponent.class, TransformComponent.class);
 
-        for (Entity proj : projectiles) {
-            // If projectile was removed in this frame by a previous collision
-            if (!entityManager.getAllEntities().contains(proj)) continue;
+        for (int i = 0; i < collidables.size(); i++) {
+            for (int j = i + 1; j < collidables.size(); j++) {
+                Entity e1 = collidables.get(i);
+                Entity e2 = collidables.get(j);
 
-            ProjectileComponent pData = entityManager.getComponent(proj, ProjectileComponent.class);
-            TransformComponent pTrans = entityManager.getComponent(proj, TransformComponent.class);
-            ColliderComponent pColl = entityManager.getComponent(proj, ColliderComponent.class);
-
-            if (pData == null || pTrans == null || pColl == null) continue;
-
-            for (Entity victim : potentialVictims) {
-                // Check if victim still exists
-                if (!entityManager.getAllEntities().contains(victim)) continue;
-                
-                // Don't collide with self or the shooter
-                if (proj.equals(victim) || victim.getId() == pData.ownerId) {
-                    continue;
-                }
-
-                TransformComponent vTrans = entityManager.getComponent(victim, TransformComponent.class);
-                ColliderComponent vColl = entityManager.getComponent(victim, ColliderComponent.class);
-
-                if (vTrans == null || vColl == null) continue;
-
-                float distance = Vector2.dst(pTrans.x, pTrans.y, vTrans.x, vTrans.y);
-                if (distance < pColl.radius + vColl.radius) {
-                    eventBus.publish(new HitEvent(proj, victim));
-                    // If the projectile hit something, it might be gone now
-                    if (!entityManager.getAllEntities().contains(proj)) break;
-                }
+                checkCollision(e1, e2);
             }
+        }
+    }
+
+    private void checkCollision(Entity e1, Entity e2) {
+        TransformComponent t1 = entityManager.getComponent(e1, TransformComponent.class);
+        ColliderComponent c1 = entityManager.getComponent(e1, ColliderComponent.class);
+        TransformComponent t2 = entityManager.getComponent(e2, TransformComponent.class);
+        ColliderComponent c2 = entityManager.getComponent(e2, ColliderComponent.class);
+
+        float dx = t1.x - t2.x;
+        float dy = t1.y - t2.y;
+        float distSq = dx * dx + dy * dy;
+        float minDist = c1.radius + c2.radius;
+
+        if (distSq < minDist * minDist) {
+            handleCollision(e1, e2);
+        }
+    }
+
+    private void handleCollision(Entity e1, Entity e2) {
+        // Projectile collisions
+        ProjectileComponent p1 = entityManager.getComponent(e1, ProjectileComponent.class);
+        ProjectileComponent p2 = entityManager.getComponent(e2, ProjectileComponent.class);
+
+        if (p1 != null) handleProjectileHit(e1, p1, e2);
+        else if (p2 != null) handleProjectileHit(e2, p2, e1);
+
+        // Player vs Ammo Pickup collisions
+        PlayerComponent player1 = entityManager.getComponent(e1, PlayerComponent.class);
+        AmmoPickupComponent ammo1 = entityManager.getComponent(e1, AmmoPickupComponent.class);
+        PlayerComponent player2 = entityManager.getComponent(e2, PlayerComponent.class);
+        AmmoPickupComponent ammo2 = entityManager.getComponent(e2, AmmoPickupComponent.class);
+
+        if (player1 != null && ammo2 != null) handleAmmoPickup(e1, e2, ammo2);
+        else if (player2 != null && ammo1 != null) handleAmmoPickup(e2, e1, ammo1);
+    }
+
+    private void handleProjectileHit(Entity projectile, ProjectileComponent pComp, Entity target) {
+        if (pComp.ownerId == target.getId()) return; // Don't hit self
+
+        HealthComponent health = entityManager.getComponent(target, HealthComponent.class);
+        if (health != null) {
+            eventBus.publish(new DamageEvent(target, 10f, pComp.ownerId));
+            entityManager.destroyEntity(projectile);
+        }
+    }
+
+    private void handleAmmoPickup(Entity player, Entity pickup, AmmoPickupComponent ammoComp) {
+        WeaponComponent weapon = entityManager.getComponent(player, WeaponComponent.class);
+        if (weapon != null) {
+            weapon.currentAmmo = Math.min(weapon.maxAmmo, weapon.currentAmmo + ammoComp.amount);
+            entityManager.destroyEntity(pickup);
         }
     }
 }

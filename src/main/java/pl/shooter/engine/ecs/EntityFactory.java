@@ -40,6 +40,7 @@ public class EntityFactory {
         componentAliases.put("Particle", ParticleComponent.class);
         componentAliases.put("Projectile", ProjectileComponent.class);
         componentAliases.put("Collider", ColliderComponent.class);
+        componentAliases.put("AmmoPickup", AmmoPickupComponent.class);
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {
@@ -97,8 +98,8 @@ public class EntityFactory {
     public Entity createPlayer(float x, float y) {
         Entity player = entityManager.createEntity();
         entityManager.addComponent(player, new PlayerComponent(200f));
-        // Fixed: added max ammo (e.g. 50) for shotgun
-        entityManager.addComponent(player, new WeaponComponent(WeaponComponent.Type.SHOTGUN, 0.2f, 600f, 10f, 3, 50));
+        // Parameters: Type, FireRate, ProjSpeed, Spread, ProjsPerShot, TotalAmmo, MagSize, ReloadTime
+        entityManager.addComponent(player, new WeaponComponent(WeaponComponent.Type.SHOTGUN, 0.4f, 600f, 15f, 5, 20, 4, 1.5f));
         entityManager.addComponent(player, new TransformComponent(x, y));
         entityManager.addComponent(player, new VelocityComponent(0, 0));
         entityManager.addComponent(player, new RenderComponent(Color.GREEN, 15f, true));
@@ -106,5 +107,14 @@ public class EntityFactory {
         entityManager.addComponent(player, new HealthComponent(100));
         entityManager.addComponent(player, new ScoreComponent());
         return player;
+    }
+
+    public Entity createAmmoPickup(float x, float y, int amount) {
+        Entity pickup = entityManager.createEntity();
+        entityManager.addComponent(pickup, new TransformComponent(x, y));
+        entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
+        entityManager.addComponent(pickup, new ColliderComponent(8f));
+        entityManager.addComponent(pickup, new AmmoPickupComponent(amount));
+        return pickup;
     }
 }

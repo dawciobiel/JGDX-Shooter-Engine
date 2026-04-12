@@ -10,7 +10,7 @@ import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
 
 /**
- * Handles combat logic, including weapon types, firing patterns, and ammo consumption.
+ * Handles combat logic, including weapon types, firing patterns, ammo consumption, and reloading.
  */
 public class CombatSystem extends GameSystem {
     private float totalTime = 0;
@@ -23,6 +23,22 @@ public class CombatSystem extends GameSystem {
     @Override
     public void update(float deltaTime) {
         totalTime += deltaTime;
+
+        // Process reloading
+        for (Entity entity : entityManager.getEntitiesWithComponents(WeaponComponent.class)) {
+            WeaponComponent weapon = entityManager.getComponent(entity, WeaponComponent.class);
+            if (weapon == null) continue;
+
+            if (weapon.isReloading) {
+                weapon.reloadTimer += deltaTime;
+                if (weapon.reloadTimer >= weapon.reloadTime) {
+                    finishReload(weapon);
+                }
+            } else if (weapon.magazineAmmo <= 0 && (weapon.currentAmmo > 0 || weapon.hasInfiniteAmmo)) {
+                // Auto-reload if empty and ammo is available
+                startReload(weapon);
+            }
+        }
     }
 
     private void handleShoot(ShootEvent event) {
@@ -32,22 +48,25 @@ public class CombatSystem extends GameSystem {
 
         if (weapon == null || shooterTransform == null) return;
 
-        // 1. Cooldown check
+        // 1. Reloading check
+        if (weapon.isReloading) {
+            return;
+        }
+
+        // 2. Cooldown check
         if (totalTime - weapon.lastShotTime < weapon.fireRate) {
             return;
         }
 
-        // 2. Ammo check
-        if (!weapon.hasInfiniteAmmo && weapon.currentAmmo <= 0) {
-            // TODO: Play "no ammo" sound
+        // 3. Magazine check
+        if (weapon.magazineAmmo <= 0) {
+            startReload(weapon);
             return;
         }
 
-        // 3. Firing logic
+        // 4. Firing logic
         weapon.lastShotTime = totalTime;
-        if (!weapon.hasInfiniteAmmo) {
-            weapon.currentAmmo--;
-        }
+        weapon.magazineAmmo--;
 
         // Base angle to target
         float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
@@ -55,26 +74,43 @@ public class CombatSystem extends GameSystem {
         // Fire multiple projectiles if weapon allows (e.g. Shotgun)
         for (int i = 0; i < weapon.projectilesPerShot; i++) {
             float finalAngle = baseAngle;
-            
-            // Add random spread
             if (weapon.spread > 0) {
                 finalAngle += MathUtils.random(-weapon.spread, weapon.spread);
             }
-
             spawnProjectile(shooterTransform.x, shooterTransform.y, finalAngle, weapon.projectileSpeed, shooter.getId());
         }
     }
 
+    private void startReload(WeaponComponent weapon) {
+        if (!weapon.isReloading && (weapon.currentAmmo > 0 || weapon.hasInfiniteAmmo)) {
+            weapon.isReloading = true;
+            weapon.reloadTimer = 0;
+        }
+    }
+
+    private void finishReload(WeaponComponent weapon) {
+        if (!weapon.isReloading) return;
+
+        int needed = weapon.magazineSize - weapon.magazineAmmo;
+        
+        if (weapon.hasInfiniteAmmo) {
+            weapon.magazineAmmo = weapon.magazineSize;
+        } else {
+            int toTransfer = Math.min(needed, weapon.currentAmmo);
+            weapon.currentAmmo -= toTransfer;
+            weapon.magazineAmmo += toTransfer;
+        }
+
+        weapon.isReloading = false;
+        weapon.reloadTimer = 0;
+    }
+
     private void spawnProjectile(float x, float y, float angle, float speed, int ownerId) {
         Entity projectile = entityManager.createEntity();
-        
         entityManager.addComponent(projectile, new TransformComponent(x, y, angle));
-        
-        // Calculate velocity vector from angle
         float vx = MathUtils.cosDeg(angle) * speed;
         float vy = MathUtils.sinDeg(angle) * speed;
         entityManager.addComponent(projectile, new VelocityComponent(vx, vy));
-        
         entityManager.addComponent(projectile, new RenderComponent(Color.YELLOW, 3f, true));
         entityManager.addComponent(projectile, new ProjectileComponent(1.5f, ownerId));
         entityManager.addComponent(projectile, new ColliderComponent(3f));
