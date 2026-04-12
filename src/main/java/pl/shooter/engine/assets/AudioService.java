@@ -6,34 +6,33 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Manages sound effects and background music.
+ * Manages sound effects and background music with automatic loading.
  */
 public class AudioService {
     private final Map<String, Sound> sounds = new HashMap<>();
 
-    public void loadSound(String name, String path) {
+    public void loadSound(String path) {
+        if (sounds.containsKey(path)) return;
+        
         try {
             if (Gdx.files.internal(path).exists()) {
-                sounds.put(name, Gdx.audio.newSound(Gdx.files.internal(path)));
-            } else {
-                Gdx.app.error("AudioService", "Sound file not found: " + path);
+                sounds.put(path, Gdx.audio.newSound(Gdx.files.internal(path)));
+                Gdx.app.log("AudioService", "Loaded sound: " + path);
             }
         } catch (Exception e) {
             Gdx.app.error("AudioService", "Error loading sound: " + path);
         }
     }
 
-    public void playSound(String name) {
-        Sound s = sounds.get(name);
-        if (s != null) {
-            s.play();
-        }
-    }
-
-    public void playSound(String name, float volume) {
-        Sound s = sounds.get(name);
+    public void playSound(String path, float volume) {
+        Sound s = sounds.get(path);
         if (s != null) {
             s.play(volume);
+        } else {
+            // Auto-load if not loaded yet
+            loadSound(path);
+            s = sounds.get(path);
+            if (s != null) s.play(volume);
         }
     }
 

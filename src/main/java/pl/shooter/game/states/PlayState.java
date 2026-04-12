@@ -1,6 +1,5 @@
 package pl.shooter.game.states;
 
-import com.badlogic.gdx.Gdx;
 import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
@@ -41,12 +40,9 @@ public class PlayState extends GameState {
 
         assetService.finishLoading();
 
-        try {
-            audioService.loadSound("shoot", "assets/sfx/shoot.wav");
-            audioService.loadSound("hit", "assets/sfx/hit.wav");
-        } catch (Exception e) {
-            Gdx.app.log("PlayState", "Sound files not found.");
-        }
+        // Audio is now loaded lazily, but we can pre-load to avoid lag
+        audioService.loadSound("assets/sfx/shoot.wav");
+        audioService.loadSound("assets/sfx/hit.wav");
 
         ProceduralMap map = new ProceduralMap();
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);

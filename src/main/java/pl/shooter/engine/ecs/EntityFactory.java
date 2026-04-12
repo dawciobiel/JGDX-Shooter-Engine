@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Creates entities from external JSON definitions with support for dynamic animations.
+ * Creates entities from external JSON definitions with support for dynamic animations and sounds.
  */
 public class EntityFactory {
     private final EntityManager entityManager;
@@ -56,10 +56,7 @@ public class EntityFactory {
     public Entity loadFromJson(String internalPath, float x, float y) {
         try {
             FileHandle file = Gdx.files.internal(internalPath);
-            if (!file.exists()) {
-                Gdx.app.error("EntityFactory", "File not found: " + internalPath);
-                return null;
-            }
+            if (!file.exists()) return null;
             
             JsonNode root = objectMapper.readTree(file.read());
             Entity entity = entityManager.createEntity();
@@ -91,6 +88,19 @@ public class EntityFactory {
                 setupAnimationsFromConfig(entity, animConfig);
             }
 
+            // 3. Process data-driven sounds
+            JsonNode soundsNode = root.get("sounds");
+            if (soundsNode != null && soundsNode.isObject()) {
+                SoundComponent soundComp = new SoundComponent();
+                Iterator<Map.Entry<String, JsonNode>> soundFields = soundsNode.fields();
+                while (soundFields.hasNext()) {
+                    Map.Entry<String, JsonNode> entry = soundFields.next();
+                    SoundComponent.Action action = SoundComponent.Action.valueOf(entry.getKey());
+                    soundComp.addSound(action, entry.getValue().asText());
+                }
+                entityManager.addComponent(entity, soundComp);
+            }
+
             return entity;
         } catch (Exception e) {
             Gdx.app.error("EntityFactory", "Failed to load entity from " + internalPath, e);
@@ -101,25 +111,18 @@ public class EntityFactory {
     private void setupAnimationsFromConfig(Entity entity, AnimationConfig config) {
         if (assetService == null) return;
         AnimationComponent animComp = new AnimationComponent(config.width, config.height);
-
         for (Map.Entry<String, AnimationConfig.StateConfig> entry : config.states.entrySet()) {
             try {
                 AnimationComponent.State state = AnimationComponent.State.valueOf(entry.getKey());
                 AnimationConfig.StateConfig stateConfig = entry.getValue();
-                
                 Animation<TextureRegion> anim;
                 if ("SHEET".equals(stateConfig.type)) {
                     anim = createAnimationFromSheet(stateConfig.path, stateConfig.rows, stateConfig.cols, stateConfig.frameDuration);
                 } else {
                     anim = createAnimationFromFiles(stateConfig.path, stateConfig.count, stateConfig.frameDuration);
                 }
-                
-                if (anim != null) {
-                    animComp.addAnimation(state, anim);
-                }
-            } catch (IllegalArgumentException e) {
-                Gdx.app.error("EntityFactory", "Invalid animation state in JSON: " + entry.getKey());
-            }
+                if (anim != null) animComp.addAnimation(state, anim);
+            } catch (Exception e) {}
         }
         entityManager.addComponent(entity, animComp);
     }
