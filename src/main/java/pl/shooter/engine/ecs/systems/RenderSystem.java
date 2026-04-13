@@ -1,13 +1,14 @@
 package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -29,6 +30,11 @@ public class RenderSystem extends GameSystem {
     private final AssetService assetService;
     private GameMap currentMap;
 
+    // Lighting
+    private FrameBuffer sceneFbo;
+    private ShaderProgram lightingShader;
+    private LightSystem lightSystem;
+
     public RenderSystem(EntityManager entityManager, AssetService assetService) {
         super(entityManager);
         this.assetService = assetService;
@@ -36,36 +42,88 @@ public class RenderSystem extends GameSystem {
         this.spriteBatch = new SpriteBatch();
         this.camera = new OrthographicCamera();
         this.viewport = new ExtendViewport(800, 600, camera);
+
+        initShaders();
+        resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+    }
+
+    private void initShaders() {
+        String vert = Gdx.files.internal("assets/shaders/lighting.vert").readString();
+        String frag = Gdx.files.internal("assets/shaders/lighting.frag").readString();
+        this.lightingShader = new ShaderProgram(vert, frag);
+        if (!lightingShader.isCompiled()) {
+            Gdx.app.error("Shader", "Compilation failed: " + lightingShader.getLog());
+        }
     }
 
     public void setMap(GameMap map) {
         this.currentMap = map;
     }
 
+    public void setLightSystem(LightSystem lightSystem) {
+        this.lightSystem = lightSystem;
+    }
+
     @Override
     public void update(float deltaTime) {
         updateCamera();
-        ScreenUtils.clear(0.05f, 0.05f, 0.05f, 1);
 
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        // 1. Start rendering the game scene to FBO
+        if (sceneFbo != null) {
+            sceneFbo.begin();
+            ScreenUtils.clear(0.05f, 0.05f, 0.05f, 1);
 
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        if (currentMap instanceof ProceduralMap pMap) {
-            renderProceduralMap(pMap);
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            if (currentMap instanceof ProceduralMap pMap) {
+                renderProceduralMap(pMap);
+            }
+            renderPrimitiveEntities();
+            renderHealthBars();
+            shapeRenderer.end();
+
+            spriteBatch.setProjectionMatrix(camera.combined);
+            spriteBatch.begin();
+            renderTexturedEntities();
+            renderAnimatedEntities();
+            spriteBatch.end();
+            sceneFbo.end();
         }
-        renderPrimitiveEntities();
-        renderHealthBars();
-        shapeRenderer.end();
 
-        spriteBatch.setProjectionMatrix(camera.combined);
+        // 2. Prepare lightmap
+        if (lightSystem != null) {
+            lightSystem.setProjectionMatrix(camera.combined);
+            lightSystem.update(deltaTime);
+        }
+
+        // 3. Final Pass
+        renderFinalPass();
+    }
+
+    private void renderFinalPass() {
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        spriteBatch.setProjectionMatrix(spriteBatch.getProjectionMatrix().idt());
+        spriteBatch.setShader(lightingShader);
         spriteBatch.begin();
-        renderTexturedEntities();
-        renderAnimatedEntities(); // --- New: Animated entities ---
-        spriteBatch.end();
+
+        if (lightSystem != null) {
+            lightSystem.getLightMapTexture().bind(1);
+            lightingShader.setUniformi("u_lightmap", 1);
+            lightingShader.setUniformf("u_ambientColor", lightSystem.getAmbientColor());
+            Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
+        }
+
+        if (sceneFbo != null) {
+            spriteBatch.draw(sceneFbo.getColorBufferTexture(), -1, 1, 2, -2);
+        }
         
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        spriteBatch.end();
+        spriteBatch.setShader(null);
     }
 
     private void renderPrimitiveEntities() {
@@ -176,6 +234,9 @@ public class RenderSystem extends GameSystem {
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height);
+        if (sceneFbo != null) sceneFbo.dispose();
+        sceneFbo = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
+        if (lightSystem != null) lightSystem.resize(width, height);
     }
 
     public OrthographicCamera getCamera() { return camera; }
@@ -184,5 +245,7 @@ public class RenderSystem extends GameSystem {
     public void dispose() {
         shapeRenderer.dispose();
         spriteBatch.dispose();
+        lightingShader.dispose();
+        if (sceneFbo != null) sceneFbo.dispose();
     }
 }
