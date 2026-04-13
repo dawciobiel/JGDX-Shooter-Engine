@@ -37,14 +37,14 @@ public class GameStateManager {
     }
 
     public void render() {
-        if (!states.isEmpty()) {
-            states.peek().render();
+        for (GameState state : states) {
+            state.render();
         }
     }
 
     public void resize(int width, int height) {
-        if (!states.isEmpty()) {
-            states.peek().resize(width, height);
+        for (GameState state : states) {
+            state.resize(width, height);
         }
     }
 

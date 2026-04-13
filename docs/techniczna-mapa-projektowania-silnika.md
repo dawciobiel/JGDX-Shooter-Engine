@@ -1,286 +1,89 @@
-Poniżej skrócona, techniczna mapa projektowania silnika dla takiej gry zręcznościowej (2D, top-down / twin-stick).
+Poniżej techniczna mapa projektowania silnika dla gry zręcznościowej (2D, top-down / twin-stick).
 
 ---
 
 # 1. Architektura bazowa
 
-Najważniejsza decyzja: **dziedziczenie vs kompozycja**
-
-Twoja propozycja (drzewo klas typu `Przeciwnik -> Potwór -> Zombie`) szybko prowadzi do problemów. Lepsze podejście:
-
-### ➤ ECS (Entity Component System) — rekomendowane
-
-* **Entity** – tylko ID (np. `int id`)
-* **Component** – dane (brak logiki)
-* **System** – logika operująca na komponentach
-
-Przykład:
-
-* Entity: `Enemy#123`
-* Components:
-
-  * `Position`
-  * `Velocity`
-  * `Health`
-  * `Weapon`
-  * `AI`
-* Systems:
-
-  * `MovementSystem`
-  * `CombatSystem`
-  * `AISystem`
-
-➡️ Dzięki temu:
-
-* nie potrzebujesz dziesiątek klas typu `ZombieWithGunFast`
-* łatwo dodajesz nowe zachowania przez komponenty
+### ➤ ECS (Entity Component System)
+* **Entity** – unikalne ID.
+* **Component** – czyste dane (np. `TransformComponent`, `HealthComponent`).
+* **System** – logika operująca na zestawach komponentów (np. `MovementSystem`).
 
 ---
 
-# 2. Podstawowe komponenty
+# 2. Kluczowe Komponenty
 
-Minimalny zestaw:
+### Ruch i Pozycja
+* `TransformComponent`: {x, y, rotation, z (height)}
+* `VelocityComponent`: {vx, vy}
 
-### Transform / ruch
+### Walka i Statystyki
+* `HealthComponent`: {hp, maxHp}
+* `WeaponComponent`: {damage, fireRate, ammo}
+* `ProjectileComponent`: {ownerId, damage, lifetime}
 
-```java
-Position { float x, y }
-Velocity { float vx, vy }
-Rotation { float angle }
-```
-
-### Statystyki
-
-```java
-Health { float hp, maxHp }
-Stats { speed, armor, ... }
-```
-
-### Walka
-
-```java
-Weapon {
-    damage
-    fireRate
-    reloadTime
-    projectileSpeed
-}
-```
-
-### Pociski
-
-```java
-Projectile {
-    damage
-    lifetime
-    speed
-    ownerId
-}
-```
-
-### AI
-
-```java
-AI {
-    type (aggressive, passive, ranged)
-}
-```
+### Wizualizacja i Efekty
+* `RenderComponent`: Proste kształty (koło, prostokąt).
+* `TextureComponent`: Statyczne sprite'y.
+* `AnimationComponent`: Animacje klatkowe.
+* `LightComponent`: {radius, color, intensity} — **NOWE**
 
 ---
 
-# 3. Systemy (logika gry)
+# 3. Systemy (Logika gry)
 
-Każdy system działa co frame:
-
-### MovementSystem
-
-* aktualizuje pozycję na podstawie velocity
-
-### InputSystem
-
-* tylko dla gracza
-* klawiatura → velocity
-* mysz → rotation
-
-### CombatSystem
-
-* tworzy pociski
-* obsługuje cooldown strzałów
-
-### ProjectileSystem
-
-* poruszanie pocisków
-* usuwanie po czasie (`lifetime`)
-
-### CollisionSystem
-
-* wykrywanie kolizji:
-
-  * pocisk vs obiekt
-  * gracz vs przeciwnik
-* zgłaszanie eventów
-
-### DamageSystem
-
-* odejmowanie HP
-* śmierć → event
-
-### AISystem
-
-* sterowanie przeciwnikami:
-
-  * podążanie za graczem
-  * strzelanie
+* `InputSystem`: Przetwarza wejście gracza na ruch i zdarzenia strzału.
+* `AISystem`: Steruje przeciwnikami (obecnie proste podążanie, w planach Pathfinding).
+* `CollisionSystem`: Wykrywanie kolizji kołowych (AABB w planach).
+* `DamageSystem`: Obsługa obrażeń i usuwanie martwych jednostek.
+* `RenderSystem`: Wielopasmowy proces renderowania (Scene Pass -> Light Pass -> Final Mix).
+* `LightSystem`: Generowanie mapy świateł (LightMap) przy użyciu FBO i Additive Blending. — **NOWE**
 
 ---
 
-# 4. Eventy (bardzo ważne)
+# 4. System Stanów (GameState Management)
 
-Zamiast bezpośrednich wywołań:
-
-```java
-EventBus.publish(new DamageEvent(targetId, damage));
-```
-
-Typowe eventy:
-
-* `ShootEvent`
-* `HitEvent`
-* `DeathEvent`
-* `SpawnEvent`
-
-➡️ Zalety:
-
-* brak silnych zależności między systemami
-* łatwe debugowanie
-* rozszerzalność
+Silnik zarządza stosem stanów (`GameStateManager`):
+* `MenuState`: Główne menu gry.
+* `PlayState`: Główna pętla rozgrywki.
+* `PauseState`: Nakładka pauzy (renderowana nad PlayState). — **NOWE**
 
 ---
 
-# 5. Mapa (dwa tryby)
+# 5. Konfiguracja i Dane (Data-Driven)
 
-Zaprojektuj wspólny interfejs:
-
-```java
-interface World {
-    List<Entity> getEntitiesInArea(...)
-}
-```
-
-### Tryb 1: mapa statyczna
-
-* tilemap (np. grid)
-* kolizje z mapą
-
-### Tryb 2: mapa generowana
-
-* chunki (np. 16x16)
-* generacja on-demand
-* cache + usuwanie dalekich chunków
-
-➡️ Silnik powinien nie wiedzieć, jaki tryb jest używany.
+### ➤ Game Configuration (GameConfig) — **NOWE**
+Silnik używa plików JSON do zarządzania ustawieniami:
+* **Lokalizacja**: `assets/config/default_config.json` (domyślne) oraz `user_config.json` (lokalne nadpisania).
+* **Obszary**:
+    * `graphics`: Rozdzielczość, FPS, jasność otoczenia (Ambient Light).
+    * `audio`: Głośność master/sfx/music.
+    * `debug`: Flagi dla hitboksów, FPS i trybu nieśmiertelności.
+* **Technologia**: Jackson (ObjectMapper) do szybkiej serializacji POJO.
 
 ---
 
-# 6. Pociski jako byty
+# 6. Oświetlenie (Advanced 2D Lighting) — **NOWE**
 
-Masz rację — **pocisk to osobna encja**
-
-Dlaczego:
-
-* ma własny lifecycle
-* kolizje
-* różne typy (laser, rakieta, aoe)
+Silnik implementuje oświetlenie oparte na shaderach i Frame Buffer Objects (FBO):
+1. **Pass 1**: Renderowanie całej sceny do `sceneFbo`.
+2. **Pass 2**: Renderowanie świateł (z `LightComponent`) do `lightMapFbo` (Additive Blending).
+3. **Pass 3**: Miksowanie obu buforów w shaderze `lighting.frag` (Multiply Blending).
+4. **Ambient Light**: Możliwość sterowania jasnością i kolorem tła przez konfigurację.
 
 ---
 
-# 7. Sterowanie
+# 7. Komunikacja (Event Bus)
 
-### Gracz:
-
-* WASD → `Velocity`
-* mysz → `Rotation`
-* klik → `ShootEvent`
+Systemy komunikują się za pomocą zdarzeń:
+* `ShootEvent`, `HitEvent`, `PickupEvent`, `DeathEvent`.
+Pozwala to na całkowite odseparowanie np. systemu dźwięku od systemu walki.
 
 ---
 
-# 8. Menadżery vs Systemy
+# 8. Plany Rozwoju (Roadmap)
 
-Zamiast „managerów”:
-
-* używaj **systemów ECS**
-
-Ale możesz mieć:
-
-### Core services:
-
-* `EventBus`
-* `EntityManager`
-* `ResourceManager` (assety)
-* `WorldManager` (mapa)
-
----
-
-# 9. Game loop
-
-Klasyczny loop:
-
-```java
-while (running) {
-    inputSystem.update()
-    aiSystem.update()
-    movementSystem.update()
-    collisionSystem.update()
-    combatSystem.update()
-    projectileSystem.update()
-    render()
-}
-```
-
-➡️ Kolejność ma znaczenie (np. kolizje po ruchu)
-
----
-
-# 10. Rozszerzalność
-
-Zadbaj od początku o:
-
-* data-driven (JSON/YAML na przeciwników, bronie)
-* brak hardcodu typów (`Zombie`, `Smok` itd.)
-* zamiast tego:
-
-  ```json
-  {
-    "type": "enemy",
-    "hp": 100,
-    "weapon": "rifle",
-    "ai": "aggressive"
-  }
-  ```
-
----
-
-# 11. Najczęstsze błędy
-
-* ❌ za dużo dziedziczenia
-* ❌ logika w obiektach zamiast w systemach
-* ❌ brak separacji danych i logiki
-* ❌ brak eventów (tight coupling)
-* ❌ jeden „God Manager”
-
----
-
-# 12. Minimalny MVP (kolejność implementacji)
-
-1. Entity + Component system
-2. Movement
-3. Rendering
-4. Input (gracz)
-5. Strzelanie (bez AI)
-6. Pociski
-7. Kolizje
-8. HP / śmierć
-9. AI przeciwników
-10. Mapy
-
----
+1. **Pathfinding (A*)**: Zaawansowane AI omijające przeszkody.
+2. **System Zapisu**: Trwałość statystyk i postępu.
+3. **Particle System Improvements**: Bardziej zaawansowane efekty wizualne.
+4. **Pseudo-3D Support**: Wykorzystanie kanału `z` w oświetleniu i sortowanie warstw.

@@ -1,0 +1,22 @@
+{
+  "graphics": {
+    "width": 800,
+    "height": 600,
+    "fullscreen": false,
+    "targetFps": 60,
+    "ambientBrightness": 0.5,
+    "ambientRed": 0.1,
+    "ambientGreen": 0.1,
+    "ambientBlue": 0.2
+  },
+  "audio": {
+    "masterVolume": 1.0,
+    "sfxVolume": 1.0,
+    "musicVolume": 0.5
+  },
+  "debug": {
+    "showHitboxes": false,
+    "showFps": true,
+    "invinciblePlayer": false
+  }
+}
