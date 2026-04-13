@@ -18,6 +18,9 @@ dependencies {
     implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:1.12.1")
     implementation("com.badlogicgames.gdx:gdx-platform:1.12.1:natives-desktop")
 
+    // LibGDX AI
+    implementation("com.badlogicgames.gdx:gdx-ai:1.8.2")
+
     // JSON support
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
 
@@ -25,9 +28,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
-
-// Standard Gradle resource handling (src/main/resources)
-// No need for extra srcDir("assets")
 
 application {
     mainClass.set("pl.shooter.game.DesktopLauncher")

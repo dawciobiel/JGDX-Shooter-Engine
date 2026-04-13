@@ -5,6 +5,7 @@ import java.util.Map;
 
 /**
  * Infinite map generated on-the-fly using chunks.
+ * Fixed coordinate calculation for seamless traversal.
  */
 public class ProceduralMap implements GameMap {
     public static final int TILE_SIZE = 32;
@@ -13,14 +14,10 @@ public class ProceduralMap implements GameMap {
     private final Map<String, Chunk> chunks = new HashMap<>();
 
     @Override
-    public float getWidth() {
-        return Float.MAX_VALUE;
-    }
+    public float getWidth() { return Float.MAX_VALUE; }
 
     @Override
-    public float getHeight() {
-        return Float.MAX_VALUE;
-    }
+    public float getHeight() { return Float.MAX_VALUE; }
 
     @Override
     public boolean isWalkable(float x, float y) {
@@ -35,18 +32,23 @@ public class ProceduralMap implements GameMap {
     }
 
     private Tile getTileAt(float x, float y) {
-        int cx = (int) Math.floor(x / CHUNK_PIXEL_SIZE);
-        int cy = (int) Math.floor(y / CHUNK_PIXEL_SIZE);
+        // Global tile coordinates
+        int gx = (int) Math.floor(x / TILE_SIZE);
+        int gy = (int) Math.floor(y / TILE_SIZE);
+
+        // Chunk coordinates
+        int cx = (int) Math.floor((double) gx / Chunk.SIZE);
+        int cy = (int) Math.floor((double) gy / Chunk.SIZE);
+
+        // Local tile coordinates within chunk
+        int tx = gx % Chunk.SIZE;
+        int ty = gy % Chunk.SIZE;
         
-        int tx = (int) Math.floor((x % CHUNK_PIXEL_SIZE) / TILE_SIZE);
-        int ty = (int) Math.floor((y % CHUNK_PIXEL_SIZE) / TILE_SIZE);
-        
-        // Normalize coordinates if negative
         if (tx < 0) tx += Chunk.SIZE;
         if (ty < 0) ty += Chunk.SIZE;
 
         Chunk chunk = getChunk(cx, cy);
-        return chunk != null ? chunk.getTile(tx, ty) : null;
+        return chunk.getTile(tx, ty);
     }
 
     public Chunk getChunk(int cx, int cy) {
