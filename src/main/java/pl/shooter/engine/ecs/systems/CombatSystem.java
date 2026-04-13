@@ -77,7 +77,8 @@ public class CombatSystem extends GameSystem {
         // Trigger successful shot sound/effects
         eventBus.publish(new BulletFiredEvent(shooter));
 
-        float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
+        // Invert Y direction to match world orientation
+        float baseAngle = MathUtils.atan2(shooterTransform.y - event.targetY, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
 
         for (int i = 0; i < weapon.projectilesPerShot; i++) {
             float finalAngle = baseAngle;

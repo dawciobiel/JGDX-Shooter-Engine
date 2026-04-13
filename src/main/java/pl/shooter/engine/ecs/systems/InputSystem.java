@@ -49,15 +49,16 @@ public class InputSystem extends GameSystem {
             // 1. Movement
             float vx = 0;
             float vy = 0;
-            if (Gdx.input.isKeyPressed(Input.Keys.W)) vy += pc.speed;
-            if (Gdx.input.isKeyPressed(Input.Keys.S)) vy -= pc.speed;
+            if (Gdx.input.isKeyPressed(Input.Keys.W)) vy -= pc.speed;
+            if (Gdx.input.isKeyPressed(Input.Keys.S)) vy += pc.speed;
             if (Gdx.input.isKeyPressed(Input.Keys.A)) vx -= pc.speed;
             if (Gdx.input.isKeyPressed(Input.Keys.D)) vx += pc.speed;
             vc.vx = vx;
             vc.vy = vy;
 
             // 2. Aiming
-            tc.rotation = MathUtils.atan2(worldMouseY - tc.y, worldMouseX - tc.x) * MathUtils.radiansToDegrees;
+            // If the world Y is flipped, we need to flip the target Y relative to player Y
+            tc.rotation = MathUtils.atan2(tc.y - worldMouseY, worldMouseX - tc.x) * MathUtils.radiansToDegrees;
 
             // 3. Shooting
             if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
