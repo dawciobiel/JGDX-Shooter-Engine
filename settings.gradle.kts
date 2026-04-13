@@ -1,1 +1,1 @@
-rootProject.name = "game-engine-shooter"
+rootProject.name = "JGDX-Shooter-Engine"
