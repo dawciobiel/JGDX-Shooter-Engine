@@ -18,7 +18,7 @@ import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.world.GameMap;
-import pl.shooter.engine.world.ProceduralMap;
+import pl.shooter.engine.ai.pathfinding.Node;
 
 import java.util.List;
 
@@ -30,7 +30,6 @@ public class RenderSystem extends GameSystem {
     private final AssetService assetService;
     private GameMap currentMap;
 
-    // Lighting
     private FrameBuffer sceneFbo;
     private ShaderProgram lightingShader;
     private LightSystem lightSystem;
@@ -56,31 +55,22 @@ public class RenderSystem extends GameSystem {
         }
     }
 
-    public void setMap(GameMap map) {
-        this.currentMap = map;
-    }
-
-    public void setLightSystem(LightSystem lightSystem) {
-        this.lightSystem = lightSystem;
-    }
+    public void setMap(GameMap map) { this.currentMap = map; }
+    public void setLightSystem(LightSystem lightSystem) { this.lightSystem = lightSystem; }
 
     @Override
     public void update(float deltaTime) {
         updateCamera();
 
-        // 1. Start rendering the game scene to FBO
         if (sceneFbo != null) {
             sceneFbo.begin();
             ScreenUtils.clear(0.05f, 0.05f, 0.05f, 1);
-
             Gdx.gl.glEnable(GL20.GL_BLEND);
             Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            if (currentMap instanceof ProceduralMap pMap) {
-                renderProceduralMap(pMap);
-            }
+            if (currentMap != null) renderMap(currentMap);
             renderPrimitiveEntities();
             renderHealthBars();
             shapeRenderer.end();
@@ -93,35 +83,52 @@ public class RenderSystem extends GameSystem {
             sceneFbo.end();
         }
 
-        // 2. Prepare lightmap
         if (lightSystem != null) {
             lightSystem.setProjectionMatrix(camera.combined);
             lightSystem.update(deltaTime);
         }
 
-        // 3. Final Pass
         renderFinalPass();
+        
+        // --- DRAW DEBUG PATHS ON TOP OF EVERYTHING ---
+        renderDebugPaths();
+    }
+
+    private void renderDebugPaths() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.CYAN);
+        List<Entity> enemies = entityManager.getEntitiesWithComponents(AIComponent.class);
+        for (Entity e : enemies) {
+            AIComponent ai = entityManager.getComponent(e, AIComponent.class);
+            if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
+                for (int i = 0; i < ai.currentPath.getCount() - 1; i++) {
+                    Node n1 = ai.currentPath.get(i);
+                    Node n2 = ai.currentPath.get(i+1);
+                    shapeRenderer.line(n1.x * 32 + 16, n1.y * 32 + 16, n2.x * 32 + 16, n2.y * 32 + 16);
+                }
+            }
+        }
+        shapeRenderer.end();
     }
 
     private void renderFinalPass() {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        spriteBatch.setProjectionMatrix(spriteBatch.getProjectionMatrix().idt());
+        spriteBatch.getProjectionMatrix().idt(); // Reset to identity for full-screen quad
         spriteBatch.setShader(lightingShader);
         spriteBatch.begin();
-
         if (lightSystem != null) {
             lightSystem.getLightMapTexture().bind(1);
             lightingShader.setUniformi("u_lightmap", 1);
             lightingShader.setUniformf("u_ambientColor", lightSystem.getAmbientColor());
             Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
         }
-
         if (sceneFbo != null) {
-            spriteBatch.draw(sceneFbo.getColorBufferTexture(), -1, 1, 2, -2);
+            // Draw FBO texture flipped vertically (true) because FBOs are Y-up but textures are stored Y-down in OpenGL
+            Texture fboTexture = sceneFbo.getColorBufferTexture();
+            spriteBatch.draw(fboTexture, -1, -1, 2, 2, 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
         }
-        
         spriteBatch.end();
         spriteBatch.setShader(null);
     }
@@ -129,9 +136,7 @@ public class RenderSystem extends GameSystem {
     private void renderPrimitiveEntities() {
         List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, RenderComponent.class);
         for (Entity entity : entities) {
-            if (entityManager.hasComponent(entity, TextureComponent.class) || 
-                entityManager.hasComponent(entity, AnimationComponent.class)) continue;
-
+            if (entityManager.hasComponent(entity, TextureComponent.class) || entityManager.hasComponent(entity, AnimationComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             RenderComponent r = entityManager.getComponent(entity, RenderComponent.class);
             shapeRenderer.setColor(r.color);
@@ -146,16 +151,9 @@ public class RenderSystem extends GameSystem {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             TextureComponent tex = entityManager.getComponent(entity, TextureComponent.class);
             Texture texture = assetService.getTexture(tex.assetPath);
-
             if (texture != null) {
                 spriteBatch.setColor(Color.WHITE);
-                spriteBatch.draw(texture, 
-                    t.x - tex.width / 2, t.y - tex.height / 2, 
-                    tex.width / 2, tex.height / 2, 
-                    tex.width, tex.height, 
-                    1, 1, t.rotation, 
-                    0, 0, texture.getWidth(), texture.getHeight(), 
-                    false, false);
+                spriteBatch.draw(texture, t.x - tex.width / 2, t.y - tex.height / 2, tex.width / 2, tex.height / 2, tex.width, tex.height, 1, 1, t.rotation, 0, 0, texture.getWidth(), texture.getHeight(), false, false);
             }
         }
     }
@@ -165,29 +163,19 @@ public class RenderSystem extends GameSystem {
         for (Entity entity : entities) {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             AnimationComponent anim = entityManager.getComponent(entity, AnimationComponent.class);
-            
             TextureRegion frame = anim.getCurrentKeyFrame();
-            if (frame != null) {
-                spriteBatch.draw(frame, 
-                    t.x - anim.width / 2, t.y - anim.height / 2, 
-                    anim.width / 2, anim.height / 2, 
-                    anim.width, anim.height, 
-                    1, 1, t.rotation);
-            }
+            if (frame != null) spriteBatch.draw(frame, t.x - anim.width / 2, t.y - anim.height / 2, anim.width / 2, anim.height / 2, anim.width, anim.height, 1, 1, t.rotation);
         }
     }
 
     private void renderHealthBars() {
-        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, HealthComponent.class);
-        for (Entity entity : entities) {
+        List<Entity> enemies = entityManager.getEntitiesWithComponents(TransformComponent.class, HealthComponent.class);
+        for (Entity entity : enemies) {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
             float radius = 20f;
-            if (entityManager.hasComponent(entity, RenderComponent.class)) {
-                radius = entityManager.getComponent(entity, RenderComponent.class).radius;
-            } else if (entityManager.hasComponent(entity, AnimationComponent.class)) {
-                radius = entityManager.getComponent(entity, AnimationComponent.class).width / 2;
-            }
+            if (entityManager.hasComponent(entity, RenderComponent.class)) radius = entityManager.getComponent(entity, RenderComponent.class).radius;
+            else if (entityManager.hasComponent(entity, AnimationComponent.class)) radius = entityManager.getComponent(entity, AnimationComponent.class).width / 2;
             drawHealthBar(t.x, t.y + radius + 10, radius * 2, h);
         }
     }
@@ -205,28 +193,29 @@ public class RenderSystem extends GameSystem {
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, TransformComponent.class);
         if (!players.isEmpty()) {
             TransformComponent tc = entityManager.getComponent(players.get(0), TransformComponent.class);
-            camera.position.set(tc.x, tc.y, 0);
+            camera.position.lerp(new Vector3(tc.x, tc.y, 0), 0.1f); // Smooth camera
             camera.update();
         }
     }
 
-    private void renderProceduralMap(ProceduralMap map) {
-        float startX = camera.position.x - viewport.getWorldWidth() / 2 - ProceduralMap.TILE_SIZE;
-        float startY = camera.position.y - viewport.getWorldHeight() / 2 - ProceduralMap.TILE_SIZE;
-        float endX = camera.position.x + viewport.getWorldWidth() / 2 + ProceduralMap.TILE_SIZE;
-        float endY = camera.position.y + viewport.getWorldHeight() / 2 + ProceduralMap.TILE_SIZE;
-
-        for (float x = startX; x < endX; x += ProceduralMap.TILE_SIZE) {
-            for (float y = startY; y < endY; y += ProceduralMap.TILE_SIZE) {
-                float gridX = (float) Math.floor(x / ProceduralMap.TILE_SIZE) * ProceduralMap.TILE_SIZE;
-                float gridY = (float) Math.floor(y / ProceduralMap.TILE_SIZE) * ProceduralMap.TILE_SIZE;
-                float speed = map.getSpeedMultiplier(gridX + 1, gridY + 1);
-                boolean isWalkable = map.isWalkable(gridX, gridY);
+    private void renderMap(GameMap map) {
+        float startX = camera.position.x - viewport.getWorldWidth() / 2 - 32;
+        float startY = camera.position.y - viewport.getWorldHeight() / 2 - 32;
+        float endX = camera.position.x + viewport.getWorldWidth() / 2 + 32;
+        float endY = camera.position.y + viewport.getWorldHeight() / 2 + 32;
+        for (float x = startX; x < endX; x += 32) {
+            for (float y = startY; y < endY; y += 32) {
+                int gx = (int) Math.floor(x / 32);
+                int gy = (int) Math.floor(y / 32);
+                float wx = gx * 32;
+                float wy = gy * 32;
+                float speed = map.getSpeedMultiplier(wx + 16, wy + 16);
+                boolean isWalkable = map.isWalkable(wx + 16, wy + 16);
                 if (!isWalkable) shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 1);
                 else if (speed < 0.4f) shapeRenderer.setColor(0.1f, 0.2f, 0.4f, 1);
                 else if (speed < 0.7f) shapeRenderer.setColor(0.25f, 0.15f, 0.05f, 1);
                 else shapeRenderer.setColor(0.15f, 0.15f, 0.15f, 1);
-                shapeRenderer.rect(gridX, gridY, ProceduralMap.TILE_SIZE, ProceduralMap.TILE_SIZE);
+                shapeRenderer.rect(wx, wy, 32, 32);
             }
         }
     }
@@ -235,7 +224,7 @@ public class RenderSystem extends GameSystem {
     public void resize(int width, int height) {
         viewport.update(width, height);
         if (sceneFbo != null) sceneFbo.dispose();
-        sceneFbo = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
+        sceneFbo = new FrameBuffer(Pixmap.Format.RGBA8888, Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), false);
         if (lightSystem != null) lightSystem.resize(width, height);
     }
 
@@ -245,7 +234,7 @@ public class RenderSystem extends GameSystem {
     public void dispose() {
         shapeRenderer.dispose();
         spriteBatch.dispose();
-        lightingShader.dispose();
+        if (lightingShader != null) lightingShader.dispose();
         if (sceneFbo != null) sceneFbo.dispose();
     }
 }

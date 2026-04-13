@@ -3,6 +3,7 @@ package pl.shooter.game.states;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.math.MathUtils;
 import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
@@ -15,7 +16,8 @@ import pl.shooter.engine.ecs.components.PlayerComponent;
 import pl.shooter.engine.ecs.systems.*;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
-import pl.shooter.engine.world.ProceduralMap;
+import pl.shooter.engine.world.GameMap;
+import pl.shooter.engine.world.TestingMap;
 
 public class PlayState extends GameState {
     private Engine engine;
@@ -45,15 +47,12 @@ public class PlayState extends GameState {
     }
 
     private void init() {
-        // --- 1. Load Assets & Config ---
         assetService.loadTexture("assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png");
         for (int i = 0; i <= 16; i++) {
             assetService.loadTexture("assets/tds_zombie/skeleton-idle_" + i + ".png");
             assetService.loadTexture("assets/tds_zombie/skeleton-move_" + i + ".png");
         }
-        for (int i = 0; i <= 8; i++) {
-            assetService.loadTexture("assets/tds_zombie/skeleton-attack_" + i + ".png");
-        }
+        for (int i = 0; i <= 8; i++) assetService.loadTexture("assets/tds_zombie/skeleton-attack_" + i + ".png");
         assetService.finishLoading();
 
         audioService.loadSound("assets/sfx/shotgun.wav");
@@ -61,28 +60,25 @@ public class PlayState extends GameState {
         audioService.loadSound("assets/sfx/shoot.wav");
 
         GameConfig config = configService.getConfig();
-
-        // --- 2. Setup Systems ---
-        ProceduralMap map = new ProceduralMap();
+        
+        // --- USING TESTING MAP FOR AI/PATHFINDING TESTS ---
+        GameMap map = new TestingMap();
+        
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
         renderSystem.setMap(map);
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager());
-        // Apply brightness from config
-        lightSystem.setAmbientColor(
-            config.graphics.ambientRed,
-            config.graphics.ambientGreen,
-            config.graphics.ambientBlue,
-            config.graphics.ambientBrightness
-        );
+        lightSystem.setAmbientColor(config.graphics.ambientRed, config.graphics.ambientGreen, config.graphics.ambientBlue, config.graphics.ambientBrightness);
         renderSystem.setLightSystem(lightSystem);
 
         engine.addSystem(new InputSystem(engine.getEntityManager(), engine.getEventBus(), renderSystem.getCamera()));
+        engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new AISystem(engine.getEntityManager(), engine.getEventBus()));
+        engine.addSystem(new SteeringSystem(engine.getEntityManager())); 
         engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new ProjectileSystem(engine.getEntityManager()));
         engine.addSystem(new ParticleUpdateSystem(engine.getEntityManager()));
-        engine.addSystem(new MovementSystem(engine.getEntityManager()));
+        engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new MapSystem(engine.getEntityManager(), map));
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
@@ -92,13 +88,22 @@ public class PlayState extends GameState {
         engine.addSystem(renderSystem);
         engine.addSystem(new UISystem(engine.getEntityManager()));
 
-        // --- 3. Spawn Initial Entities ---
-        Entity player = entityFactory.loadFromJson("assets/entities/player.json", 400, 300);
+        // --- Spawn Entities Safely ---
+        // Player at the top left area
+        Entity player = entityFactory.loadFromJson("assets/entities/player.json", 200, 200);
         if (player != null) {
             engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
         }
 
-        entityFactory.loadFromJson("assets/entities/zombie.json", 100, 100);
+        // Spawn 10 zombies across the map
+        for (int i = 0; i < 10; i++) {
+            float zx, zy;
+            do {
+                zx = MathUtils.random(100, 1400);
+                zy = MathUtils.random(100, 1400);
+            } while (!map.isWalkable(zx, zy));
+            entityFactory.loadFromJson("assets/entities/zombie.json", zx, zy);
+        }
     }
 
     @Override
@@ -110,34 +115,19 @@ public class PlayState extends GameState {
 
         if (isGameOver) {
             engine.getSystems().forEach(system -> {
-                if (system instanceof RenderSystem || system instanceof UISystem) {
-                    system.update(deltaTime);
-                }
+                if (system instanceof RenderSystem || system instanceof UISystem) system.update(deltaTime);
             });
-
-            if (Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-                resetState();
-            }
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) resetState();
             return;
         }
 
         engine.update(deltaTime);
-
-        if (engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class).isEmpty()) {
-            isGameOver = true;
-        }
+        if (engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class).isEmpty()) isGameOver = true;
     }
 
-    @Override
-    public void render() {}
-
-    @Override
-    public void resize(int width, int height) {
-        if (engine != null) engine.resize(width, height);
-    }
-
-    @Override
-    public void dispose() {
+    @Override public void render() {}
+    @Override public void resize(int width, int height) { if (engine != null) engine.resize(width, height); }
+    @Override public void dispose() {
         if (engine != null) engine.dispose();
         if (assetService != null) assetService.dispose();
         if (audioService != null) audioService.dispose();

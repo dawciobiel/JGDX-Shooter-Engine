@@ -9,7 +9,7 @@
     },
     "Health": { "hp": 50, "maxHp": 50 },
     "Collider": { "radius": 20 },
-    "AI": { "behavior": "CHASE", "detectRange": 350 },
+    "AI": { "behavior": "CHASE", "detectRange": 600 },
     "Velocity": { "vx": 0, "vy": 0 },
     "Weapon": {
       "type": "PISTOL",

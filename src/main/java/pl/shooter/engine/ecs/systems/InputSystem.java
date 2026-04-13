@@ -46,19 +46,18 @@ public class InputSystem extends GameSystem {
             VelocityComponent vc = entityManager.getComponent(player, VelocityComponent.class);
             TransformComponent tc = entityManager.getComponent(player, TransformComponent.class);
 
-            // 1. Movement
+            // 1. Movement - BACK TO STANDARD Y-UP
             float vx = 0;
             float vy = 0;
-            if (Gdx.input.isKeyPressed(Input.Keys.W)) vy -= pc.speed;
-            if (Gdx.input.isKeyPressed(Input.Keys.S)) vy += pc.speed;
+            if (Gdx.input.isKeyPressed(Input.Keys.W)) vy += pc.speed;
+            if (Gdx.input.isKeyPressed(Input.Keys.S)) vy -= pc.speed;
             if (Gdx.input.isKeyPressed(Input.Keys.A)) vx -= pc.speed;
             if (Gdx.input.isKeyPressed(Input.Keys.D)) vx += pc.speed;
             vc.vx = vx;
             vc.vy = vy;
 
-            // 2. Aiming
-            // If the world Y is flipped, we need to flip the target Y relative to player Y
-            tc.rotation = MathUtils.atan2(tc.y - worldMouseY, worldMouseX - tc.x) * MathUtils.radiansToDegrees;
+            // 2. Aiming - STANDARD CALCULATIONS
+            tc.rotation = MathUtils.atan2(worldMouseY - tc.y, worldMouseX - tc.x) * MathUtils.radiansToDegrees;
 
             // 3. Shooting
             if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
