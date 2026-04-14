@@ -65,10 +65,14 @@ public class PlayState extends GameState {
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
         renderSystem.setMap(map);
         renderSystem.setShowDebugPaths(config.debug.showPaths);
+        renderSystem.setShowDebugHitboxes(config.debug.showHitboxes); // Apply hitbox config
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager());
         lightSystem.setAmbientColor(config.graphics.ambientRed, config.graphics.ambientGreen, config.graphics.ambientBlue, config.graphics.ambientBrightness);
         renderSystem.setLightSystem(lightSystem);
+
+        UISystem uiSystem = new UISystem(engine.getEntityManager());
+        uiSystem.setShowFps(config.debug.showFps); // Apply FPS config
 
         engine.addSystem(new InputSystem(engine.getEntityManager(), engine.getEventBus(), renderSystem.getCamera()));
         engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map)); 
@@ -85,7 +89,7 @@ public class PlayState extends GameState {
         engine.addSystem(new AnimationSystem(engine.getEntityManager()));
         engine.addSystem(new WaveSystem(engine.getEntityManager(), entityFactory, map));
         engine.addSystem(renderSystem);
-        engine.addSystem(new UISystem(engine.getEntityManager()));
+        engine.addSystem(uiSystem);
 
         // Spawn player
         Entity player = entityFactory.loadFromJson("assets/entities/player.json", 200, 200);
@@ -93,7 +97,7 @@ public class PlayState extends GameState {
             engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
         }
 
-        // Spawn 5 initial zombies
+        // Spawn zombies
         for (int i = 0; i < 5; i++) {
             float zx, zy;
             do {
@@ -103,12 +107,10 @@ public class PlayState extends GameState {
             entityFactory.loadFromJson("assets/entities/zombie.json", zx, zy);
         }
 
-        // Spawn HEAVY OBSTACLES (crates - block movement)
+        // Spawn obstacles
         for (int i = 0; i < 15; i++) {
             createCrate(MathUtils.random(300, 1200), MathUtils.random(300, 1200), true);
         }
-
-        // Spawn LIGHT OBSTACLES (bushes - don't block movement)
         for (int i = 0; i < 10; i++) {
             createCrate(MathUtils.random(300, 1200), MathUtils.random(300, 1200), false);
         }
@@ -117,16 +119,12 @@ public class PlayState extends GameState {
     private void createCrate(float x, float y, boolean blocks) {
         Entity crate = engine.getEntityManager().createEntity();
         engine.getEntityManager().addComponent(crate, new TransformComponent(x, y));
-        
         Color color = blocks ? new Color(0.6f, 0.4f, 0.2f, 1f) : new Color(0.2f, 0.6f, 0.2f, 1f);
         engine.getEntityManager().addComponent(crate, new RenderComponent(color, 16f, false));
         engine.getEntityManager().addComponent(crate, new ColliderComponent(16f));
         engine.getEntityManager().addComponent(crate, new HealthComponent(30f, 30f));
         engine.getEntityManager().addComponent(crate, new DestructibleComponent(blocks));
-        
-        if (blocks) {
-            engine.getEntityManager().addComponent(crate, new ObstacleComponent());
-        }
+        if (blocks) engine.getEntityManager().addComponent(crate, new ObstacleComponent());
     }
 
     @Override

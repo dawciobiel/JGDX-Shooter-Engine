@@ -34,6 +34,7 @@ public class RenderSystem extends GameSystem {
     private ShaderProgram lightingShader;
     private LightSystem lightSystem;
     private boolean showDebugPaths = false;
+    private boolean showDebugHitboxes = false;
 
     public RenderSystem(EntityManager entityManager, AssetService assetService) {
         super(entityManager);
@@ -59,6 +60,7 @@ public class RenderSystem extends GameSystem {
     public void setMap(GameMap map) { this.currentMap = map; }
     public void setLightSystem(LightSystem lightSystem) { this.lightSystem = lightSystem; }
     public void setShowDebugPaths(boolean show) { this.showDebugPaths = show; }
+    public void setShowDebugHitboxes(boolean show) { this.showDebugHitboxes = show; }
 
     @Override
     public void update(float deltaTime) {
@@ -92,26 +94,40 @@ public class RenderSystem extends GameSystem {
 
         renderFinalPass();
         
-        if (showDebugPaths) {
-            renderDebugPaths();
+        if (showDebugPaths || showDebugHitboxes) {
+            renderDebugInfo();
         }
     }
 
-    private void renderDebugPaths() {
+    private void renderDebugInfo() {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(Color.CYAN);
-        List<Entity> enemies = entityManager.getEntitiesWithComponents(AIComponent.class);
-        for (Entity e : enemies) {
-            AIComponent ai = entityManager.getComponent(e, AIComponent.class);
-            if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
-                for (int i = 0; i < ai.currentPath.getCount() - 1; i++) {
-                    Node n1 = ai.currentPath.get(i);
-                    Node n2 = ai.currentPath.get(i+1);
-                    shapeRenderer.line(n1.x * 32 + 16, n1.y * 32 + 16, n2.x * 32 + 16, n2.y * 32 + 16);
+        
+        if (showDebugPaths) {
+            shapeRenderer.setColor(Color.CYAN);
+            List<Entity> enemies = entityManager.getEntitiesWithComponents(AIComponent.class);
+            for (Entity e : enemies) {
+                AIComponent ai = entityManager.getComponent(e, AIComponent.class);
+                if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
+                    for (int i = 0; i < ai.currentPath.getCount() - 1; i++) {
+                        Node n1 = ai.currentPath.get(i);
+                        Node n2 = ai.currentPath.get(i+1);
+                        shapeRenderer.line(n1.x * 32 + 16, n1.y * 32 + 16, n2.x * 32 + 16, n2.y * 32 + 16);
+                    }
                 }
             }
         }
+
+        if (showDebugHitboxes) {
+            shapeRenderer.setColor(Color.LIME);
+            List<Entity> colliders = entityManager.getEntitiesWithComponents(TransformComponent.class, ColliderComponent.class);
+            for (Entity e : colliders) {
+                TransformComponent t = entityManager.getComponent(e, TransformComponent.class);
+                ColliderComponent c = entityManager.getComponent(e, ColliderComponent.class);
+                shapeRenderer.circle(t.x, t.y, c.radius);
+            }
+        }
+
         shapeRenderer.end();
     }
 

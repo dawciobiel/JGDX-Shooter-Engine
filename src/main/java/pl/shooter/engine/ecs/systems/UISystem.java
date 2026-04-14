@@ -26,6 +26,7 @@ public class UISystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
     private final BitmapFont font;
     private final Viewport viewport;
+    private boolean showFps = false;
 
     public UISystem(EntityManager entityManager) {
         super(entityManager);
@@ -35,6 +36,8 @@ public class UISystem extends GameSystem {
         this.font.getData().setScale(1.1f);
         this.viewport = new FitViewport(800, 600);
     }
+
+    public void setShowFps(boolean show) { this.showFps = show; }
 
     @Override
     public void update(float deltaTime) {
@@ -52,6 +55,10 @@ public class UISystem extends GameSystem {
         WeaponComponent weapon = entityManager.getComponent(player, WeaponComponent.class);
 
         renderHUD(health, score, weapon);
+        
+        if (showFps) {
+            renderFps();
+        }
     }
 
     private void renderHUD(HealthComponent health, ScoreComponent score, WeaponComponent weapon) {
@@ -63,7 +70,6 @@ public class UISystem extends GameSystem {
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         
-        // 1. Health Bar
         shapeRenderer.setColor(Color.BLACK);
         shapeRenderer.rect(x - 2, y - 2, barWidth + 4, barHeight + 4);
         shapeRenderer.setColor(Color.DARK_GRAY);
@@ -78,7 +84,6 @@ public class UISystem extends GameSystem {
             shapeRenderer.rect(x, y, barWidth * healthPercent, barHeight);
         }
 
-        // 2. Reload Bar
         if (weapon != null && weapon.isReloading) {
             float ry = y - 35;
             float reloadPercent = Math.min(1, weapon.reloadTimer / weapon.reloadTime);
@@ -119,6 +124,14 @@ public class UISystem extends GameSystem {
                          800 - 320, 600 - 20);
             }
         }
+        batch.end();
+    }
+
+    private void renderFps() {
+        batch.setProjectionMatrix(viewport.getCamera().combined);
+        batch.begin();
+        font.setColor(Color.GREEN);
+        font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 10, 20);
         batch.end();
     }
 
