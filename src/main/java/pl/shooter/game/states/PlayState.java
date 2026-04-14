@@ -60,11 +60,11 @@ public class PlayState extends GameState {
         audioService.loadSound("assets/sfx/shoot.wav");
 
         GameConfig config = configService.getConfig();
-        
         GameMap map = new TestingMap();
         
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
         renderSystem.setMap(map);
+        renderSystem.setShowDebugPaths(config.debug.showPaths); // Apply config
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager());
         lightSystem.setAmbientColor(config.graphics.ambientRed, config.graphics.ambientGreen, config.graphics.ambientBlue, config.graphics.ambientBrightness);
@@ -83,18 +83,25 @@ public class PlayState extends GameState {
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
         engine.addSystem(new AnimationSystem(engine.getEntityManager()));
-        engine.addSystem(new WaveSystem(engine.getEntityManager(), entityFactory));
+        engine.addSystem(new WaveSystem(engine.getEntityManager(), entityFactory, map));
         engine.addSystem(renderSystem);
         engine.addSystem(new UISystem(engine.getEntityManager()));
 
-        // Player at (200, 200)
+        // Spawn player
         Entity player = entityFactory.loadFromJson("assets/entities/player.json", 200, 200);
         if (player != null) {
             engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
         }
 
-        // --- TEST: Safe spawn at (500, 200) ---
-        entityFactory.loadFromJson("assets/entities/zombie.json", 500, 200);
+        // Initial zombies
+        for (int i = 0; i < 5; i++) {
+            float zx, zy;
+            do {
+                zx = MathUtils.random(100, 1400);
+                zy = MathUtils.random(100, 1400);
+            } while (!map.isWalkable(zx, zy));
+            entityFactory.loadFromJson("assets/entities/zombie.json", zx, zy);
+        }
     }
 
     @Override

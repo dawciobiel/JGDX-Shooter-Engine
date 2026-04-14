@@ -33,6 +33,7 @@ public class RenderSystem extends GameSystem {
     private FrameBuffer sceneFbo;
     private ShaderProgram lightingShader;
     private LightSystem lightSystem;
+    private boolean showDebugPaths = false;
 
     public RenderSystem(EntityManager entityManager, AssetService assetService) {
         super(entityManager);
@@ -57,6 +58,7 @@ public class RenderSystem extends GameSystem {
 
     public void setMap(GameMap map) { this.currentMap = map; }
     public void setLightSystem(LightSystem lightSystem) { this.lightSystem = lightSystem; }
+    public void setShowDebugPaths(boolean show) { this.showDebugPaths = show; }
 
     @Override
     public void update(float deltaTime) {
@@ -90,8 +92,9 @@ public class RenderSystem extends GameSystem {
 
         renderFinalPass();
         
-        // --- DRAW DEBUG PATHS ON TOP OF EVERYTHING ---
-        renderDebugPaths();
+        if (showDebugPaths) {
+            renderDebugPaths();
+        }
     }
 
     private void renderDebugPaths() {
@@ -125,7 +128,6 @@ public class RenderSystem extends GameSystem {
             Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
         }
         if (sceneFbo != null) {
-            // Draw FBO texture flipped vertically (true) because FBOs are Y-up but textures are stored Y-down in OpenGL
             Texture fboTexture = sceneFbo.getColorBufferTexture();
             spriteBatch.draw(fboTexture, -1, -1, 2, 2, 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
         }

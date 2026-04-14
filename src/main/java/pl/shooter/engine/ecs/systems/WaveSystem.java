@@ -9,6 +9,7 @@ import pl.shooter.engine.ecs.components.AIComponent;
 import pl.shooter.engine.ecs.components.PlayerComponent;
 import pl.shooter.engine.ecs.components.ScoreComponent;
 import pl.shooter.engine.ecs.components.TransformComponent;
+import pl.shooter.engine.world.GameMap;
 
 import java.util.List;
 
@@ -17,14 +18,16 @@ import java.util.List;
  */
 public class WaveSystem extends GameSystem {
     private final EntityFactory entityFactory;
+    private final GameMap map;
     private final float spawnInterval = 5.0f;
     private float spawnTimer = 0;
-    private final int maxEnemiesBase = 5;
+    private final int maxEnemiesBase = 8;
     private int spawnedCount = 0;
 
-    public WaveSystem(EntityManager entityManager, EntityFactory entityFactory) {
+    public WaveSystem(EntityManager entityManager, EntityFactory entityFactory, GameMap map) {
         super(entityManager);
         this.entityFactory = entityFactory;
+        this.map = map;
     }
 
     @Override
@@ -36,13 +39,13 @@ public class WaveSystem extends GameSystem {
         
         ScoreComponent score = entityManager.getComponent(players.get(0), ScoreComponent.class);
 
-        // Wave increase logic (every 5 enemies spawned)
+        // Wave increase logic
         if (spawnedCount >= 5) {
             score.wave++;
             spawnedCount = 0;
         }
 
-        if (spawnTimer >= (spawnInterval / (1 + score.wave * 0.1f))) { // Spawn faster as waves go
+        if (spawnTimer >= (spawnInterval / (1 + score.wave * 0.1f))) {
             spawnTimer = 0;
             
             int currentEnemies = entityManager.getEntitiesWithComponents(AIComponent.class).size();
@@ -58,11 +61,19 @@ public class WaveSystem extends GameSystem {
         if (players.isEmpty()) return;
 
         TransformComponent playerTrans = entityManager.getComponent(players.get(0), TransformComponent.class);
-        float angle = MathUtils.random(0, 360);
-        float distance = MathUtils.random(500, 700);
-        float spawnX = playerTrans.x + MathUtils.cosDeg(angle) * distance;
-        float spawnY = playerTrans.y + MathUtils.sinDeg(angle) * distance;
+        
+        float spawnX, spawnY;
+        int attempts = 0;
+        do {
+            float angle = MathUtils.random(0, 360);
+            float distance = MathUtils.random(400, 800);
+            spawnX = playerTrans.x + MathUtils.cosDeg(angle) * distance;
+            spawnY = playerTrans.y + MathUtils.sinDeg(angle) * distance;
+            attempts++;
+        } while (!map.isWalkable(spawnX, spawnY) && attempts < 10);
 
-        entityFactory.loadFromJson("assets/entities/zombie.json", spawnX, spawnY);
+        if (attempts < 10) {
+            entityFactory.loadFromJson("assets/entities/zombie.json", spawnX, spawnY);
+        }
     }
 }

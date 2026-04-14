@@ -1,20 +1,26 @@
 package pl.shooter.engine.ecs.systems;
 
+import com.badlogic.gdx.ai.steer.Steerable;
+import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
 import com.badlogic.gdx.ai.steer.behaviors.Seek;
+import com.badlogic.gdx.ai.steer.behaviors.Separation;
+import com.badlogic.gdx.ai.steer.proximities.RadiusProximity;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 import pl.shooter.engine.ai.pathfinding.Node;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.events.EventBus;
+import pl.shooter.engine.events.ShootEvent;
 
 import java.util.List;
 
 public class AISystem extends GameSystem {
     private final EventBus eventBus;
-    private static final float MELEE_RANGE = 45f;
+    private static final float MELEE_ANIM_RANGE = 45f;
     private final Vector2 tempTarget = new Vector2();
 
     public AISystem(EntityManager entityManager, EventBus eventBus) {
@@ -39,15 +45,23 @@ public class AISystem extends GameSystem {
             TransformComponent enemyTrans = entityManager.getComponent(enemy, TransformComponent.class);
             VelocityComponent enemyVel = entityManager.getComponent(enemy, VelocityComponent.class);
             AnimationComponent anim = entityManager.getComponent(enemy, AnimationComponent.class);
+            WeaponComponent weapon = entityManager.getComponent(enemy, WeaponComponent.class);
             
-            SteeringComponent sc = getOrAddSteering(enemy, enemyTrans, enemyVel);
+            SteeringComponent sc = getOrAddSteering(enemy, enemyTrans, enemyVel, enemies);
             float distanceToPlayer = Vector2.dst(enemyTrans.x, enemyTrans.y, playerTrans.x, playerTrans.y);
 
             if (distanceToPlayer < ai.detectRange) {
                 // Point towards player
                 enemyTrans.rotation = MathUtils.atan2(playerTrans.y - enemyTrans.y, playerTrans.x - enemyTrans.x) * MathUtils.radiansToDegrees;
                 
-                handleLogic(enemy, ai, sc, playerTrans, anim, distanceToPlayer);
+                // Tactics: Shooting logic
+                boolean isShooting = false;
+                if (weapon != null) {
+                    eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
+                    isShooting = true;
+                }
+
+                handleTacticalMovement(enemy, ai, sc, playerTrans, anim, distanceToPlayer, isShooting);
             } else {
                 sc.behavior = null;
                 enemyVel.vx = 0;
@@ -57,23 +71,40 @@ public class AISystem extends GameSystem {
         }
     }
 
-    private SteeringComponent getOrAddSteering(Entity enemy, TransformComponent t, VelocityComponent v) {
+    private SteeringComponent getOrAddSteering(Entity enemy, TransformComponent t, VelocityComponent v, List<Entity> allEnemies) {
         SteeringComponent sc = entityManager.getComponent(enemy, SteeringComponent.class);
         if (sc == null) {
             sc = new SteeringComponent(t, v);
-            sc.setMaxLinearSpeed(70f);
+            sc.setMaxLinearSpeed(75f);
             sc.setMaxLinearAcceleration(1000f);
             sc.seekBehavior = new Seek<>(sc, new StaticLocation(new Vector2()));
-            sc.behavior = sc.seekBehavior;
+            Array<Steerable<Vector2>> otherAgents = new Array<>();
+            sc.separationBehavior = new Separation<>(sc, new RadiusProximity<>(sc, otherAgents, 40f));
+            sc.prioritySteering = new PrioritySteering<>(sc);
+            sc.prioritySteering.add(sc.separationBehavior);
+            sc.prioritySteering.add(sc.seekBehavior);
+            sc.behavior = sc.prioritySteering;
             entityManager.addComponent(enemy, sc);
+        }
+        
+        if (sc.separationBehavior != null) {
+            Array<Steerable<Vector2>> agents = (Array<Steerable<Vector2>>) ((RadiusProximity<Vector2>)sc.separationBehavior.getProximity()).getAgents();
+            agents.clear();
+            for (Entity e : allEnemies) {
+                if (e == enemy) continue;
+                SteeringComponent otherSc = entityManager.getComponent(e, SteeringComponent.class);
+                if (otherSc != null) agents.add(otherSc);
+            }
         }
         return sc;
     }
 
-    private void handleLogic(Entity enemy, AIComponent ai, SteeringComponent sc,
-                             TransformComponent playerTrans, AnimationComponent anim, float distanceToPlayer) {
+    private void handleTacticalMovement(Entity enemy, AIComponent ai, SteeringComponent sc,
+                                        TransformComponent playerTrans, AnimationComponent anim, 
+                                        float distanceToPlayer, boolean isShooting) {
         
-        if (distanceToPlayer < MELEE_RANGE) {
+        // 1. Should we stop because we are shooting?
+        if (ai.stopToShoot && isShooting) {
             sc.behavior = null;
             sc.velocity.vx = 0;
             sc.velocity.vy = 0;
@@ -81,45 +112,42 @@ public class AISystem extends GameSystem {
             return;
         }
 
+        // 2. Should we stop because we reached preferred distance?
+        if (distanceToPlayer < ai.preferredRange) {
+            sc.behavior = null;
+            sc.velocity.vx = 0;
+            sc.velocity.vy = 0;
+            if (anim != null) anim.currentState = AnimationComponent.State.IDLE;
+            return;
+        }
+
+        // 3. Melee animation trigger
+        if (distanceToPlayer < MELEE_ANIM_RANGE) {
+            if (anim != null) anim.currentState = AnimationComponent.State.SHOOT;
+        } else {
+            if (anim != null) anim.currentState = AnimationComponent.State.WALK;
+        }
+
+        // 4. Normal Pathfinding / Chase
         if (ai.behavior == AIComponent.Behavior.CHASE) {
             boolean usingPathNode = false;
-            
-            // 1. If very close to player, skip pathfinding logic and go direct
-            if (distanceToPlayer < 80f) {
-                tempTarget.set(playerTrans.x, playerTrans.y);
-            } 
-            // 2. Use pathfinding nodes if available
-            else if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
+            if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
                 if (ai.currentPathIndex >= ai.currentPath.getCount()) ai.currentPathIndex = 1;
-
                 Node targetNode = ai.currentPath.get(ai.currentPathIndex);
                 float tx = targetNode.x * 32 + 16;
                 float ty = targetNode.y * 32 + 16;
 
-                // Advance to next node if close enough (reduced threshold to 8px)
-                if (Vector2.dst(sc.transform.x, sc.transform.y, tx, ty) < 8f) {
-                    if (ai.currentPathIndex < ai.currentPath.getCount() - 1) {
-                        ai.currentPathIndex++;
-                        targetNode = ai.currentPath.get(ai.currentPathIndex);
-                        tx = targetNode.x * 32 + 16;
-                        ty = targetNode.y * 32 + 16;
-                    }
+                if (Vector2.dst(sc.transform.x, sc.transform.y, tx, ty) < 12f) {
+                    if (ai.currentPathIndex < ai.currentPath.getCount() - 1) ai.currentPathIndex++;
                 }
                 tempTarget.set(tx, ty);
                 usingPathNode = true;
             }
 
-            if (!usingPathNode && distanceToPlayer >= 80f) {
-                tempTarget.set(playerTrans.x, playerTrans.y);
-            }
+            if (!usingPathNode) tempTarget.set(playerTrans.x, playerTrans.y);
 
-            // Always update seeker target
             ((StaticLocation)sc.seekBehavior.getTarget()).pos.set(tempTarget);
-            sc.behavior = sc.seekBehavior;
-
-            if (anim != null && anim.currentState != AnimationComponent.State.WALK) {
-                anim.currentState = AnimationComponent.State.WALK;
-            }
+            sc.behavior = sc.prioritySteering;
         }
     }
 

@@ -33,6 +33,7 @@ public class GameConfig {
     public static class DebugConfig {
         public boolean showHitboxes = false;
         public boolean showFps = true;
+        public boolean showPaths = false; // New option for AI path visualization
         public boolean invinciblePlayer = false;
     }
 }
