@@ -18,9 +18,12 @@ import pl.shooter.engine.events.ShootEvent;
 
 import java.util.List;
 
+/**
+ * Manages NPC behaviors, including chasing, shooting and melee attacks.
+ * Now respects weapon range for all attack types.
+ */
 public class AISystem extends GameSystem {
     private final EventBus eventBus;
-    private static final float MELEE_ANIM_RANGE = 45f;
     private final Vector2 tempTarget = new Vector2();
 
     public AISystem(EntityManager entityManager, EventBus eventBus) {
@@ -54,14 +57,17 @@ public class AISystem extends GameSystem {
                 // Point towards player
                 enemyTrans.rotation = MathUtils.atan2(playerTrans.y - enemyTrans.y, playerTrans.x - enemyTrans.x) * MathUtils.radiansToDegrees;
                 
-                // Tactics: Shooting logic
-                boolean isShooting = false;
+                // Tactics: Shooting/Melee logic based on weapon range
+                boolean isAttacking = false;
                 if (weapon != null) {
-                    eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
-                    isShooting = true;
+                    float attackRange = (weapon.type == WeaponComponent.Type.KNIFE) ? weapon.range + 10f : 400f; // Default 400 for firearms
+                    if (distanceToPlayer <= attackRange) {
+                        eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
+                        isAttacking = true;
+                    }
                 }
 
-                handleTacticalMovement(enemy, ai, sc, playerTrans, anim, distanceToPlayer, isShooting);
+                handleTacticalMovement(enemy, ai, sc, playerTrans, anim, distanceToPlayer, isAttacking);
             } else {
                 sc.behavior = null;
                 enemyVel.vx = 0;
@@ -101,10 +107,10 @@ public class AISystem extends GameSystem {
 
     private void handleTacticalMovement(Entity enemy, AIComponent ai, SteeringComponent sc,
                                         TransformComponent playerTrans, AnimationComponent anim, 
-                                        float distanceToPlayer, boolean isShooting) {
+                                        float distanceToPlayer, boolean isAttacking) {
         
-        // 1. Should we stop because we are shooting?
-        if (ai.stopToShoot && isShooting) {
+        // 1. Should we stop because we are attacking?
+        if (ai.stopToShoot && isAttacking) {
             sc.behavior = null;
             sc.velocity.vx = 0;
             sc.velocity.vy = 0;
@@ -121,8 +127,8 @@ public class AISystem extends GameSystem {
             return;
         }
 
-        // 3. Melee animation trigger
-        if (distanceToPlayer < MELEE_ANIM_RANGE) {
+        // 3. Animation trigger based on attack state
+        if (isAttacking) {
             if (anim != null) anim.currentState = AnimationComponent.State.SHOOT;
         } else {
             if (anim != null) anim.currentState = AnimationComponent.State.WALK;
