@@ -53,13 +53,14 @@ Silnik zarządza stosem stanów (`GameStateManager`):
 # 5. Konfiguracja i Dane (Data-Driven)
 
 ### ➤ Game Configuration (GameConfig) — **NOWE**
-Silnik używa plików JSON do zarządzania ustawieniami:
+Silnik używa plików JSON do zarządzania ustawieniami w sposób warstwowy (Layered Loading):
+* **Logika**: System najpierw ładuje wartości domyślne z kodu, następnie nadpisuje je wartościami z `assets/config/default_config.json`, a na końcu stosuje nadpisania użytkownika z `user_config.json`.
 * **Lokalizacja**: `assets/config/default_config.json` (domyślne) oraz `user_config.json` (lokalne nadpisania).
 * **Obszary**:
-    * `graphics`: Rozdzielczość, FPS, jasność otoczenia (Ambient Light).
+    * `graphics`: Rozdzielczość, Fullscreen, FPS, jasność otoczenia (Ambient Light).
     * `audio`: Głośność master/sfx/music.
     * `debug`: Flagi dla hitboksów, FPS i trybu nieśmiertelności.
-* **Technologia**: Jackson (ObjectMapper) do szybkiej serializacji POJO.
+* **Technologia**: Jackson (ObjectMapper) z wykorzystaniem `readerForUpdating` do scalania konfiguracji.
 
 ---
 

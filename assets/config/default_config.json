@@ -2,7 +2,7 @@
   "graphics": {
     "width": 800,
     "height": 600,
-    "fullscreen": false,
+    "fullscreen": true,
     "targetFps": 60,
     "ambientBrightness": 0.5,
     "ambientRed": 0.1,
