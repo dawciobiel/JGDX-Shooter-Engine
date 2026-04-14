@@ -171,7 +171,8 @@ public class RenderSystem extends GameSystem {
             Texture texture = assetService.getTexture(tex.assetPath);
             if (texture != null) {
                 spriteBatch.setColor(Color.WHITE);
-                spriteBatch.draw(texture, t.x - tex.width / 2, t.y - tex.height / 2, tex.width / 2, tex.height / 2, tex.width, tex.height, 1, 1, t.rotation, 0, 0, texture.getWidth(), texture.getHeight(), false, false);
+                // Added -90 offset because texture facing UP in PNG needs to be rotated to face RIGHT (0 degrees)
+                spriteBatch.draw(texture, t.x - tex.width / 2, t.y - tex.height / 2, tex.width / 2, tex.height / 2, tex.width, tex.height, 1, 1, t.rotation - 90, 0, 0, texture.getWidth(), texture.getHeight(), false, false);
             }
         }
     }
@@ -182,7 +183,8 @@ public class RenderSystem extends GameSystem {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             AnimationComponent anim = entityManager.getComponent(entity, AnimationComponent.class);
             TextureRegion frame = anim.getCurrentKeyFrame();
-            if (frame != null) spriteBatch.draw(frame, t.x - anim.width / 2, t.y - anim.height / 2, anim.width / 2, anim.height / 2, anim.width, anim.height, 1, 1, t.rotation);
+            // Added -90 offset for animations
+            if (frame != null) spriteBatch.draw(frame, t.x - anim.width / 2, t.y - anim.height / 2, anim.width / 2, anim.height / 2, anim.width, anim.height, 1, 1, t.rotation - 90);
         }
     }
 
