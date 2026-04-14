@@ -1,6 +1,8 @@
 # Lista zadań - Silnik Gry Shooter (Architektura ECS)
 
-## Etap 9: Szlify i Rozwój (DO REALIZACJI)
+## Etap 9: Szlify i Rozwój (W TRAKCIE)
+- [x] **Rozbudowany System Broni** (9 typów broni, inwentarz, brak resetu amunicji)
+- [x] **Dynamiczna Zmiana Broni** (Klawisze 1-9, Q/E, konfigurowalne)
 - [ ] **Różne typy przeciwników** (Szybsi biegacze, pancerni wrogowie)
 - [ ] **System Animacji Śmierci** (Wrogowie nie znikają natychmiast)
 - [ ] **System Drzwi i Przełączników** (Prosta interakcja ze światem)

@@ -65,14 +65,14 @@ public class PlayState extends GameState {
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
         renderSystem.setMap(map);
         renderSystem.setShowDebugPaths(config.debug.showPaths);
-        renderSystem.setShowDebugHitboxes(config.debug.showHitboxes); // Apply hitbox config
+        renderSystem.setShowDebugHitboxes(config.debug.showHitboxes);
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager());
         lightSystem.setAmbientColor(config.graphics.ambientRed, config.graphics.ambientGreen, config.graphics.ambientBlue, config.graphics.ambientBrightness);
         renderSystem.setLightSystem(lightSystem);
 
         UISystem uiSystem = new UISystem(engine.getEntityManager());
-        uiSystem.setShowFps(config.debug.showFps); // Apply FPS config
+        uiSystem.setShowFps(config.debug.showFps);
 
         engine.addSystem(new InputSystem(engine.getEntityManager(), engine.getEventBus(), renderSystem.getCamera()));
         engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map)); 
@@ -91,13 +91,28 @@ public class PlayState extends GameState {
         engine.addSystem(renderSystem);
         engine.addSystem(uiSystem);
 
-        // Spawn player
+        // --- PLAYER INITIALIZATION WITH INVENTORY ---
         Entity player = entityFactory.loadFromJson("assets/entities/player.json", 200, 200);
         if (player != null) {
             engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
+            
+            // Create and fill inventory
+            InventoryComponent inv = new InventoryComponent();
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PISTOL));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SHOTGUN));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.MACHINE_GUN));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SNIPER_RIFLE));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PLASMA_GUN));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.ROCKET_LAUNCHER));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.LIGHTNING_GUN));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.RAIL_GUN));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.GRENADE));
+            
+            engine.getEntityManager().addComponent(player, inv);
+            // Ensure the starting weapon is the active one on the entity
+            engine.getEntityManager().addComponent(player, inv.getActiveWeapon());
         }
 
-        // Spawn zombies
         for (int i = 0; i < 5; i++) {
             float zx, zy;
             do {
@@ -107,7 +122,6 @@ public class PlayState extends GameState {
             entityFactory.loadFromJson("assets/entities/zombie.json", zx, zy);
         }
 
-        // Spawn obstacles
         for (int i = 0; i < 15; i++) {
             createCrate(MathUtils.random(300, 1200), MathUtils.random(300, 1200), true);
         }
