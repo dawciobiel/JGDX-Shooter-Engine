@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Manages sound effects and background music with automatic loading.
+ * Manages sound effects and background music with automatic loading and fallback support.
  */
 public class AudioService {
     private final Map<String, Sound> sounds = new HashMap<>();
@@ -24,15 +24,36 @@ public class AudioService {
         }
     }
 
+    public boolean isSoundLoaded(String path) {
+        return sounds.containsKey(path);
+    }
+
+    /**
+     * Plays a sound. If it's not loaded, it attempts to load it.
+     */
     public void playSound(String path, float volume) {
+        if (path == null) return;
+        
         Sound s = sounds.get(path);
-        if (s != null) {
-            s.play(volume);
-        } else {
-            // Auto-load if not loaded yet
+        if (s == null) {
             loadSound(path);
             s = sounds.get(path);
-            if (s != null) s.play(volume);
+        }
+        
+        if (s != null) {
+            s.play(volume);
+        }
+    }
+
+    /**
+     * Attempts to play a sound from the preferred path. 
+     * If it doesn't exist, plays from the fallback path.
+     */
+    public void playSoundWithFallback(String preferredPath, String fallbackPath, float volume) {
+        if (preferredPath != null && Gdx.files.internal(preferredPath).exists()) {
+            playSound(preferredPath, volume);
+        } else if (fallbackPath != null) {
+            playSound(fallbackPath, volume);
         }
     }
 

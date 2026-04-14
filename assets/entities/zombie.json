@@ -28,27 +28,27 @@
     "states": {
       "IDLE": {
         "type": "FILES",
-        "path": "assets/tds_zombie/skeleton-idle_",
+        "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_",
         "count": 16,
         "frameDuration": 0.05
       },
       "WALK": {
         "type": "FILES",
-        "path": "assets/tds_zombie/skeleton-move_",
+        "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-move_",
         "count": 16,
         "frameDuration": 0.05
       },
       "SHOOT": {
         "type": "FILES",
-        "path": "assets/tds_zombie/skeleton-attack_",
+        "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_",
         "count": 8,
         "frameDuration": 0.08
       }
     }
   },
   "sounds": {
-    "SHOOT": "assets/sfx/zombie_attack.wav",
-    "HIT": "assets/sfx/zombie_hit.wav",
-    "DIE": "assets/sfx/death.wav"
+    "SHOOT": "assets/audio/sfx/characters/zombies/skeleton/zombie_attack.wav",
+    "HIT": "assets/audio/sfx/characters/zombies/skeleton/zombie_hit.wav",
+    "DIE": "assets/audio/sfx/characters/zombies/skeleton/death.wav"
   }
 }

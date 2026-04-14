@@ -49,8 +49,8 @@ public class RenderSystem extends GameSystem {
     }
 
     private void initShaders() {
-        String vert = Gdx.files.internal("assets/shaders/lighting.vert").readString();
-        String frag = Gdx.files.internal("assets/shaders/lighting.frag").readString();
+        String vert = Gdx.files.internal("assets/graphics/shaders/lighting.vert").readString();
+        String frag = Gdx.files.internal("assets/graphics/shaders/lighting.frag").readString();
         this.lightingShader = new ShaderProgram(vert, frag);
         if (!lightingShader.isCompiled()) {
             Gdx.app.error("Shader", "Compilation failed: " + lightingShader.getLog());

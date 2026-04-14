@@ -8,6 +8,7 @@ import pl.shooter.engine.config.WeaponConfig;
  */
 public class WeaponComponent implements Component {
     public enum Type {
+        KNIFE,
         PISTOL,
         SHOTGUN,
         MACHINE_GUN,
@@ -25,6 +26,7 @@ public class WeaponComponent implements Component {
     public float projectileSpeed;
     public float spread;        
     public int projectilesPerShot = 1;
+    public float range = 50f; // Added for melee weapons like KNIFE
     
     // Ammo system
     public int currentAmmo = 0;      
@@ -66,7 +68,12 @@ public class WeaponComponent implements Component {
             wc.spread = 3f;
             wc.magazineSize = 10;
             wc.magazineAmmo = 10;
-            wc.hasInfiniteAmmo = (type == Type.PISTOL);
+            wc.hasInfiniteAmmo = (type == Type.PISTOL || type == Type.KNIFE);
+            if (type == Type.KNIFE) {
+                wc.projectileSpeed = 0; // Knife doesn't shoot projectiles in traditional sense
+                wc.fireRate = 0.3f;
+                wc.range = 40f;
+            }
         }
         return wc;
     }

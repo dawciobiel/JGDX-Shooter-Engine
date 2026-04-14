@@ -5,6 +5,7 @@
 - [x] **Rozbudowany System Broni** (9 typów broni, inwentarz, brak resetu amunicji)
 - [x] **Dynamiczna Zmiana Broni** (Klawisze 1-9, Q/E, konfigurowalne)
 - [x] **Obsługa Fullscreen i Ustawień Ekranu** (Wczytywanie szerokości, wysokości i trybu pełnoekranowego z plików konfiguracyjnych)
+- [ ] **Broń Melee: Nóż (Knife)** (Implementacja walki wręcz, krótkiego zasięgu i dedykowanej animacji)
 - [ ] **Różne typy przeciwników** (Szybsi biegacze, pancerni wrogowie)
 - [ ] **System Animacji Śmierci** (Wrogowie nie znikają natychmiast)
 - [ ] **System Drzwi i Przełączników** (Prosta interakcja ze światem)

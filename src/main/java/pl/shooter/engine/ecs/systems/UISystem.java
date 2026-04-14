@@ -2,11 +2,13 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
@@ -19,22 +21,31 @@ import java.util.List;
 
 /**
  * Handles the On-Screen Display (HUD).
- * Renders player health, score, kills, wave, and weapon info.
+ * Renders player health, score, kills, wave, and weapon info with icons.
  */
 public class UISystem extends GameSystem {
     private final SpriteBatch batch;
     private final ShapeRenderer shapeRenderer;
     private final BitmapFont font;
     private final Viewport viewport;
+    private final AssetService assetService;
     private boolean showFps = false;
 
+    private static final String WEAPON_ICONS_BASE = "assets/graphics/textures/weapons/";
+    private static final String DEFAULT_ICON = "assets/graphics/textures/weapons/default/icon.png";
+
     public UISystem(EntityManager entityManager) {
+        this(entityManager, new AssetService());
+    }
+
+    public UISystem(EntityManager entityManager, AssetService assetService) {
         super(entityManager);
         this.batch = new SpriteBatch();
         this.shapeRenderer = new ShapeRenderer();
         this.font = new BitmapFont();
         this.font.getData().setScale(1.1f);
         this.viewport = new FitViewport(800, 600);
+        this.assetService = assetService;
     }
 
     public void setShowFps(boolean show) { this.showFps = show; }
@@ -113,18 +124,46 @@ public class UISystem extends GameSystem {
         }
 
         if (weapon != null) {
-            font.setColor(Color.CYAN);
-            String ammoText = weapon.hasInfiniteAmmo ? weapon.magazineAmmo + " / INF" : weapon.magazineAmmo + " / " + weapon.currentAmmo;
-            
-            if (weapon.isReloading) {
-                font.setColor(Color.ORANGE);
-                font.draw(batch, "RELOADING...", 800 - 180, 600 - 20);
-            } else {
-                font.draw(batch, "WEAPON: " + weapon.type + " [" + ammoText + "]", 
-                         800 - 320, 600 - 20);
-            }
+            renderWeaponInfo(weapon);
         }
         batch.end();
+    }
+
+    private void renderWeaponInfo(WeaponComponent weapon) {
+        String typeName = weapon.type.name().toLowerCase();
+        
+        // Try to find the best matching icon
+        String iconPath = WEAPON_ICONS_BASE + typeName + "/" + typeName + ".png";
+        if (!Gdx.files.internal(iconPath).exists()) {
+             iconPath = DEFAULT_ICON;
+        }
+
+        Texture icon = assetService.getTexture(iconPath);
+        if (icon == null && Gdx.files.internal(iconPath).exists()) {
+            assetService.loadTexture(iconPath);
+            assetService.finishLoading(); // Synchronous loading for HUD icons
+            icon = assetService.getTexture(iconPath);
+        }
+
+        float iconX = 800 - 380; // Moved more to the left to fit text
+        float iconY = 600 - 55;
+        float iconSize = 48;
+
+        if (icon != null) {
+            batch.setColor(Color.WHITE);
+            batch.draw(icon, iconX, iconY, iconSize, iconSize);
+        }
+
+        font.setColor(Color.CYAN);
+        String ammoText = weapon.hasInfiniteAmmo ? weapon.magazineAmmo + " / INF" : weapon.magazineAmmo + " / " + weapon.currentAmmo;
+        
+        if (weapon.isReloading) {
+            font.setColor(Color.ORANGE);
+            font.draw(batch, "RELOADING...", 800 - 180, 600 - 20);
+        } else {
+            font.draw(batch, "WEAPON: " + weapon.type + " [" + ammoText + "]", 
+                     iconX + iconSize + 10, 600 - 20);
+        }
     }
 
     private void renderFps() {

@@ -26,14 +26,14 @@
     "states": {
       "WALK": {
         "type": "SHEET",
-        "path": "assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png",
+        "path": "assets/graphics/textures/characters/soldier/walk.png",
         "rows": 1,
         "cols": 4,
         "frameDuration": 0.1
       },
       "IDLE": {
         "type": "SHEET",
-        "path": "assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png",
+        "path": "assets/graphics/textures/characters/soldier/walk.png",
         "rows": 1,
         "cols": 4,
         "frameDuration": 0.1
@@ -41,10 +41,10 @@
     }
   },
   "sounds": {
-    "SHOOT": "assets/sfx/shotgun.wav",
-    "HIT": "assets/sfx/hit.wav",
-    "DIE": "assets/sfx/death.wav",
-    "EMPTY_CLICK": "assets/sfx/empty_click.wav",
-    "PICKUP": "assets/sfx/pickup.wav"
+    "SHOOT": "assets/audio/sfx/weapons/shotgun/shotgun.wav",
+    "HIT": "assets/audio/sfx/characters/soldier/hit.wav",
+    "DIE": "assets/audio/sfx/characters/soldier/death.wav",
+    "EMPTY_CLICK": "assets/audio/sfx/weapons/default/empty.wav",
+    "PICKUP": "assets/audio/sfx/weapons/default/pickup.wav"
   }
 }

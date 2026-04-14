@@ -2,6 +2,7 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.WeaponConfig;
 import pl.shooter.engine.ecs.Entity;
@@ -13,9 +14,13 @@ import pl.shooter.engine.events.BulletFiredEvent;
 import pl.shooter.engine.events.EmptyWeaponEvent;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
+import pl.shooter.events.HitEvent;
+
+import java.util.List;
 
 /**
  * Handles combat logic, including weapon types, firing patterns, ammo consumption, and reloading.
+ * Now supports melee attacks for weapons like KNIFE.
  */
 public class CombatSystem extends GameSystem {
     private final EventBus eventBus;
@@ -66,6 +71,13 @@ public class CombatSystem extends GameSystem {
 
         if (totalTime - weapon.lastShotTime < weapon.fireRate) return;
 
+        // Melee check
+        if (weapon.type == WeaponComponent.Type.KNIFE) {
+            handleMeleeAttack(shooter, shooterTransform, weapon, event.targetX, event.targetY);
+            weapon.lastShotTime = totalTime;
+            return;
+        }
+
         if (weapon.magazineSize > 0 && weapon.magazineAmmo <= 0) {
             if (weapon.currentAmmo <= 0 && !weapon.hasInfiniteAmmo) {
                 eventBus.publish(new EmptyWeaponEvent(shooter));
@@ -103,6 +115,35 @@ public class CombatSystem extends GameSystem {
                 finalAngle += MathUtils.random(-weapon.spread, weapon.spread);
             }
             spawnProjectile(shooterTransform.x, shooterTransform.y, finalAngle, weapon, shooter.getId(), projData);
+        }
+    }
+
+    private void handleMeleeAttack(Entity shooter, TransformComponent t, WeaponComponent weapon, float targetX, float targetY) {
+        eventBus.publish(new BulletFiredEvent(shooter)); // Triggers attack sound
+
+        float angle = MathUtils.atan2(targetY - t.y, targetX - t.x) * MathUtils.radiansToDegrees;
+        float cos = MathUtils.cosDeg(angle);
+        float sin = MathUtils.sinDeg(angle);
+        
+        // Find entities in front of the shooter
+        List<Entity> targets = entityManager.getEntitiesWithComponents(TransformComponent.class, HealthComponent.class, ColliderComponent.class);
+        for (Entity victim : targets) {
+            if (victim.getId() == shooter.getId()) continue;
+            
+            TransformComponent vt = entityManager.getComponent(victim, TransformComponent.class);
+            ColliderComponent vc = entityManager.getComponent(victim, ColliderComponent.class);
+            
+            float dx = vt.x - t.x;
+            float dy = vt.y - t.y;
+            float dist = (float) Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist <= weapon.range + vc.radius) {
+                // Check if target is roughly in the direction of attack (within ~90 degrees arc)
+                float dot = (dx/dist) * cos + (dy/dist) * sin;
+                if (dot > 0.7f) { // ~45 degrees each side
+                    eventBus.publish(new HitEvent(victim, shooter.getId(), 15)); // Corrected HitEvent constructor usage
+                }
+            }
         }
     }
 

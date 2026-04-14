@@ -48,17 +48,16 @@ public class PlayState extends GameState {
     }
 
     private void init() {
-        assetService.loadTexture("assets/2dpixx_-_free_2d_topdown_shooter_pack/2DPIXX - Free Topdown Shooter - Soldier - Walk.png");
+        assetService.loadTexture("assets/graphics/textures/characters/soldier/walk.png");
         for (int i = 0; i <= 16; i++) {
-            assetService.loadTexture("assets/tds_zombie/skeleton-idle_" + i + ".png");
-            assetService.loadTexture("assets/tds_zombie/skeleton-move_" + i + ".png");
+            assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_" + i + ".png");
+            assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-move_" + i + ".png");
         }
-        for (int i = 0; i <= 8; i++) assetService.loadTexture("assets/tds_zombie/skeleton-attack_" + i + ".png");
+        for (int i = 0; i <= 8; i++) assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_" + i + ".png");
         assetService.finishLoading();
 
-        audioService.loadSound("assets/sfx/shotgun.wav");
-        audioService.loadSound("assets/sfx/hit.wav");
-        audioService.loadSound("assets/sfx/shoot.wav");
+        audioService.loadSound("assets/audio/sfx/characters/soldier/hit.wav");
+        audioService.loadSound("assets/audio/sfx/characters/soldier/death.wav");
 
         GameConfig config = configService.getConfig();
         WeaponConfig weaponConfig = configService.getWeaponConfig();
@@ -73,7 +72,7 @@ public class PlayState extends GameState {
         lightSystem.setAmbientColor(config.graphics.ambientRed, config.graphics.ambientGreen, config.graphics.ambientBlue, config.graphics.ambientBrightness);
         renderSystem.setLightSystem(lightSystem);
 
-        UISystem uiSystem = new UISystem(engine.getEntityManager());
+        UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
         uiSystem.setShowFps(config.debug.showFps);
 
         engine.addSystem(new InputSystem(engine.getEntityManager(), engine.getEventBus(), renderSystem.getCamera()));
@@ -100,6 +99,7 @@ public class PlayState extends GameState {
             
             // Create and fill inventory
             InventoryComponent inv = new InventoryComponent();
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.KNIFE, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PISTOL, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SHOTGUN, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.MACHINE_GUN, weaponConfig));

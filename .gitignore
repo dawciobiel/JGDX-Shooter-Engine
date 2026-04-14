@@ -20,5 +20,8 @@ bin/
 .DS_Store
 Thumbs.db
 
+# logs
+*.log
+
 # Keep Gradle wrapper JAR
 !gradle/wrapper/gradle-wrapper.jar
