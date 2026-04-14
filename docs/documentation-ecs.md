@@ -21,38 +21,44 @@ Główna klasa zarządzająca cyklem życia gry.
     - `HealthComponent`: Statystyki żywotności.
     - `RenderComponent`: Dane o wyglądzie (kolor, rozmiar).
     - `TextureComponent`: Ścieżka do grafiki PNG.
-    - `AIComponent`: Definicja zachowania bota (CHASE, STATIONARY).
-    - `WeaponComponent`: Parametry ataku i typy broni (PISTOL, SHOTGUN, MACHINE_GUN).
-    - `ProjectileComponent`: Cykl życia pocisku.
-    - `ParticleComponent`: Efekty wizualne (fading/scaling).
+    - `AIComponent`: Definicja zachowania bota z parametrami taktycznymi.
+    - `WeaponComponent`: Parametry ataku i typy broni.
+    - `ProjectileComponent`: Cykl życia pocisku i ID właściciela.
+    - `ParticleComponent`: Efekty wizualne (zanikanie).
     - `ScoreComponent`: Wynik punktowy gracza.
+    - `SteeringComponent`: Integracja z `gdx-ai`.
+    - `DestructibleComponent`: Obiekt możliwy do zniszczenia (skrzynie, krzaki).
+    - `ObstacleComponent`: Encja blokująca ruch i ścieżki AI.
 
 ### Systemy (`pl.shooter.engine.ecs.systems`)
 Kolejność wywołań w pętli gry:
-1. `InputSystem`: Czyta WASD, przelicza pozycję myszy na świat (unproject) i publikuje `ShootEvent`.
-2. `AISystem`: Steruje wrogami (pogoń za graczem, automatyczny strzał).
-3. `CombatSystem`: Reaguje na `ShootEvent`, sprawdza cooldown i tworzy encje pocisków.
-4. `ProjectileSystem`: Odpowiada za czas życia pocisków.
-5. `ParticleUpdateSystem`: Animuje (zanikanie) i usuwa cząsteczki.
-6. `MovementSystem`: Fizyka ruchu (poz = poz + vel * dt).
-7. `MapSystem`: Pilnuje, aby obiekty nie opuszczały granic mapy.
-8. `CollisionSystem`: Wykrywa kolizje kołowe, publikuje `HitEvent`.
-9. `DamageSystem`: Reaguje na `HitEvent` (odejmowanie HP, śmierć, spawn efektów cząsteczkowych).
-10. `RenderSystem`: Kamera śledząca gracza, rysowanie mapy i wszystkich obiektów (prymitywy lub tekstury).
-11. `UISystem`: Wyświetla HUD (HP, Wynik) na stałej pozycji ekranu.
+1. `InputSystem`: Sterowanie graczem i celowanie.
+2. `PathfindingSystem`: Dynamiczne wyznaczanie ścieżek A*.
+3. `AISystem`: Decyzje przeciwników.
+4. `SteeringSystem`: Kinematyczny ruch na podstawie decyzji AI.
+5. `CombatSystem`: Zarządzanie bronią i efektami strzału (łuski).
+6. `ProjectileSystem`: Czas życia pocisków.
+7. `ParticleUpdateSystem`: Animacja cząsteczek.
+8. `MovementSystem`: Fizyka ruchu z logiką kolizji z mapą i wyślizgiwania się.
+9. `MapSystem`: Granice mapy.
+10. `CollisionSystem`: Wykrywanie trafień i kolizji.
+11. `DamageSystem`: HP, efekty krwi i drzazg, scoring bez friendly-fire.
+12. `RenderSystem`: Rysowanie świata i debugowanie ścieżek.
+13. `UISystem`: HUD.
 
-## 3. Komunikacja (EventBus)
-Systemy komunikują się asynchronicznie.
-- `ShootEvent`: Publikowany przez `InputSystem` lub `AISystem`.
-- `HitEvent`: Publikowany przez `CollisionSystem`.
-- `ScoreEvent`: Publikowany przez `DamageSystem` po eliminacji wroga.
+## 3. Zaawansowane Funkcje
+
+### Dynamiczne Przeszkody
+Silnik wspiera zniszczalne obiekty, które blokują ruch.
+- `DestructibleComponent` pozwala na niszczenie elementów otoczenia.
+- Jeśli obiekt posiada `ObstacleComponent`, `NavigationGraph` automatycznie usuwa te kafelki z dostępnych ścieżek AI. Po zniszczeniu obiektu, ścieżki są przeliczane ponownie.
+
+### System Walki i Friendly Fire
+- Pociski posiadają `ownerId`, co pozwala rozróżnić kto oddał strzał.
+- `DamageSystem` zapobiega ranieniu sojuszników (np. zombie przez zombie).
+- Pociski przelatują przez sojuszników bez ich ranienia i bez znikania, co pozwala na walkę w grupie.
 
 ## 4. Zasoby i Dane (Data-Driven)
 Encje są definiowane w plikach JSON w folderze `assets/entities/`.
-- `EntityFactory.loadFromJson("assets/entities/zombie.json", x, y)`: Automatycznie tworzy encję i przypisuje jej komponenty na podstawie kluczy (aliasów) zdefiniowanych w JSON.
-- **Aliasy:** Zamiast pełnych nazw klas, w JSON używamy skrótów: `Transform`, `Render`, `Health`, `AI`, `Weapon`, `Velocity`, `Collider`.
-
-## 5. System Mapy
-- **GameMap / StaticMap**: Definiuje świat gry.
-- **ProceduralMap**: System oparty na chunkach (wycinkach 16x16), generujący świat w czasie rzeczywistym.
-- **MapSystem**: Zapewnia, że obiekty pozostają wewnątrz granic `GameMap`.
+- `EntityFactory.loadFromJson("assets/entities/zombie.json", x, y)`: Tworzy encję na podstawie definicji JSON.
+- **Aliasy:** `Transform`, `Render`, `Health`, `AI`, `Weapon`, `Velocity`, `Collider`, `Score`.

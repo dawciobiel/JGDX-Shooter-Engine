@@ -11,6 +11,7 @@ import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.AIComponent;
+import pl.shooter.engine.ecs.components.DestructibleComponent;
 import pl.shooter.engine.ecs.components.PlayerComponent;
 import pl.shooter.engine.ecs.components.TransformComponent;
 import pl.shooter.engine.world.GameMap;
@@ -21,7 +22,8 @@ public class PathfindingSystem extends GameSystem {
     private final NavigationGraph graph;
     private IndexedAStarPathFinder<Node> pathFinder;
     private final DistanceHeuristic heuristic;
-    private boolean graphInitialized = false;
+    private float graphRefreshTimer = 0;
+    private int lastObstacleCount = -1;
 
     public PathfindingSystem(EntityManager entityManager, GameMap map) {
         super(entityManager);
@@ -37,13 +39,17 @@ public class PathfindingSystem extends GameSystem {
         Entity player = players.get(0);
         TransformComponent playerTrans = entityManager.getComponent(player, TransformComponent.class);
 
-        // INITIALIZE GRAPH ONCE (or when map changes)
-        // Building around (800, 800) to cover the whole testing map area reliably
-        if (!graphInitialized) {
-            graph.update(800, 800); 
-            this.pathFinder = new IndexedAStarPathFinder<>(graph);
-            this.graphInitialized = true;
-            Gdx.app.log("PathfindingSystem", "Graph initialized with " + graph.getNodeCount() + " nodes.");
+        // Periodically check if we need to refresh the graph (e.g. if a crate was destroyed)
+        graphRefreshTimer += deltaTime;
+        if (graphRefreshTimer > 1.0f) {
+            int currentObstacles = entityManager.getEntitiesWithComponents(DestructibleComponent.class).size();
+            if (currentObstacles != lastObstacleCount) {
+                graph.update(800, 800, entityManager);
+                this.pathFinder = new IndexedAStarPathFinder<>(graph);
+                this.lastObstacleCount = currentObstacles;
+                Gdx.app.log("PathfindingSystem", "Graph refreshed due to obstacle change.");
+            }
+            graphRefreshTimer = 0;
         }
 
         if (pathFinder == null || graph.getNodeCount() == 0) return;
@@ -77,14 +83,9 @@ public class PathfindingSystem extends GameSystem {
                     for (int i = 0; i < tempPath.getCount(); i++) {
                         ai.currentPath.add(tempPath.get(i));
                     }
-                    // ONLY reset index if the path is significantly different or index was invalid
-                    if (ai.currentPathIndex >= ai.currentPath.getCount()) {
-                        ai.currentPathIndex = 1;
-                    }
+                    if (ai.currentPathIndex >= ai.currentPath.getCount()) ai.currentPathIndex = 1;
                 }
-            } catch (Exception e) {
-                Gdx.app.error("Pathfinding", "A* Search Error: " + e.getMessage());
-            }
+            } catch (Exception e) {}
         }
     }
 }

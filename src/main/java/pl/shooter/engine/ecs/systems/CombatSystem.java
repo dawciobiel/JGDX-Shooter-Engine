@@ -3,6 +3,7 @@ package pl.shooter.engine.ecs.systems;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
 import pl.shooter.engine.ecs.Entity;
+import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
@@ -16,11 +17,13 @@ import pl.shooter.engine.events.ShootEvent;
  */
 public class CombatSystem extends GameSystem {
     private final EventBus eventBus;
+    private final EntityFactory entityFactory;
     private float totalTime = 0;
 
-    public CombatSystem(EntityManager entityManager, EventBus eventBus) {
+    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory) {
         super(entityManager);
         this.eventBus = eventBus;
+        this.entityFactory = entityFactory;
         eventBus.subscribe(ShootEvent.class, this::handleShoot);
     }
 
@@ -61,7 +64,7 @@ public class CombatSystem extends GameSystem {
         if (weapon.magazineSize > 0 && weapon.magazineAmmo <= 0) {
             if (weapon.currentAmmo <= 0 && !weapon.hasInfiniteAmmo) {
                 eventBus.publish(new EmptyWeaponEvent(shooter));
-                weapon.lastShotTime = totalTime; // Anti-spam for click sound
+                weapon.lastShotTime = totalTime; 
             } else {
                 startReload(weapon);
             }
@@ -77,8 +80,12 @@ public class CombatSystem extends GameSystem {
         // Trigger successful shot sound/effects
         eventBus.publish(new BulletFiredEvent(shooter));
 
-        // BACK TO STANDARD CALCULATIONS
         float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
+
+        // Shell ejection effect
+        if (entityFactory != null) {
+            entityFactory.createShellEjection(shooterTransform.x, shooterTransform.y, baseAngle);
+        }
 
         for (int i = 0; i < weapon.projectilesPerShot; i++) {
             float finalAngle = baseAngle;

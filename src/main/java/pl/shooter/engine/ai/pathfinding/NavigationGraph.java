@@ -3,17 +3,21 @@ package pl.shooter.engine.ai.pathfinding;
 import com.badlogic.gdx.ai.pfa.Connection;
 import com.badlogic.gdx.ai.pfa.indexed.IndexedGraph;
 import com.badlogic.gdx.utils.Array;
+import pl.shooter.engine.ecs.Entity;
+import pl.shooter.engine.ecs.EntityManager;
+import pl.shooter.engine.ecs.components.DestructibleComponent;
+import pl.shooter.engine.ecs.components.ObstacleComponent;
+import pl.shooter.engine.ecs.components.TransformComponent;
 import pl.shooter.engine.world.GameMap;
-import pl.shooter.engine.world.TestingMap;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class NavigationGraph implements IndexedGraph<Node> {
     private final GameMap map;
     private final Array<Node> nodes;
     private final Map<String, Node> nodeMap;
-    // Massive range to cover the whole testing area (50x50 tiles = 1600px)
     private final int range = 100; 
 
     public NavigationGraph(GameMap map) {
@@ -22,19 +26,37 @@ public class NavigationGraph implements IndexedGraph<Node> {
         this.nodeMap = new HashMap<>();
     }
 
-    public void update(float centerX, float centerY) {
+    public void update(float centerX, float centerY, EntityManager entityManager) {
         nodes.clear();
         nodeMap.clear();
 
         int gridCenterX = (int) Math.floor(centerX / 32);
         int gridCenterY = (int) Math.floor(centerY / 32);
 
+        // Pre-cache obstacles positions for performance
+        Map<String, Boolean> obstacleTiles = new HashMap<>();
+        if (entityManager != null) {
+            List<Entity> obstacles = entityManager.getEntitiesWithComponents(TransformComponent.class);
+            for (Entity e : obstacles) {
+                boolean blocks = entityManager.hasComponent(e, ObstacleComponent.class);
+                if (!blocks && entityManager.hasComponent(e, DestructibleComponent.class)) {
+                    blocks = entityManager.getComponent(e, DestructibleComponent.class).blocksMovement;
+                }
+                
+                if (blocks) {
+                    TransformComponent t = entityManager.getComponent(e, TransformComponent.class);
+                    int gx = (int) Math.floor(t.x / 32);
+                    int gy = (int) Math.floor(t.y / 32);
+                    obstacleTiles.put(gx + "," + gy, true);
+                }
+            }
+        }
+
         int index = 0;
-        // Search from grid coords -range to +range relative to center
         for (int x = gridCenterX - range; x <= gridCenterX + range; x++) {
             for (int y = gridCenterY - range; y <= gridCenterY + range; y++) {
-                // Bounds check against map if possible, but testing map is small anyway
-                if (map.isWalkable(x * 32 + 16, y * 32 + 16)) {
+                // Check map and entity obstacles
+                if (map.isWalkable(x * 32 + 16, y * 32 + 16) && !obstacleTiles.containsKey(x + "," + y)) {
                     Node node = new Node(x, y, index++);
                     nodes.add(node);
                     nodeMap.put(x + "," + y, node);
@@ -74,7 +96,6 @@ public class NavigationGraph implements IndexedGraph<Node> {
         int gx = (int) Math.floor(worldX / 32);
         int gy = (int) Math.floor(worldY / 32);
         
-        // Search slightly wider if exact tile is not a node (e.g. wall or outside range)
         for (int r = 0; r <= 3; r++) {
             for (int dx = -r; dx <= r; dx++) {
                 for (int dy = -r; dy <= r; dy++) {

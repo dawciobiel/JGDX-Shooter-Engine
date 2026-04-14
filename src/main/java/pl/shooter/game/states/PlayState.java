@@ -11,8 +11,8 @@ import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
-import pl.shooter.engine.ecs.components.LightComponent;
-import pl.shooter.engine.ecs.components.PlayerComponent;
+import pl.shooter.engine.ecs.EntityManager;
+import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.ecs.systems.*;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
@@ -64,7 +64,7 @@ public class PlayState extends GameState {
         
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
         renderSystem.setMap(map);
-        renderSystem.setShowDebugPaths(config.debug.showPaths); // Apply config
+        renderSystem.setShowDebugPaths(config.debug.showPaths);
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager());
         lightSystem.setAmbientColor(config.graphics.ambientRed, config.graphics.ambientGreen, config.graphics.ambientBlue, config.graphics.ambientBrightness);
@@ -74,7 +74,7 @@ public class PlayState extends GameState {
         engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new AISystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new SteeringSystem(engine.getEntityManager())); 
-        engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus()));
+        engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new ProjectileSystem(engine.getEntityManager()));
         engine.addSystem(new ParticleUpdateSystem(engine.getEntityManager()));
         engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
@@ -93,7 +93,7 @@ public class PlayState extends GameState {
             engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
         }
 
-        // Initial zombies
+        // Spawn 5 initial zombies
         for (int i = 0; i < 5; i++) {
             float zx, zy;
             do {
@@ -101,6 +101,31 @@ public class PlayState extends GameState {
                 zy = MathUtils.random(100, 1400);
             } while (!map.isWalkable(zx, zy));
             entityFactory.loadFromJson("assets/entities/zombie.json", zx, zy);
+        }
+
+        // Spawn HEAVY OBSTACLES (crates - block movement)
+        for (int i = 0; i < 15; i++) {
+            createCrate(MathUtils.random(300, 1200), MathUtils.random(300, 1200), true);
+        }
+
+        // Spawn LIGHT OBSTACLES (bushes - don't block movement)
+        for (int i = 0; i < 10; i++) {
+            createCrate(MathUtils.random(300, 1200), MathUtils.random(300, 1200), false);
+        }
+    }
+
+    private void createCrate(float x, float y, boolean blocks) {
+        Entity crate = engine.getEntityManager().createEntity();
+        engine.getEntityManager().addComponent(crate, new TransformComponent(x, y));
+        
+        Color color = blocks ? new Color(0.6f, 0.4f, 0.2f, 1f) : new Color(0.2f, 0.6f, 0.2f, 1f);
+        engine.getEntityManager().addComponent(crate, new RenderComponent(color, 16f, false));
+        engine.getEntityManager().addComponent(crate, new ColliderComponent(16f));
+        engine.getEntityManager().addComponent(crate, new HealthComponent(30f, 30f));
+        engine.getEntityManager().addComponent(crate, new DestructibleComponent(blocks));
+        
+        if (blocks) {
+            engine.getEntityManager().addComponent(crate, new ObstacleComponent());
         }
     }
 

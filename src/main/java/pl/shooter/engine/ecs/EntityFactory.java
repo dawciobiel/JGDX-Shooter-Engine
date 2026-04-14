@@ -140,6 +140,21 @@ public class EntityFactory {
         }
     }
 
+    public void createShellEjection(float x, float y, float angle) {
+        Entity shell = entityManager.createEntity();
+        entityManager.addComponent(shell, new TransformComponent(x, y, angle));
+        
+        // Eject shell to the side (relative to firing angle)
+        float ejectAngle = angle - 90 + (random.nextFloat() - 0.5f) * 30f;
+        float speed = 100f + random.nextFloat() * 50f;
+        float vx = (float)Math.cos(Math.toRadians(ejectAngle)) * speed;
+        float vy = (float)Math.sin(Math.toRadians(ejectAngle)) * speed;
+        
+        entityManager.addComponent(shell, new VelocityComponent(vx, vy));
+        entityManager.addComponent(shell, new RenderComponent(Color.GOLD, 1.5f, false)); // Small rectangle
+        entityManager.addComponent(shell, new ParticleComponent(0.5f, 0.8f)); // Short life
+    }
+
     public Entity createAmmoPickup(float x, float y, int amount) {
         Entity pickup = entityManager.createEntity();
         entityManager.addComponent(pickup, new TransformComponent(x, y));
