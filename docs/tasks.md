@@ -1,13 +1,15 @@
 # Lista zadań - Silnik Gry Shooter (Architektura ECS)
 
 ## Etap 9: Szlify i Rozwój (W TRAKCIE)
-- [x] **Orientacja wyświetlanej grafiki** (Czy pliki textur są odpowiedino wyświetlane? Wydaje mi się, że są one "odbite w lustrze" i/lub obrócone o 45 stopni)
+- [x] **Refaktoryzacja struktury assets** (Podział na audio/sfx, graphics/textures, shaders)
+- [x] **System Fallback dla zasobów** (Automatyczne ładowanie domyślnych dźwięków i ikon broni)
+- [x] **Broń Melee: Nóż (Knife)** (Implementacja walki wręcz, zasięgu ataku i ikony w HUD)
+- [x] **Orientacja wyświetlanej grafiki** (Poprawne wyświetlanie tekstur postaci i broni)
 - [x] **Rozbudowany System Broni** (9 typów broni, inwentarz, brak resetu amunicji)
 - [x] **Dynamiczna Zmiana Broni** (Klawisze 1-9, Q/E, konfigurowalne)
 - [x] **Obsługa Fullscreen i Ustawień Ekranu** (Wczytywanie szerokości, wysokości i trybu pełnoekranowego z plików konfiguracyjnych)
-- [ ] **Broń Melee: Nóż (Knife)** (Implementacja walki wręcz, krótkiego zasięgu i dedykowanej animacji)
-- [ ] **Różne typy przeciwników** (Szybsi biegacze, pancerni wrogowie)
 - [ ] **System Animacji Śmierci** (Wrogowie nie znikają natychmiast)
+- [ ] **Różne typy przeciwników** (Szybsi biegacze, pancerni wrogowie)
 - [ ] **System Drzwi i Przełączników** (Prosta interakcja ze światem)
 - [x] **Wyświetlanie HitBox** (W konfigu gry jest opcja "showHitboxes")
 - [x] **Wyświetlanie FPS** (W konfigu gry jest opcja "showFps")
@@ -27,7 +29,7 @@
 - [x] Paski zdrowia (Health Bars) nad głowami encji i w HUD
 - [x] System ładowania Assetów (`AssetService` i `AudioService`)
 - [x] **Menu główne i stany gry** (Scene2D buttons, Game Over, Restart)
-- [x] **UI/HUD** (Licznik punktów, Kills, Wave, Ammo, Reload Bar)
+- [x] **UI/HUD** (Licznik punktów, Kills, Wave, Ammo, Reload Bar, Ikony broni)
 - [x] **System Animacji** (Dynamiczny, Data-Driven, Sprite Sheets & Files)
 - [x] **Dźwięki** (Integracja audio z walką, amunicją i śmiercią)
 

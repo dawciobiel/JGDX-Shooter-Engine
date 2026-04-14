@@ -22,7 +22,7 @@ Główna klasa zarządzająca cyklem życia gry.
     - `RenderComponent`: Dane o wyglądzie (kolor, rozmiar).
     - `TextureComponent`: Ścieżka do grafiki PNG.
     - `AIComponent`: Definicja zachowania bota z parametrami taktycznymi.
-    - `WeaponComponent`: Parametry ataku, typy broni i system amunicji.
+    - `WeaponComponent`: Parametry ataku, typy broni, system amunicji oraz **zasięg walki wręcz (`range`)**.
     - `ProjectileComponent`: Cykl życia pocisku, obrażenia i specjalne zachowania (Explosive/Piercing).
     - `ParticleComponent`: Efekty wizualne (zanikanie).
     - `ScoreComponent`: Wynik punktowy gracza.
@@ -37,37 +37,32 @@ Kolejność wywołań w pętli gry:
 2. `PathfindingSystem`: Dynamiczne wyznaczanie ścieżek A*.
 3. `AISystem`: Decyzje przeciwników.
 4. `SteeringSystem`: Kinematyczny ruch na podstawie decyzji AI.
-5. `CombatSystem`: Zarządzanie bronią, przeładowaniem i wczytywaniem parametrów z `weapons.json`.
+5. **`CombatSystem`**: Zarządzanie bronią palną i **walką wręcz (Melee)**. Obsługuje przeładowanie i wczytywanie parametrów z `weapons.json`.
 6. `ProjectileSystem`: Czas życia pocisków.
 7. `ParticleUpdateSystem`: Animacja cząsteczek.
 8. `MovementSystem`: Fizyka ruchu z logiką kolizji z mapą.
 9. `MapSystem`: Granice mapy.
 10. `CollisionSystem`: Wykrywanie trafień, kolizji obszarowych (wybuchy) oraz podnoszenia przedmiotów (pickups).
 11. `DamageSystem`: HP, efekty krwi, scoring i logika Friendly Fire.
-12. `RenderSystem`: Rysowanie świata z korektą orientacji grafik i cieniowaniem (FBO).
-13. `UISystem`: HUD.
+12. `RenderSystem`: Rysowanie świata z korektą orientacji grafik i cieniowaniem (FBO) przy użyciu shaderów.
+13. **`UISystem`**: HUD (Paski zdrowia, punkty, wave, **ikony broni**).
 
 ## 3. Zaawansowane Funkcje
 
-### System Broni (Data-Driven)
+### System Broni i Melee
 Parametry wszystkich broni są zdefiniowane w pliku `assets/config/weapons.json`.
-- Pozwala na konfigurację obrażeń, szybkostrzelności, rozrzutu i zachowania pocisku.
-- **Specjalne zachowania pocisków:**
-    - `NORMAL`: Standardowy pocisk znikający po trafieniu.
-    - `EXPLOSIVE`: Zadaje obrażenia obszarowe w zadanym promieniu (np. Rakieta).
-    - `PIERCING`: Przebija wrogów i leci dalej, aż trafi w ścianę (np. RailGun).
+- **System Fallback:** Silnik automatycznie szuka dźwięków i ikon w dedykowanych folderach broni. Jeśli ich nie znajdzie, używa zasobów z folderu `assets/audio/sfx/weapons/default/`.
+- **Walka Wręcz (Melee):** Bronie typu `KNIFE` nie generują pocisków. `CombatSystem` sprawdza obecność wrogów w zasięgu `range` i w kącie ~90 stopni przed atakującym.
 
-### Dynamiczne Przeszkody
-Silnik wspiera zniszczalne obiekty, które blokują ruch.
-- `DestructibleComponent` pozwala na niszczenie elementów otoczenia.
-- Jeśli obiekt posiada `ObstacleComponent`, `NavigationGraph` automatycznie usuwa te kafelki z dostępnych ścieżek AI. Po zniszczeniu obiektu, ścieżki są przeliczane ponownie.
-
-### System Walki i Friendly Fire
-- Pociski posiadają `ownerId`, co pozwala rozróżnić kto oddał strzał.
-- `DamageSystem` zapobiega ranieniu sojuszników (np. zombie przez zombie).
-- Pociski przelatują przez sojuszników bez ich ranienia i bez znikania, co pozwala na walkę w grupie.
+### System Ładowania Zasobów (Asset Pipeline)
+- **AudioService:** Zarządza dźwiękami z mechanizmem fallback.
+- **AssetService:** Wykorzystuje `AssetManager` do asynchronicznego ładowania tekstur.
 
 ## 4. Zasoby i Dane (Data-Driven)
+- **Struktura Katalogów:**
+    - `assets/audio/sfx/`: Efekty dźwiękowe (characters, weapons, ui).
+    - `assets/graphics/textures/`: Tekstury postaci, broni, UI.
+    - `assets/graphics/shaders/`: Pliki `.vert` i `.frag`.
 - **Encje:** Definiowane w `assets/entities/`.
 - **Bronie:** Definiowane w `assets/config/weapons.json`.
 - **Konfiguracja Silnika:** `assets/config/default_config.json` oraz `user_config.json`.
