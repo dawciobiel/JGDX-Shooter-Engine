@@ -4,14 +4,16 @@ import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.events.Event;
 
 /**
- * Triggered when two colliders overlap.
+ * Triggered when a target is hit, either by a projectile or an explosion.
  */
 public class HitEvent implements Event {
-    public final Entity attacker; // e.g. the projectile
-    public final Entity victim;   // e.g. the enemy
+    public final Entity victim;
+    public final int attackerId;
+    public final int damage;
 
-    public HitEvent(Entity attacker, Entity victim) {
-        this.attacker = attacker;
+    public HitEvent(Entity victim, int attackerId, int damage) {
         this.victim = victim;
+        this.attackerId = attackerId;
+        this.damage = damage;
     }
 }

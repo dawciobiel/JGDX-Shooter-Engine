@@ -1,6 +1,7 @@
 package pl.shooter.engine.ecs.components;
 
 import pl.shooter.engine.ecs.Component;
+import pl.shooter.engine.config.WeaponConfig;
 
 /**
  * Stores weapon data, supporting firing patterns, ammo, and reloading.
@@ -38,43 +39,35 @@ public class WeaponComponent implements Component {
     public boolean isReloading = false;
 
     public WeaponComponent() {}
-    public WeaponComponent(Type type, float fireRate, float projectileSpeed, float spread, int projectilesPerShot, int totalAmmo, int magSize, float reloadTime) {
-        this.type = type;
-        this.fireRate = fireRate;
-        this.projectileSpeed = projectileSpeed;
-        this.spread = spread;
-        this.projectilesPerShot = projectilesPerShot;
-        
-        this.maxAmmo = totalAmmo;
-        this.currentAmmo = totalAmmo;
-        this.magazineSize = magSize;
-        this.magazineAmmo = magSize;
-        this.reloadTime = reloadTime;
 
-        this.lastShotTime = 0;
-        this.hasInfiniteAmmo = (type == Type.PISTOL);
+    public void applyConfig(WeaponConfig.WeaponData data) {
+        if (data == null) return;
+        this.fireRate = data.fireRate;
+        this.projectileSpeed = data.projectileSpeed;
+        this.spread = data.spread;
+        this.projectilesPerShot = data.projectilesPerShot;
+        this.maxAmmo = data.maxAmmo;
+        this.currentAmmo = data.maxAmmo;
+        this.magazineSize = data.magazineSize;
+        this.magazineAmmo = data.magazineSize;
+        this.reloadTime = data.reloadTime;
+        this.hasInfiniteAmmo = data.hasInfiniteAmmo;
     }
 
-    public static WeaponComponent create(Type type) {
-        switch (type) {
-            case SHOTGUN:
-                return new WeaponComponent(Type.SHOTGUN, 0.8f, 400f, 15f, 6, 40, 2, 2.5f);
-            case MACHINE_GUN:
-                return new WeaponComponent(Type.MACHINE_GUN, 0.1f, 500f, 5f, 1, 200, 30, 2.0f);
-            case SNIPER_RIFLE:
-                return new WeaponComponent(Type.SNIPER_RIFLE, 1.5f, 1200f, 0f, 1, 20, 5, 3.5f);
-            case PLASMA_GUN:
-                return new WeaponComponent(Type.PLASMA_GUN, 0.3f, 350f, 2f, 1, 60, 15, 1.8f);
-            case ROCKET_LAUNCHER:
-                return new WeaponComponent(Type.ROCKET_LAUNCHER, 1.2f, 300f, 2f, 1, 10, 1, 3.0f);
-            case LIGHTNING_GUN:
-                return new WeaponComponent(Type.LIGHTNING_GUN, 0.05f, 800f, 1f, 1, 100, 100, 4.0f);
-            case RAIL_GUN:
-                return new WeaponComponent(Type.RAIL_GUN, 2.0f, 2000f, 0f, 1, 10, 1, 4.0f);
-            case GRENADE:
-                return new WeaponComponent(Type.GRENADE, 1.0f, 250f, 10f, 1, 15, 1, 2.0f);
-            default:
-                return new WeaponComponent(Type.PISTOL, 0.4f, 450f, 3f, 1, 0, 10, 1.2f);
+    public static WeaponComponent create(Type type, WeaponConfig config) {
+        WeaponComponent wc = new WeaponComponent();
+        wc.type = type;
+        if (config != null && config.weapons.containsKey(type.name())) {
+            wc.applyConfig(config.weapons.get(type.name()));
+        } else {
+            // Fallback default
+            wc.fireRate = 0.4f;
+            wc.projectileSpeed = 450f;
+            wc.spread = 3f;
+            wc.magazineSize = 10;
+            wc.magazineAmmo = 10;
+            wc.hasInfiniteAmmo = (type == Type.PISTOL);
         }
+        return wc;
     }
 }

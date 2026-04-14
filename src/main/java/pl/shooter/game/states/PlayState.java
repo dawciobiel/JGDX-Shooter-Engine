@@ -9,6 +9,7 @@ import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
 import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.WeaponConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
@@ -60,6 +61,7 @@ public class PlayState extends GameState {
         audioService.loadSound("assets/sfx/shoot.wav");
 
         GameConfig config = configService.getConfig();
+        WeaponConfig weaponConfig = configService.getWeaponConfig();
         GameMap map = new TestingMap();
         
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
@@ -78,12 +80,12 @@ public class PlayState extends GameState {
         engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new AISystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new SteeringSystem(engine.getEntityManager())); 
-        engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
+        engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, configService));
         engine.addSystem(new ProjectileSystem(engine.getEntityManager()));
         engine.addSystem(new ParticleUpdateSystem(engine.getEntityManager()));
         engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new MapSystem(engine.getEntityManager(), map));
-        engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus()));
+        engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
         engine.addSystem(new AnimationSystem(engine.getEntityManager()));
@@ -98,15 +100,15 @@ public class PlayState extends GameState {
             
             // Create and fill inventory
             InventoryComponent inv = new InventoryComponent();
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PISTOL));
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SHOTGUN));
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.MACHINE_GUN));
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SNIPER_RIFLE));
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PLASMA_GUN));
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.ROCKET_LAUNCHER));
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.LIGHTNING_GUN));
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.RAIL_GUN));
-            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.GRENADE));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PISTOL, weaponConfig));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SHOTGUN, weaponConfig));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.MACHINE_GUN, weaponConfig));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SNIPER_RIFLE, weaponConfig));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PLASMA_GUN, weaponConfig));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.ROCKET_LAUNCHER, weaponConfig));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.LIGHTNING_GUN, weaponConfig));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.RAIL_GUN, weaponConfig));
+            inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.GRENADE, weaponConfig));
             
             engine.getEntityManager().addComponent(player, inv);
             // Ensure the starting weapon is the active one on the entity

@@ -22,13 +22,14 @@ Główna klasa zarządzająca cyklem życia gry.
     - `RenderComponent`: Dane o wyglądzie (kolor, rozmiar).
     - `TextureComponent`: Ścieżka do grafiki PNG.
     - `AIComponent`: Definicja zachowania bota z parametrami taktycznymi.
-    - `WeaponComponent`: Parametry ataku i typy broni.
-    - `ProjectileComponent`: Cykl życia pocisku i ID właściciela.
+    - `WeaponComponent`: Parametry ataku, typy broni i system amunicji.
+    - `ProjectileComponent`: Cykl życia pocisku, obrażenia i specjalne zachowania (Explosive/Piercing).
     - `ParticleComponent`: Efekty wizualne (zanikanie).
     - `ScoreComponent`: Wynik punktowy gracza.
     - `SteeringComponent`: Integracja z `gdx-ai`.
     - `DestructibleComponent`: Obiekt możliwy do zniszczenia (skrzynie, krzaki).
     - `ObstacleComponent`: Encja blokująca ruch i ścieżki AI.
+    - `AmmoPickupComponent` / `HealthPickupComponent`: Przedmioty do podniesienia.
 
 ### Systemy (`pl.shooter.engine.ecs.systems`)
 Kolejność wywołań w pętli gry:
@@ -36,17 +37,25 @@ Kolejność wywołań w pętli gry:
 2. `PathfindingSystem`: Dynamiczne wyznaczanie ścieżek A*.
 3. `AISystem`: Decyzje przeciwników.
 4. `SteeringSystem`: Kinematyczny ruch na podstawie decyzji AI.
-5. `CombatSystem`: Zarządzanie bronią i efektami strzału (łuski).
+5. `CombatSystem`: Zarządzanie bronią, przeładowaniem i wczytywaniem parametrów z `weapons.json`.
 6. `ProjectileSystem`: Czas życia pocisków.
 7. `ParticleUpdateSystem`: Animacja cząsteczek.
-8. `MovementSystem`: Fizyka ruchu z logiką kolizji z mapą i wyślizgiwania się.
+8. `MovementSystem`: Fizyka ruchu z logiką kolizji z mapą.
 9. `MapSystem`: Granice mapy.
-10. `CollisionSystem`: Wykrywanie trafień i kolizji.
-11. `DamageSystem`: HP, efekty krwi i drzazg, scoring bez friendly-fire.
-12. `RenderSystem`: Rysowanie świata i debugowanie ścieżek.
+10. `CollisionSystem`: Wykrywanie trafień, kolizji obszarowych (wybuchy) oraz podnoszenia przedmiotów (pickups).
+11. `DamageSystem`: HP, efekty krwi, scoring i logika Friendly Fire.
+12. `RenderSystem`: Rysowanie świata z korektą orientacji grafik i cieniowaniem (FBO).
 13. `UISystem`: HUD.
 
 ## 3. Zaawansowane Funkcje
+
+### System Broni (Data-Driven)
+Parametry wszystkich broni są zdefiniowane w pliku `assets/config/weapons.json`.
+- Pozwala na konfigurację obrażeń, szybkostrzelności, rozrzutu i zachowania pocisku.
+- **Specjalne zachowania pocisków:**
+    - `NORMAL`: Standardowy pocisk znikający po trafieniu.
+    - `EXPLOSIVE`: Zadaje obrażenia obszarowe w zadanym promieniu (np. Rakieta).
+    - `PIERCING`: Przebija wrogów i leci dalej, aż trafi w ścianę (np. RailGun).
 
 ### Dynamiczne Przeszkody
 Silnik wspiera zniszczalne obiekty, które blokują ruch.
@@ -59,6 +68,7 @@ Silnik wspiera zniszczalne obiekty, które blokują ruch.
 - Pociski przelatują przez sojuszników bez ich ranienia i bez znikania, co pozwala na walkę w grupie.
 
 ## 4. Zasoby i Dane (Data-Driven)
-Encje są definiowane w plikach JSON w folderze `assets/entities/`.
-- `EntityFactory.loadFromJson("assets/entities/zombie.json", x, y)`: Tworzy encję na podstawie definicji JSON.
-- **Aliasy:** `Transform`, `Render`, `Health`, `AI`, `Weapon`, `Velocity`, `Collider`, `Score`.
+- **Encje:** Definiowane w `assets/entities/`.
+- **Bronie:** Definiowane w `assets/config/weapons.json`.
+- **Konfiguracja Silnika:** `assets/config/default_config.json` oraz `user_config.json`.
+- **Aliasy Komponentów:** `Transform`, `Render`, `Health`, `AI`, `Weapon`, `Velocity`, `Collider`, `Score`, `AmmoPickup`, `HealthPickup`.

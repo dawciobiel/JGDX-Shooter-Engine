@@ -1,0 +1,142 @@
+{
+  "weapons": {
+    "PISTOL": {
+      "fireRate": 0.4,
+      "projectileSpeed": 450.0,
+      "spread": 3.0,
+      "projectilesPerShot": 1,
+      "maxAmmo": 0,
+      "magazineSize": 10,
+      "reloadTime": 1.2,
+      "hasInfiniteAmmo": true,
+      "projectile": {
+        "color": "YELLOW",
+        "radius": 3.0,
+        "lifetime": 1.5,
+        "damage": 15,
+        "behavior": "NORMAL"
+      }
+    },
+    "SHOTGUN": {
+      "fireRate": 0.8,
+      "projectileSpeed": 400.0,
+      "spread": 15.0,
+      "projectilesPerShot": 6,
+      "maxAmmo": 40,
+      "magazineSize": 6,
+      "reloadTime": 2.5,
+      "hasInfiniteAmmo": false,
+      "projectile": {
+        "color": "LIGHT_GRAY",
+        "radius": 2.5,
+        "lifetime": 0.5,
+        "damage": 10,
+        "behavior": "NORMAL"
+      }
+    },
+    "MACHINE_GUN": {
+      "fireRate": 0.1,
+      "projectileSpeed": 500.0,
+      "spread": 5.0,
+      "projectilesPerShot": 1,
+      "maxAmmo": 200,
+      "magazineSize": 30,
+      "reloadTime": 2.0,
+      "hasInfiniteAmmo": false,
+      "projectile": {
+        "color": "ORANGE",
+        "radius": 2.5,
+        "lifetime": 1.5,
+        "damage": 12,
+        "behavior": "NORMAL"
+      }
+    },
+    "SNIPER_RIFLE": {
+      "fireRate": 1.5,
+      "projectileSpeed": 1200.0,
+      "spread": 0.0,
+      "projectilesPerShot": 1,
+      "maxAmmo": 20,
+      "magazineSize": 5,
+      "reloadTime": 3.5,
+      "hasInfiniteAmmo": false,
+      "projectile": {
+        "color": "WHITE",
+        "radius": 2.0,
+        "lifetime": 3.0,
+        "damage": 100,
+        "behavior": "PIERCING"
+      }
+    },
+    "PLASMA_GUN": {
+      "fireRate": 0.3,
+      "projectileSpeed": 350.0,
+      "spread": 2.0,
+      "projectilesPerShot": 1,
+      "maxAmmo": 60,
+      "magazineSize": 15,
+      "reloadTime": 1.8,
+      "hasInfiniteAmmo": false,
+      "projectile": {
+        "color": "CYAN",
+        "radius": 6.0,
+        "lifetime": 2.0,
+        "damage": 40,
+        "behavior": "NORMAL"
+      }
+    },
+    "ROCKET_LAUNCHER": {
+      "fireRate": 1.2,
+      "projectileSpeed": 300.0,
+      "spread": 2.0,
+      "projectilesPerShot": 1,
+      "maxAmmo": 10,
+      "magazineSize": 1,
+      "reloadTime": 3.0,
+      "hasInfiniteAmmo": false,
+      "projectile": {
+        "color": "RED",
+        "radius": 8.0,
+        "lifetime": 4.0,
+        "damage": 80,
+        "behavior": "EXPLOSIVE",
+        "explosionRadius": 100.0
+      }
+    },
+    "RAIL_GUN": {
+      "fireRate": 2.0,
+      "projectileSpeed": 2000.0,
+      "spread": 0.0,
+      "projectilesPerShot": 1,
+      "maxAmmo": 10,
+      "magazineSize": 1,
+      "reloadTime": 4.0,
+      "hasInfiniteAmmo": false,
+      "projectile": {
+        "color": "PURPLE",
+        "radius": 4.0,
+        "lifetime": 5.0,
+        "damage": 200,
+        "behavior": "PIERCING"
+      }
+    },
+    "GRENADE": {
+      "fireRate": 1.0,
+      "projectileSpeed": 250.0,
+      "spread": 10.0,
+      "projectilesPerShot": 1,
+      "maxAmmo": 15,
+      "magazineSize": 1,
+      "reloadTime": 2.0,
+      "hasInfiniteAmmo": false,
+      "projectile": {
+        "color": "FOREST",
+        "radius": 5.0,
+        "lifetime": 2.5,
+        "damage": 120,
+        "behavior": "EXPLOSIVE",
+        "explosionRadius": 150.0
+      }
+    }
+  }
+}

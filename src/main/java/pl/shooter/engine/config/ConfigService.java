@@ -13,14 +13,17 @@ import java.io.IOException;
 public class ConfigService {
     private static final String DEFAULT_PATH = "assets/config/default_config.json";
     private static final String USER_PATH = "user_config.json"; 
+    private static final String WEAPONS_PATH = "assets/config/weapons.json";
     
     private final ObjectMapper mapper;
     private GameConfig config;
+    private WeaponConfig weaponConfig;
 
     public ConfigService() {
         this.mapper = new ObjectMapper();
         this.mapper.enable(SerializationFeature.INDENT_OUTPUT);
         load();
+        loadWeapons();
     }
 
     /**
@@ -49,6 +52,22 @@ public class ConfigService {
         }
     }
 
+    private void loadWeapons() {
+        FileHandle weaponFile = Gdx.files.internal(WEAPONS_PATH);
+        try {
+            if (weaponFile.exists()) {
+                weaponConfig = mapper.readValue(weaponFile.read(), WeaponConfig.class);
+                Gdx.app.log("ConfigService", "Weapon config loaded: " + weaponConfig.weapons.size() + " types.");
+            } else {
+                weaponConfig = new WeaponConfig();
+                Gdx.app.error("ConfigService", "Weapon config file missing!");
+            }
+        } catch (IOException e) {
+            Gdx.app.error("ConfigService", "Error loading weapon config: " + e.getMessage());
+            weaponConfig = new WeaponConfig();
+        }
+    }
+
     /**
      * Saves the current config to the user file.
      */
@@ -65,5 +84,9 @@ public class ConfigService {
 
     public GameConfig getConfig() {
         return config;
+    }
+
+    public WeaponConfig getWeaponConfig() {
+        return weaponConfig;
     }
 }

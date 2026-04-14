@@ -2,6 +2,8 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
+import pl.shooter.engine.config.ConfigService;
+import pl.shooter.engine.config.WeaponConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
@@ -18,12 +20,18 @@ import pl.shooter.engine.events.ShootEvent;
 public class CombatSystem extends GameSystem {
     private final EventBus eventBus;
     private final EntityFactory entityFactory;
+    private final ConfigService configService;
     private float totalTime = 0;
 
     public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory) {
+        this(entityManager, eventBus, entityFactory, new ConfigService());
+    }
+
+    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory, ConfigService configService) {
         super(entityManager);
         this.eventBus = eventBus;
         this.entityFactory = entityFactory;
+        this.configService = configService;
         eventBus.subscribe(ShootEvent.class, this::handleShoot);
     }
 
@@ -82,12 +90,19 @@ public class CombatSystem extends GameSystem {
             entityFactory.createShellEjection(shooterTransform.x, shooterTransform.y, baseAngle);
         }
 
+        // Get projectile data from config if available
+        WeaponConfig.ProjectileData projData = null;
+        WeaponConfig weaponConfig = configService.getWeaponConfig();
+        if (weaponConfig != null && weaponConfig.weapons.containsKey(weapon.type.name())) {
+            projData = weaponConfig.weapons.get(weapon.type.name()).projectile;
+        }
+
         for (int i = 0; i < weapon.projectilesPerShot; i++) {
             float finalAngle = baseAngle;
             if (weapon.spread > 0) {
                 finalAngle += MathUtils.random(-weapon.spread, weapon.spread);
             }
-            spawnProjectileByType(shooterTransform.x, shooterTransform.y, finalAngle, weapon, shooter.getId());
+            spawnProjectile(shooterTransform.x, shooterTransform.y, finalAngle, weapon, shooter.getId(), projData);
         }
     }
 
@@ -96,7 +111,7 @@ public class CombatSystem extends GameSystem {
                type == WeaponComponent.Type.MACHINE_GUN || type == WeaponComponent.Type.SNIPER_RIFLE;
     }
 
-    private void spawnProjectileByType(float x, float y, float angle, WeaponComponent weapon, int ownerId) {
+    private void spawnProjectile(float x, float y, float angle, WeaponComponent weapon, int ownerId, WeaponConfig.ProjectileData config) {
         Entity projectile = entityManager.createEntity();
         entityManager.addComponent(projectile, new TransformComponent(x, y, angle));
         
@@ -107,21 +122,30 @@ public class CombatSystem extends GameSystem {
         Color color = Color.YELLOW;
         float radius = 3f;
         float lifetime = 1.5f;
+        int damage = 10;
+        ProjectileComponent.Behavior behavior = ProjectileComponent.Behavior.NORMAL;
+        float explosionRadius = 0f;
 
-        switch (weapon.type) {
-            case SHOTGUN: color = Color.LIGHT_GRAY; radius = 2.5f; lifetime = 0.5f; break;
-            case SNIPER_RIFLE: color = Color.WHITE; radius = 2f; lifetime = 3.0f; break;
-            case MACHINE_GUN: color = Color.ORANGE; radius = 2.5f; break;
-            case PLASMA_GUN: color = Color.CYAN; radius = 6f; lifetime = 2.0f; break;
-            case ROCKET_LAUNCHER: color = Color.RED; radius = 8f; lifetime = 4.0f; break;
-            case LIGHTNING_GUN: color = Color.BLUE; radius = 2f; lifetime = 0.8f; break;
-            case RAIL_GUN: color = Color.PURPLE; radius = 4f; lifetime = 5.0f; break;
-            case GRENADE: color = Color.FOREST; radius = 5f; lifetime = 2.5f; break;
+        if (config != null) {
+            color = parseColor(config.color);
+            radius = config.radius;
+            lifetime = config.lifetime;
+            damage = config.damage;
+            behavior = ProjectileComponent.Behavior.valueOf(config.behavior);
+            explosionRadius = config.explosionRadius;
         }
 
         entityManager.addComponent(projectile, new RenderComponent(color, radius, true));
-        entityManager.addComponent(projectile, new ProjectileComponent(lifetime, ownerId));
+        entityManager.addComponent(projectile, new ProjectileComponent(lifetime, ownerId, damage, behavior, explosionRadius));
         entityManager.addComponent(projectile, new ColliderComponent(radius));
+    }
+
+    private Color parseColor(String colorName) {
+        try {
+            return Color.valueOf(colorName);
+        } catch (Exception e) {
+            return Color.YELLOW;
+        }
     }
 
     private void startReload(WeaponComponent weapon) {

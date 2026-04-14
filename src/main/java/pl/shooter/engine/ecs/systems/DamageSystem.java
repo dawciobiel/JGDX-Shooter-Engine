@@ -31,46 +31,31 @@ public class DamageSystem extends GameSystem {
     public void update(float deltaTime) {}
 
     private void handleHit(HitEvent event) {
-        ProjectileComponent bullet = entityManager.getComponent(event.attacker, ProjectileComponent.class);
-        
-        boolean isVictimPlayer = entityManager.hasComponent(event.victim, PlayerComponent.class);
-        boolean isVictimDestructible = entityManager.hasComponent(event.victim, DestructibleComponent.class);
-        boolean isAttackerPlayerBullet = false;
-        
-        if (bullet != null) {
-            Entity owner = entityManager.getEntityById(bullet.ownerId);
-            if (owner != null && entityManager.hasComponent(owner, PlayerComponent.class)) {
-                isAttackerPlayerBullet = true;
-            }
-        } else {
-            if (entityManager.hasComponent(event.attacker, PlayerComponent.class)) {
-                isAttackerPlayerBullet = true;
-            }
-        }
+        Entity victim = event.victim;
+        int attackerId = event.attackerId;
+        int damage = event.damage;
 
-        // --- NEW LOGIC: Friendly Fire - Bullet passes through friends ---
+        boolean isVictimPlayer = entityManager.hasComponent(victim, PlayerComponent.class);
+        boolean isVictimDestructible = entityManager.hasComponent(victim, DestructibleComponent.class);
+        
+        Entity attacker = entityManager.getEntityById(attackerId);
+        boolean isAttackerPlayer = attacker != null && entityManager.hasComponent(attacker, PlayerComponent.class);
+
+        // --- Friendly Fire Logic ---
         boolean shouldDamage = false;
-        if (isVictimPlayer && !isAttackerPlayerBullet) {
-            shouldDamage = true; // Monster hits player
-        } else if (!isVictimPlayer && isAttackerPlayerBullet) {
+        if (isVictimPlayer && !isAttackerPlayer) {
+            shouldDamage = true; // Monster/Explosion hits player
+        } else if (!isVictimPlayer && isAttackerPlayer) {
             shouldDamage = true; // Player hits monster or scenery
         }
 
-        if (!shouldDamage) {
-            // Bullet just flies through! Do not remove bullet, do not apply damage.
-            return;
-        }
+        if (!shouldDamage) return;
 
-        // If we reach here, we are doing damage. Remove bullet.
-        if (bullet != null) {
-            entityManager.removeEntity(event.attacker);
-        }
-
-        HealthComponent health = entityManager.getComponent(event.victim, HealthComponent.class);
-        TransformComponent trans = entityManager.getComponent(event.victim, TransformComponent.class);
+        HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
+        TransformComponent trans = entityManager.getComponent(victim, TransformComponent.class);
 
         if (health != null && trans != null) {
-            health.hp -= 10;
+            health.hp -= damage;
             
             if (isVictimDestructible) {
                 factory.createExplosion(trans.x, trans.y, new Color(0.6f, 0.4f, 0.2f, 1f));
@@ -79,7 +64,7 @@ public class DamageSystem extends GameSystem {
             }
 
             if (health.hp <= 0) {
-                onEntityDeath(event.victim, trans.x, trans.y, isAttackerPlayerBullet, isVictimDestructible);
+                onEntityDeath(victim, trans.x, trans.y, isAttackerPlayer, isVictimDestructible);
             }
         }
     }
