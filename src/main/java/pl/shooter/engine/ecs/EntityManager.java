@@ -21,6 +21,13 @@ public class EntityManager {
         return entity;
     }
 
+    public Entity getEntityById(int id) {
+        for (Entity e : entities) {
+            if (e.getId() == id) return e;
+        }
+        return null;
+    }
+
     /**
      * Adds a component to an entity.
      */

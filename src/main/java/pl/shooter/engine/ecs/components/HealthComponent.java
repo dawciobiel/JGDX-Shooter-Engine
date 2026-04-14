@@ -11,4 +11,8 @@ public class HealthComponent implements Component {
         this.hp = hp;
         this.maxHp = hp;
     }
+    public HealthComponent(float hp, float maxHp) {
+        this.hp = hp;
+        this.maxHp = maxHp;
+    }
 }
