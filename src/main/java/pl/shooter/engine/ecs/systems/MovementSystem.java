@@ -3,7 +3,6 @@ package pl.shooter.engine.ecs.systems;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
-import pl.shooter.engine.ecs.components.ColliderComponent;
 import pl.shooter.engine.ecs.components.ProjectileComponent;
 import pl.shooter.engine.ecs.components.TransformComponent;
 import pl.shooter.engine.ecs.components.VelocityComponent;
@@ -31,28 +30,38 @@ public class MovementSystem extends GameSystem {
             VelocityComponent v = entityManager.getComponent(entity, VelocityComponent.class);
             boolean isProjectile = entityManager.hasComponent(entity, ProjectileComponent.class);
 
-            // Radius for map collision (8f is safe for 32px tiles)
-            float radius = 8f; 
-            
-            if (isProjectile) radius = 2f;
-
+            float radius = isProjectile ? 2f : 6f; 
             float speedMult = map.getSpeedMultiplier(t.x, t.y);
             
-            // Try X move
-            float nextX = t.x + (v.vx * speedMult * deltaTime);
-            if (isWalkable(nextX, t.y, radius)) {
-                t.x = nextX;
-            } else if (isProjectile) {
-                entityManager.removeEntity(entity);
-                continue;
+            float dx = v.vx * speedMult * deltaTime;
+            float dy = v.vy * speedMult * deltaTime;
+
+            // --- IMPROVED COLLISION WITH UNSTUCK LOGIC ---
+            
+            // Try X movement
+            if (isWalkable(t.x + dx, t.y, radius)) {
+                t.x += dx;
+            } else {
+                // If blocked, try to "slide" or check if we are already stuck
+                if (!isWalkable(t.x, t.y, radius) && isWalkable(t.x + dx, t.y, radius * 0.5f)) {
+                    t.x += dx; // Allow moving if it helps getting out
+                }
+                if (isProjectile) {
+                    entityManager.removeEntity(entity);
+                    continue;
+                }
             }
 
-            // Try Y move
-            float nextY = t.y + (v.vy * speedMult * deltaTime);
-            if (isWalkable(t.x, nextY, radius)) {
-                t.y = nextY;
-            } else if (isProjectile) {
-                entityManager.removeEntity(entity);
+            // Try Y movement
+            if (isWalkable(t.x, t.y + dy, radius)) {
+                t.y += dy;
+            } else {
+                if (!isWalkable(t.x, t.y, radius) && isWalkable(t.x, t.y + dy, radius * 0.5f)) {
+                    t.y += dy;
+                }
+                if (isProjectile) {
+                    entityManager.removeEntity(entity);
+                }
             }
         }
     }

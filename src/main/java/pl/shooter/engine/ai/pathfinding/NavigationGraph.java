@@ -4,6 +4,7 @@ import com.badlogic.gdx.ai.pfa.Connection;
 import com.badlogic.gdx.ai.pfa.indexed.IndexedGraph;
 import com.badlogic.gdx.utils.Array;
 import pl.shooter.engine.world.GameMap;
+import pl.shooter.engine.world.TestingMap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,7 +13,8 @@ public class NavigationGraph implements IndexedGraph<Node> {
     private final GameMap map;
     private final Array<Node> nodes;
     private final Map<String, Node> nodeMap;
-    private final int range = 35; // Wider range for planning
+    // Massive range to cover the whole testing area (50x50 tiles = 1600px)
+    private final int range = 100; 
 
     public NavigationGraph(GameMap map) {
         this.map = map;
@@ -28,8 +30,10 @@ public class NavigationGraph implements IndexedGraph<Node> {
         int gridCenterY = (int) Math.floor(centerY / 32);
 
         int index = 0;
+        // Search from grid coords -range to +range relative to center
         for (int x = gridCenterX - range; x <= gridCenterX + range; x++) {
             for (int y = gridCenterY - range; y <= gridCenterY + range; y++) {
+                // Bounds check against map if possible, but testing map is small anyway
                 if (map.isWalkable(x * 32 + 16, y * 32 + 16)) {
                     Node node = new Node(x, y, index++);
                     nodes.add(node);
@@ -44,7 +48,6 @@ public class NavigationGraph implements IndexedGraph<Node> {
     }
 
     private void addConnections(Node from) {
-        // Only 4 cardinal neighbors for simplicity and robustness in corridors
         int[][] cardinal = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
         for (int[] n : cardinal) {
             Node to = nodeMap.get((from.x + n[0]) + "," + (from.y + n[1]));
@@ -54,7 +57,6 @@ public class NavigationGraph implements IndexedGraph<Node> {
             }
         }
         
-        // Diagonal: only if both intermediate cardinal nodes are walkable
         int[][] diagonal = {{1, 1}, {1, -1}, {-1, -1}, {-1, 1}};
         for (int[] n : diagonal) {
             if (nodeMap.containsKey((from.x + n[0]) + "," + from.y) && 
@@ -72,7 +74,7 @@ public class NavigationGraph implements IndexedGraph<Node> {
         int gx = (int) Math.floor(worldX / 32);
         int gy = (int) Math.floor(worldY / 32);
         
-        // Search in increasing radius to find the closest walkable tile
+        // Search slightly wider if exact tile is not a node (e.g. wall or outside range)
         for (int r = 0; r <= 3; r++) {
             for (int dx = -r; dx <= r; dx++) {
                 for (int dy = -r; dy <= r; dy++) {

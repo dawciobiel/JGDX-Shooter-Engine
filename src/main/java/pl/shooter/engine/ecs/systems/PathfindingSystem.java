@@ -1,6 +1,8 @@
 package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.ai.pfa.DefaultGraphPath;
+import com.badlogic.gdx.ai.pfa.GraphPath;
 import com.badlogic.gdx.ai.pfa.indexed.IndexedAStarPathFinder;
 import pl.shooter.engine.ai.pathfinding.DistanceHeuristic;
 import pl.shooter.engine.ai.pathfinding.NavigationGraph;
@@ -19,8 +21,7 @@ public class PathfindingSystem extends GameSystem {
     private final NavigationGraph graph;
     private IndexedAStarPathFinder<Node> pathFinder;
     private final DistanceHeuristic heuristic;
-    private float graphUpdateTimer = 1.0f;
-    private int lastNodeCount = -1;
+    private boolean graphInitialized = false;
 
     public PathfindingSystem(EntityManager entityManager, GameMap map) {
         super(entityManager);
@@ -36,22 +37,18 @@ public class PathfindingSystem extends GameSystem {
         Entity player = players.get(0);
         TransformComponent playerTrans = entityManager.getComponent(player, TransformComponent.class);
 
-        // 1. Periodic graph update
-        graphUpdateTimer += deltaTime;
-        if (graphUpdateTimer > 0.5f) {
-            graph.update(playerTrans.x, playerTrans.y);
-            graphUpdateTimer = 0;
-            
-            // Re-create pathfinder if graph size changed (CRITICAL FIX)
-            if (graph.getNodeCount() != lastNodeCount) {
-                this.pathFinder = new IndexedAStarPathFinder<>(graph);
-                this.lastNodeCount = graph.getNodeCount();
-            }
+        // INITIALIZE GRAPH ONCE (or when map changes)
+        // Building around (800, 800) to cover the whole testing map area reliably
+        if (!graphInitialized) {
+            graph.update(800, 800); 
+            this.pathFinder = new IndexedAStarPathFinder<>(graph);
+            this.graphInitialized = true;
+            Gdx.app.log("PathfindingSystem", "Graph initialized with " + graph.getNodeCount() + " nodes.");
         }
 
         if (pathFinder == null || graph.getNodeCount() == 0) return;
 
-        // 2. Update AI paths
+        // Update AI paths
         List<Entity> enemies = entityManager.getEntitiesWithComponents(AIComponent.class, TransformComponent.class);
         for (Entity enemy : enemies) {
             AIComponent ai = entityManager.getComponent(enemy, AIComponent.class);
@@ -72,15 +69,22 @@ public class PathfindingSystem extends GameSystem {
         Node endNode = graph.getNodeAt(end.x, end.y);
 
         if (startNode != null && endNode != null && startNode != endNode) {
+            DefaultGraphPath<Node> tempPath = new DefaultGraphPath<>();
             try {
-                ai.currentPath.clear();
-                pathFinder.searchNodePath(startNode, endNode, heuristic, ai.currentPath);
+                pathFinder.searchNodePath(startNode, endNode, heuristic, tempPath);
+                if (tempPath.getCount() > 1) {
+                    ai.currentPath.clear();
+                    for (int i = 0; i < tempPath.getCount(); i++) {
+                        ai.currentPath.add(tempPath.get(i));
+                    }
+                    // ONLY reset index if the path is significantly different or index was invalid
+                    if (ai.currentPathIndex >= ai.currentPath.getCount()) {
+                        ai.currentPathIndex = 1;
+                    }
+                }
             } catch (Exception e) {
-                ai.currentPath.clear();
+                Gdx.app.error("Pathfinding", "A* Search Error: " + e.getMessage());
             }
-        } else {
-            // If we can't find nodes, clear the path so AISystem knows we are stuck
-            ai.currentPath.clear();
         }
     }
 }

@@ -13,7 +13,10 @@ public class AIComponent implements Component {
     // Pathfinding data
     public GraphPath<Node> currentPath = new DefaultGraphPath<>();
     public float pathfindingTimer = 0; 
-    public static final float PATHFINDING_RECALC_INTERVAL = 0.2f; // More frequent updates
+    public static final float PATHFINDING_RECALC_INTERVAL = 0.1f; 
+    
+    // Path following stability
+    public int currentPathIndex = 0;
 
     public AIComponent() {}
     public AIComponent(Behavior behavior, float detectRange) {

@@ -61,7 +61,6 @@ public class PlayState extends GameState {
 
         GameConfig config = configService.getConfig();
         
-        // --- USING TESTING MAP FOR AI/PATHFINDING TESTS ---
         GameMap map = new TestingMap();
         
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
@@ -88,22 +87,14 @@ public class PlayState extends GameState {
         engine.addSystem(renderSystem);
         engine.addSystem(new UISystem(engine.getEntityManager()));
 
-        // --- Spawn Entities Safely ---
-        // Player at the top left area
+        // Player at (200, 200)
         Entity player = entityFactory.loadFromJson("assets/entities/player.json", 200, 200);
         if (player != null) {
             engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
         }
 
-        // Spawn 10 zombies across the map
-        for (int i = 0; i < 10; i++) {
-            float zx, zy;
-            do {
-                zx = MathUtils.random(100, 1400);
-                zy = MathUtils.random(100, 1400);
-            } while (!map.isWalkable(zx, zy));
-            entityFactory.loadFromJson("assets/entities/zombie.json", zx, zy);
-        }
+        // --- TEST: Safe spawn at (500, 200) ---
+        entityFactory.loadFromJson("assets/entities/zombie.json", 500, 200);
     }
 
     @Override
