@@ -9,6 +9,7 @@ import java.io.IOException;
 
 /**
  * Handles loading and saving of the game configuration.
+ * Now safely merges user configuration with default settings.
  */
 public class ConfigService {
     private static final String DEFAULT_PATH = "assets/config/default_config.json";
@@ -27,7 +28,7 @@ public class ConfigService {
     }
 
     /**
-     * Loads the config from user file (local), fallback to default (internal).
+     * Loads the config by first loading defaults, then merging with user file.
      * If user file is missing, it will be created from defaults.
      */
     public void load() {
@@ -35,19 +36,25 @@ public class ConfigService {
         FileHandle defaultFile = Gdx.files.internal(DEFAULT_PATH);
 
         try {
-            if (userFile.exists()) {
-                config = mapper.readValue(userFile.read(), GameConfig.class);
+            // 1. Load default config
+            if (defaultFile.exists()) {
+                config = mapper.readValue(defaultFile.read(), GameConfig.class);
             } else {
-                if (defaultFile.exists()) {
-                    config = mapper.readValue(defaultFile.read(), GameConfig.class);
-                } else {
-                    config = new GameConfig();
-                }
-                // Auto-create user_config.json on first run
+                config = new GameConfig(); // Fallback to hardcoded defaults if default file is missing
+                Gdx.app.error("ConfigService", "Default config file missing! Using hardcoded defaults.");
+            }
+
+            // 2. Merge with user config if it exists
+            if (userFile.exists()) {
+                // Use readerForUpdating to merge existing config with user's changes
+                config = mapper.readerForUpdating(config).readValue(userFile.read());
+            } else {
+                // If user file doesn't exist, create it based on the (now merged) default config
                 save();
             }
         } catch (IOException e) {
             Gdx.app.error("ConfigService", "Error loading config: " + e.getMessage());
+            // If any error during load, ensure we have a working config
             config = new GameConfig();
         }
     }

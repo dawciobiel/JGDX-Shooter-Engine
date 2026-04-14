@@ -112,6 +112,9 @@ public class PlayState extends GameState {
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.RAIL_GUN, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.GRENADE, weaponConfig));
             
+            // Set starting weapon to PLASMA_GUN (index 5)
+            inv.currentWeaponIndex = 5;
+            
             engine.getEntityManager().addComponent(player, inv);
             // Ensure the starting weapon is the active one on the entity
             engine.getEntityManager().addComponent(player, inv.getActiveWeapon());

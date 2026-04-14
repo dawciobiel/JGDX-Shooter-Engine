@@ -13,6 +13,7 @@ public class GameConfig {
     public AudioConfig audio = new AudioConfig();
     public DebugConfig debug = new DebugConfig();
     public InputConfig controls = new InputConfig();
+    public EffectsConfig effects = new EffectsConfig(); // New effects config
 
     public static class GraphicsConfig {
         public int width = 800;
@@ -41,5 +42,9 @@ public class GameConfig {
     public static class InputConfig {
         public int prevWeaponKey = Input.Keys.Q;
         public int nextWeaponKey = Input.Keys.E;
+    }
+
+    public static class EffectsConfig {
+        public boolean showBloodDecals = true; // New option for blood decals
     }
 }

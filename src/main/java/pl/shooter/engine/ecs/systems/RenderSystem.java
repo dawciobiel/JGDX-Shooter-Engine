@@ -13,6 +13,8 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import pl.shooter.engine.assets.AssetService;
+import pl.shooter.engine.config.ConfigService;
+import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
@@ -28,6 +30,7 @@ public class RenderSystem extends GameSystem {
     private final OrthographicCamera camera;
     private final Viewport viewport;
     private final AssetService assetService;
+    private final GameConfig config;
     private GameMap currentMap;
 
     private FrameBuffer sceneFbo;
@@ -39,6 +42,7 @@ public class RenderSystem extends GameSystem {
     public RenderSystem(EntityManager entityManager, AssetService assetService) {
         super(entityManager);
         this.assetService = assetService;
+        this.config = new ConfigService().getConfig();
         this.shapeRenderer = new ShapeRenderer();
         this.spriteBatch = new SpriteBatch();
         this.camera = new OrthographicCamera();
@@ -73,17 +77,32 @@ public class RenderSystem extends GameSystem {
             Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
             shapeRenderer.setProjectionMatrix(camera.combined);
+            
+            // Pass 1: Render Map
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             if (currentMap != null) renderMap(currentMap);
+            shapeRenderer.end();
+
+            // Pass 2: Render Blood Decals (Static, under entities)
+            if (config.effects.showBloodDecals) {
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+                renderBloodDecals();
+                shapeRenderer.end();
+            }
+
+            // Pass 3: Render Primitive Entities
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             renderPrimitiveEntities();
             renderHealthBars();
             shapeRenderer.end();
 
+            // Pass 4: Render Textures & Animations
             spriteBatch.setProjectionMatrix(camera.combined);
             spriteBatch.begin();
             renderTexturedEntities();
             renderAnimatedEntities();
             spriteBatch.end();
+            
             sceneFbo.end();
         }
 
@@ -96,6 +115,22 @@ public class RenderSystem extends GameSystem {
         
         if (showDebugPaths || showDebugHitboxes) {
             renderDebugInfo();
+        }
+    }
+
+    private void renderBloodDecals() {
+        List<Entity> deadEntities = entityManager.getEntitiesWithComponents(HealthComponent.class, TransformComponent.class);
+        for (Entity entity : deadEntities) {
+            HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
+            if (h.isDead && h.hasBlood) {
+                TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
+                float alpha = 0.6f; // Static transparency for blood
+                if (!h.corpseStayPermanent) {
+                    alpha *= (1.0f - (h.deathTimer / h.corpseDuration));
+                }
+                shapeRenderer.setColor(h.bloodColor.r, h.bloodColor.g, h.bloodColor.b, h.bloodColor.a * alpha);
+                shapeRenderer.circle(t.x, t.y, h.bloodSize);
+            }
         }
     }
 

@@ -14,10 +14,12 @@ public class HealthComponent implements Component {
     public boolean isDead = false;
     public float deathTimer = 0f;
     public float corpseDuration = 3.0f; // Default 3 seconds
+    public boolean corpseStayPermanent = false; // If true, corpse/blood doesn't fade
     
     // Blood system
     public boolean hasBlood = true;
     public Color bloodColor = Color.RED;
+    public float bloodSize = 25f; // Radius of the blood puddle
 
     public HealthComponent() {} // Required for JSON
     public HealthComponent(float hp) {

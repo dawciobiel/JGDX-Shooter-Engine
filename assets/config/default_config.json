@@ -18,5 +18,12 @@
     "showHitboxes": false,
     "showFps": true,
     "invinciblePlayer": false
+  },
+  "controls": {
+    "prevWeaponKey": 51,
+    "nextWeaponKey": 33
+  },
+  "effects": {
+    "showBloodDecals": true
   }
 }

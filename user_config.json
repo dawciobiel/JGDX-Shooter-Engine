@@ -1,22 +1,30 @@
 {
-  "graphics": {
-    "width": 800,
-    "height": 600,
-    "fullscreen": true,
-    "targetFps": 60,
-    "ambientBrightness": 9.5,
-    "ambientRed": 9.1,
-    "ambientGreen": 9.1,
-    "ambientBlue": 9.2
+  "graphics" : {
+    "width" : 800,
+    "height" : 600,
+    "fullscreen" : true,
+    "targetFps" : 60,
+    "ambientBrightness" : 10.5,
+    "ambientRed" : 10.1,
+    "ambientGreen" : 10.1,
+    "ambientBlue" : 10.2
   },
-  "audio": {
-    "masterVolume": 1.0,
-    "sfxVolume": 1.0,
-    "musicVolume": 0.5
+  "audio" : {
+    "masterVolume" : 1.0,
+    "sfxVolume" : 1.0,
+    "musicVolume" : 0.5
   },
-  "debug": {
-    "showHitboxes": true,
-    "showFps": true,
-    "invinciblePlayer": false
+  "debug" : {
+    "showHitboxes" : false,
+    "showFps" : true,
+    "showPaths" : false,
+    "invinciblePlayer" : false
+  },
+  "controls" : {
+    "prevWeaponKey" : 51,
+    "nextWeaponKey" : 33
+  },
+  "effects" : {
+    "showBloodDecals" : true
   }
 }
