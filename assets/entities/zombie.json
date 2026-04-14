@@ -7,18 +7,22 @@
       "radius": 20,
       "isCircle": false
     },
-    "Health": { "hp": 50, "maxHp": 50 },
+    "Health": {
+      "hp": 50,
+      "maxHp": 50,
+      "hasBlood": true,
+      "bloodColor": { "r": 0.5, "g": 0.1, "b": 0.1, "a": 1 },
+      "corpseDuration": 5.0
+    },
     "Collider": { "radius": 12 },
     "AI": { "behavior": "CHASE", "detectRange": 1200 },
     "Velocity": { "vx": 0, "vy": 0 },
     "Weapon": {
-      "type": "PISTOL",
-      "fireRate": 1.5,
-      "projectileSpeed": 250,
-      "spread": 5,
+      "type": "KNIFE",
+      "fireRate": 1.0,
+      "projectileSpeed": 0,
+      "spread": 0,
       "projectilesPerShot": 1,
-      "magazineSize": 10,
-      "magazineAmmo": 10,
       "hasInfiniteAmmo": true
     }
   },

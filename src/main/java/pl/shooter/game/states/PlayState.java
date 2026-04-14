@@ -20,6 +20,8 @@ import pl.shooter.engine.state.GameStateManager;
 import pl.shooter.engine.world.GameMap;
 import pl.shooter.engine.world.TestingMap;
 
+import java.util.List;
+
 public class PlayState extends GameState {
     private Engine engine;
     private AssetService assetService;
@@ -151,15 +153,36 @@ public class PlayState extends GameState {
         }
 
         if (isGameOver) {
-            engine.getSystems().forEach(system -> {
-                if (system instanceof RenderSystem || system instanceof UISystem) system.update(deltaTime);
-            });
+            // Explicitly render background world THEN UI on top during Game Over
+            RenderSystem rs = null;
+            UISystem ui = null;
+            for (pl.shooter.engine.ecs.GameSystem system : engine.getSystems()) {
+                if (system instanceof RenderSystem) rs = (RenderSystem) system;
+                if (system instanceof UISystem) ui = (UISystem) system;
+            }
+            if (rs != null) rs.update(deltaTime);
+            if (ui != null) ui.update(deltaTime);
+
             if (Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) resetState();
             return;
         }
 
         engine.update(deltaTime);
-        if (engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class).isEmpty()) isGameOver = true;
+        checkGameOver();
+    }
+
+    private void checkGameOver() {
+        // Player is dead if they have no PlayerComponent OR HealthComponent says they are dead
+        List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
+        if (players.isEmpty()) {
+            isGameOver = true;
+            return;
+        }
+        
+        HealthComponent health = engine.getEntityManager().getComponent(players.get(0), HealthComponent.class);
+        if (health != null && health.isDead) {
+            isGameOver = true;
+        }
     }
 
     @Override public void render() {}

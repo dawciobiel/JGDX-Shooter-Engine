@@ -62,6 +62,13 @@ public class UISystem extends GameSystem {
 
         Entity player = players.get(0);
         HealthComponent health = entityManager.getComponent(player, HealthComponent.class);
+        
+        // Check if player is dead even if component still exists
+        if (health != null && health.isDead) {
+            renderGameOver();
+            return;
+        }
+
         ScoreComponent score = entityManager.getComponent(player, ScoreComponent.class);
         WeaponComponent weapon = entityManager.getComponent(player, WeaponComponent.class);
 
@@ -87,7 +94,8 @@ public class UISystem extends GameSystem {
         shapeRenderer.rect(x, y, barWidth, barHeight);
 
         if (health != null) {
-            float healthPercent = Math.max(0, Math.min(1, health.hp / health.maxHp));
+            float displayHp = Math.max(0, health.hp);
+            float healthPercent = Math.max(0, Math.min(1, displayHp / health.maxHp));
             Color healthColor = Color.GREEN;
             if (healthPercent < 0.6f) healthColor = Color.YELLOW;
             if (healthPercent < 0.3f) healthColor = Color.RED;
@@ -111,7 +119,8 @@ public class UISystem extends GameSystem {
         batch.begin();
         if (health != null) {
             font.setColor(Color.WHITE);
-            font.draw(batch, "HEALTH: " + (int)health.hp, x, y + barHeight + 15);
+            int displayHp = (int) Math.max(0, health.hp);
+            font.draw(batch, "HEALTH: " + displayHp, x, y + barHeight + 15);
         }
 
         if (score != null) {
@@ -132,7 +141,6 @@ public class UISystem extends GameSystem {
     private void renderWeaponInfo(WeaponComponent weapon) {
         String typeName = weapon.type.name().toLowerCase();
         
-        // Try to find the best matching icon
         String iconPath = WEAPON_ICONS_BASE + typeName + "/" + typeName + ".png";
         if (!Gdx.files.internal(iconPath).exists()) {
              iconPath = DEFAULT_ICON;
@@ -141,11 +149,11 @@ public class UISystem extends GameSystem {
         Texture icon = assetService.getTexture(iconPath);
         if (icon == null && Gdx.files.internal(iconPath).exists()) {
             assetService.loadTexture(iconPath);
-            assetService.finishLoading(); // Synchronous loading for HUD icons
+            assetService.finishLoading();
             icon = assetService.getTexture(iconPath);
         }
 
-        float iconX = 800 - 380; // Moved more to the left to fit text
+        float iconX = 800 - 380;
         float iconY = 600 - 55;
         float iconSize = 48;
 

@@ -14,7 +14,7 @@ import pl.shooter.events.HitEvent;
 import java.util.List;
 
 /**
- * Handles health reduction, death, scoring, and item drops.
+ * Handles health reduction, death, scoring, item drops, and corpse/blood system.
  */
 public class DamageSystem extends GameSystem {
     private final EntityFactory factory;
@@ -28,10 +28,27 @@ public class DamageSystem extends GameSystem {
     }
 
     @Override
-    public void update(float deltaTime) {}
+    public void update(float deltaTime) {
+        // Handle corpse fading and removal
+        List<Entity> healthEntities = entityManager.getEntitiesWithComponents(HealthComponent.class);
+        for (Entity entity : healthEntities) {
+            HealthComponent health = entityManager.getComponent(entity, HealthComponent.class);
+            if (health.isDead) {
+                health.deathTimer += deltaTime;
+                if (health.deathTimer >= health.corpseDuration) {
+                    entityManager.removeEntity(entity);
+                }
+            }
+        }
+    }
 
     private void handleHit(HitEvent event) {
         Entity victim = event.victim;
+        HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
+        
+        // Don't hit things that are already dead
+        if (health != null && health.isDead) return;
+
         int attackerId = event.attackerId;
         int damage = event.damage;
 
@@ -51,16 +68,18 @@ public class DamageSystem extends GameSystem {
 
         if (!shouldDamage) return;
 
-        HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
         TransformComponent trans = entityManager.getComponent(victim, TransformComponent.class);
 
         if (health != null && trans != null) {
             health.hp -= damage;
             
+            // Effects of hit
             if (isVictimDestructible) {
                 factory.createExplosion(trans.x, trans.y, new Color(0.6f, 0.4f, 0.2f, 1f));
+            } else if (health.hasBlood) {
+                factory.createExplosion(trans.x, trans.y, health.bloodColor); // Splatter effect
             } else {
-                factory.createExplosion(trans.x, trans.y, Color.RED);
+                factory.createExplosion(trans.x, trans.y, Color.GRAY); // Sparks/Dust
             }
 
             if (health.hp <= 0) {
@@ -70,6 +89,8 @@ public class DamageSystem extends GameSystem {
     }
 
     private void onEntityDeath(Entity victim, float x, float y, boolean killedByPlayer, boolean isDestructible) {
+        HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
+        
         if (isDestructible) {
             factory.createExplosion(x, y, new Color(0.4f, 0.2f, 0.1f, 1f));
             entityManager.removeEntity(victim);
@@ -78,7 +99,7 @@ public class DamageSystem extends GameSystem {
 
         if (entityManager.hasComponent(victim, PlayerComponent.class)) {
             factory.createExplosion(x, y, Color.RED);
-            entityManager.removeEntity(victim);
+            health.isDead = true; // Mark player dead, but don't remove yet for death screen/fade
         } else {
             if (killedByPlayer) {
                 List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, ScoreComponent.class);
@@ -96,7 +117,13 @@ public class DamageSystem extends GameSystem {
                     factory.createHealthPickup(x, y, 20f);
                 }
             }
-            entityManager.removeEntity(victim);
+            
+            // CORPSE SYSTEM: Start death timer and disable AI/Collisions
+            health.isDead = true;
+            entityManager.removeComponent(victim, AIComponent.class);
+            entityManager.removeComponent(victim, ColliderComponent.class);
+            entityManager.removeComponent(victim, VelocityComponent.class);
+            entityManager.removeComponent(victim, SteeringComponent.class);
         }
     }
 }

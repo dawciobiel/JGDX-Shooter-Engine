@@ -56,6 +56,16 @@ public class EntityManager {
     }
 
     /**
+     * Removes a specific component from an entity.
+     */
+    public void removeComponent(Entity entity, Class<? extends Component> componentClass) {
+        Map<Class<? extends Component>, Component> entityComponents = componentsByEntity.get(entity.getId());
+        if (entityComponents != null) {
+            entityComponents.remove(componentClass);
+        }
+    }
+
+    /**
      * Removes an entity and all its components.
      */
     public void removeEntity(Entity entity) {

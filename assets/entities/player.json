@@ -5,7 +5,13 @@
     "Transform": { "x": 0, "y": 0 },
     "Velocity": { "vx": 0, "vy": 0 },
     "Collider": { "radius": 15.0 },
-    "Health": { "hp": 100.0, "maxHp": 100.0 },
+    "Health": {
+      "hp": 100.0,
+      "maxHp": 100.0,
+      "hasBlood": true,
+      "bloodColor": { "r": 1, "g": 0, "b": 0, "a": 1 },
+      "corpseDuration": 10.0
+    },
     "Score": {},
     "Weapon": {
       "type": "SHOTGUN",

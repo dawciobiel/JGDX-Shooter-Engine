@@ -134,19 +134,24 @@ public class RenderSystem extends GameSystem {
     private void renderFinalPass() {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        
         spriteBatch.getProjectionMatrix().idt(); // Reset to identity for full-screen quad
+        spriteBatch.setColor(Color.WHITE); // IMPORTANT: Reset color to avoid global dimming from corpses
         spriteBatch.setShader(lightingShader);
         spriteBatch.begin();
+        
         if (lightSystem != null) {
             lightSystem.getLightMapTexture().bind(1);
             lightingShader.setUniformi("u_lightmap", 1);
             lightingShader.setUniformf("u_ambientColor", lightSystem.getAmbientColor());
             Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
         }
+        
         if (sceneFbo != null) {
             Texture fboTexture = sceneFbo.getColorBufferTexture();
             spriteBatch.draw(fboTexture, -1, -1, 2, 2, 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
         }
+
         spriteBatch.end();
         spriteBatch.setShader(null);
     }
@@ -157,7 +162,14 @@ public class RenderSystem extends GameSystem {
             if (entityManager.hasComponent(entity, TextureComponent.class) || entityManager.hasComponent(entity, AnimationComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             RenderComponent r = entityManager.getComponent(entity, RenderComponent.class);
-            shapeRenderer.setColor(r.color);
+            
+            float alpha = 1.0f;
+            HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
+            if (h != null && h.isDead) {
+                alpha = 1.0f - (h.deathTimer / h.corpseDuration);
+            }
+            
+            shapeRenderer.setColor(r.color.r, r.color.g, r.color.b, r.color.a * alpha);
             if (r.isCircle) shapeRenderer.circle(t.x, t.y, r.radius);
             else shapeRenderer.rect(t.x - r.radius, t.y - r.radius, r.radius * 2, r.radius * 2);
         }
@@ -170,8 +182,13 @@ public class RenderSystem extends GameSystem {
             TextureComponent tex = entityManager.getComponent(entity, TextureComponent.class);
             Texture texture = assetService.getTexture(tex.assetPath);
             if (texture != null) {
-                spriteBatch.setColor(Color.WHITE);
-                // Added -90 offset because texture facing UP in PNG needs to be rotated to face RIGHT (0 degrees)
+                float alpha = 1.0f;
+                HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
+                if (h != null && h.isDead) {
+                    alpha = 1.0f - (h.deathTimer / h.corpseDuration);
+                }
+                
+                spriteBatch.setColor(1, 1, 1, alpha);
                 spriteBatch.draw(texture, t.x - tex.width / 2, t.y - tex.height / 2, tex.width / 2, tex.height / 2, tex.width, tex.height, 1, 1, t.rotation - 90, 0, 0, texture.getWidth(), texture.getHeight(), false, false);
             }
         }
@@ -183,16 +200,27 @@ public class RenderSystem extends GameSystem {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             AnimationComponent anim = entityManager.getComponent(entity, AnimationComponent.class);
             TextureRegion frame = anim.getCurrentKeyFrame();
-            // Added -90 offset for animations
-            if (frame != null) spriteBatch.draw(frame, t.x - anim.width / 2, t.y - anim.height / 2, anim.width / 2, anim.height / 2, anim.width, anim.height, 1, 1, t.rotation - 90);
+            
+            if (frame != null) {
+                float alpha = 1.0f;
+                HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
+                if (h != null && h.isDead) {
+                    alpha = 1.0f - (h.deathTimer / h.corpseDuration);
+                }
+                
+                spriteBatch.setColor(1, 1, 1, alpha);
+                spriteBatch.draw(frame, t.x - anim.width / 2, t.y - anim.height / 2, anim.width / 2, anim.height / 2, anim.width, anim.height, 1, 1, t.rotation - 90);
+            }
         }
     }
 
     private void renderHealthBars() {
         List<Entity> enemies = entityManager.getEntitiesWithComponents(TransformComponent.class, HealthComponent.class);
         for (Entity entity : enemies) {
-            TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
+            if (h.isDead) continue; // Don't draw health bars for corpses
+            
+            TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             float radius = 20f;
             if (entityManager.hasComponent(entity, RenderComponent.class)) radius = entityManager.getComponent(entity, RenderComponent.class).radius;
             else if (entityManager.hasComponent(entity, AnimationComponent.class)) radius = entityManager.getComponent(entity, AnimationComponent.class).width / 2;

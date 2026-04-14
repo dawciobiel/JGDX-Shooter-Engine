@@ -16,6 +16,10 @@ import pl.shooter.engine.events.ShootEvent;
 
 import java.util.List;
 
+/**
+ * Handles player input for movement, aiming, and weapon management.
+ * Now respects the death state of the player entity.
+ */
 public class InputSystem extends GameSystem {
     private final EventBus eventBus;
     private final OrthographicCamera camera;
@@ -44,6 +48,12 @@ public class InputSystem extends GameSystem {
         float worldMouseY = mouseBuffer.y;
 
         for (Entity player : players) {
+            HealthComponent health = entityManager.getComponent(player, HealthComponent.class);
+            if (health != null && health.isDead) {
+                // Ignore input for dead player
+                continue;
+            }
+
             PlayerComponent pc = entityManager.getComponent(player, PlayerComponent.class);
             VelocityComponent vc = entityManager.getComponent(player, VelocityComponent.class);
             TransformComponent tc = entityManager.getComponent(player, TransformComponent.class);
