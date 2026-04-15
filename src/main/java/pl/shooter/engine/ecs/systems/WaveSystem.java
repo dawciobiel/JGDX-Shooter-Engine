@@ -15,6 +15,7 @@ import java.util.List;
 
 /**
  * Periodically spawns new enemies around the player and handles waves.
+ * Supports different enemy types (Zombie, Runner, Tank) based on the current wave.
  */
 public class WaveSystem extends GameSystem {
     private final EntityFactory entityFactory;
@@ -39,7 +40,7 @@ public class WaveSystem extends GameSystem {
         
         ScoreComponent score = entityManager.getComponent(players.get(0), ScoreComponent.class);
 
-        // Wave increase logic
+        // Wave increase logic: Advance wave every 5 spawns
         if (spawnedCount >= 5) {
             score.wave++;
             spawnedCount = 0;
@@ -50,13 +51,13 @@ public class WaveSystem extends GameSystem {
             
             int currentEnemies = entityManager.getEntitiesWithComponents(AIComponent.class).size();
             if (currentEnemies < (maxEnemiesBase + score.wave * 2)) {
-                spawnEnemyNearPlayer();
+                spawnEnemyNearPlayer(score.wave);
                 spawnedCount++;
             }
         }
     }
 
-    private void spawnEnemyNearPlayer() {
+    private void spawnEnemyNearPlayer(int currentWave) {
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, TransformComponent.class);
         if (players.isEmpty()) return;
 
@@ -73,7 +74,15 @@ public class WaveSystem extends GameSystem {
         } while (!map.isWalkable(spawnX, spawnY) && attempts < 10);
 
         if (attempts < 10) {
-            entityFactory.loadFromJson("assets/entities/zombie.json", spawnX, spawnY);
+            // Testing Runners and Tanks: Disable normal zombie and spawn these two only
+            String enemyJson;
+            if (MathUtils.randomBoolean()) {
+                enemyJson = "assets/entities/zombie_runner.json";
+            } else {
+                enemyJson = "assets/entities/zombie_tank.json";
+            }
+            
+            entityFactory.loadFromJson(enemyJson, spawnX, spawnY);
         }
     }
 }
