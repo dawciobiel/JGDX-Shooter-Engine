@@ -9,6 +9,7 @@ public class AIComponent implements Component {
     public enum Behavior { STATIONARY, CHASE, WANDER }
     public Behavior behavior;
     public float detectRange;
+    public float speed = 75f; // Default linear speed
     
     // --- New Tactical Parameters ---
     public float preferredRange = 0;    // 0 = close melee, >0 = keep distance

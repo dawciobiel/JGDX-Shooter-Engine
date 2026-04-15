@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Manages NPC behaviors, including chasing, shooting and melee attacks.
- * Now respects weapon range for all attack types.
+ * Now respects weapon range and AI-defined speed.
  */
 public class AISystem extends GameSystem {
     private final EventBus eventBus;
@@ -50,7 +50,11 @@ public class AISystem extends GameSystem {
             AnimationComponent anim = entityManager.getComponent(enemy, AnimationComponent.class);
             WeaponComponent weapon = entityManager.getComponent(enemy, WeaponComponent.class);
             
-            SteeringComponent sc = getOrAddSteering(enemy, enemyTrans, enemyVel, enemies);
+            SteeringComponent sc = getOrAddSteering(enemy, enemyTrans, enemyVel, enemies, ai.speed);
+            
+            // Sync speed in case it changed in JSON
+            sc.setMaxLinearSpeed(ai.speed);
+
             float distanceToPlayer = Vector2.dst(enemyTrans.x, enemyTrans.y, playerTrans.x, playerTrans.y);
 
             if (distanceToPlayer < ai.detectRange) {
@@ -60,7 +64,7 @@ public class AISystem extends GameSystem {
                 // Tactics: Shooting/Melee logic based on weapon range
                 boolean isAttacking = false;
                 if (weapon != null) {
-                    float attackRange = (weapon.type == WeaponComponent.Type.KNIFE) ? weapon.range + 10f : 400f; // Default 400 for firearms
+                    float attackRange = (weapon.type == WeaponComponent.Type.KNIFE) ? weapon.range + 10f : 400f;
                     if (distanceToPlayer <= attackRange) {
                         eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
                         isAttacking = true;
@@ -77,11 +81,11 @@ public class AISystem extends GameSystem {
         }
     }
 
-    private SteeringComponent getOrAddSteering(Entity enemy, TransformComponent t, VelocityComponent v, List<Entity> allEnemies) {
+    private SteeringComponent getOrAddSteering(Entity enemy, TransformComponent t, VelocityComponent v, List<Entity> allEnemies, float maxSpeed) {
         SteeringComponent sc = entityManager.getComponent(enemy, SteeringComponent.class);
         if (sc == null) {
             sc = new SteeringComponent(t, v);
-            sc.setMaxLinearSpeed(75f);
+            sc.setMaxLinearSpeed(maxSpeed);
             sc.setMaxLinearAcceleration(1000f);
             sc.seekBehavior = new Seek<>(sc, new StaticLocation(new Vector2()));
             Array<Steerable<Vector2>> otherAgents = new Array<>();

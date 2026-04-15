@@ -24,6 +24,10 @@ import pl.shooter.engine.ai.pathfinding.Node;
 
 import java.util.List;
 
+/**
+ * Renders the game world, including entities, map, blood decals and dynamic lighting.
+ * Supports color tinting for textured entities.
+ */
 public class RenderSystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
     private final SpriteBatch spriteBatch;
@@ -78,25 +82,25 @@ public class RenderSystem extends GameSystem {
 
             shapeRenderer.setProjectionMatrix(camera.combined);
             
-            // Pass 1: Render Map
+            // Pass 1: Map
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             if (currentMap != null) renderMap(currentMap);
             shapeRenderer.end();
 
-            // Pass 2: Render Blood Decals (Static, under entities)
+            // Pass 2: Blood Decals
             if (config.effects.showBloodDecals) {
                 shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
                 renderBloodDecals();
                 shapeRenderer.end();
             }
 
-            // Pass 3: Render Primitive Entities
+            // Pass 3: Primitives & Health Bars
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             renderPrimitiveEntities();
             renderHealthBars();
             shapeRenderer.end();
 
-            // Pass 4: Render Textures & Animations
+            // Pass 4: Textures & Animations (with Tinting)
             spriteBatch.setProjectionMatrix(camera.combined);
             spriteBatch.begin();
             renderTexturedEntities();
@@ -124,7 +128,7 @@ public class RenderSystem extends GameSystem {
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
             if (h.isDead && h.hasBlood) {
                 TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
-                float alpha = 0.6f; // Static transparency for blood
+                float alpha = 0.6f;
                 if (!h.corpseStayPermanent) {
                     alpha *= (1.0f - (h.deathTimer / h.corpseDuration));
                 }
@@ -134,44 +138,12 @@ public class RenderSystem extends GameSystem {
         }
     }
 
-    private void renderDebugInfo() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        
-        if (showDebugPaths) {
-            shapeRenderer.setColor(Color.CYAN);
-            List<Entity> enemies = entityManager.getEntitiesWithComponents(AIComponent.class);
-            for (Entity e : enemies) {
-                AIComponent ai = entityManager.getComponent(e, AIComponent.class);
-                if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
-                    for (int i = 0; i < ai.currentPath.getCount() - 1; i++) {
-                        Node n1 = ai.currentPath.get(i);
-                        Node n2 = ai.currentPath.get(i+1);
-                        shapeRenderer.line(n1.x * 32 + 16, n1.y * 32 + 16, n2.x * 32 + 16, n2.y * 32 + 16);
-                    }
-                }
-            }
-        }
-
-        if (showDebugHitboxes) {
-            shapeRenderer.setColor(Color.LIME);
-            List<Entity> colliders = entityManager.getEntitiesWithComponents(TransformComponent.class, ColliderComponent.class);
-            for (Entity e : colliders) {
-                TransformComponent t = entityManager.getComponent(e, TransformComponent.class);
-                ColliderComponent c = entityManager.getComponent(e, ColliderComponent.class);
-                shapeRenderer.circle(t.x, t.y, c.radius);
-            }
-        }
-
-        shapeRenderer.end();
-    }
-
     private void renderFinalPass() {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         
-        spriteBatch.getProjectionMatrix().idt(); // Reset to identity for full-screen quad
-        spriteBatch.setColor(Color.WHITE); // IMPORTANT: Reset color to avoid global dimming from corpses
+        spriteBatch.getProjectionMatrix().idt();
+        spriteBatch.setColor(Color.WHITE); // Reset to pure white for final pass
         spriteBatch.setShader(lightingShader);
         spriteBatch.begin();
         
@@ -186,7 +158,7 @@ public class RenderSystem extends GameSystem {
             Texture fboTexture = sceneFbo.getColorBufferTexture();
             spriteBatch.draw(fboTexture, -1, -1, 2, 2, 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
         }
-
+        
         spriteBatch.end();
         spriteBatch.setShader(null);
     }
@@ -217,13 +189,8 @@ public class RenderSystem extends GameSystem {
             TextureComponent tex = entityManager.getComponent(entity, TextureComponent.class);
             Texture texture = assetService.getTexture(tex.assetPath);
             if (texture != null) {
-                float alpha = 1.0f;
-                HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
-                if (h != null && h.isDead) {
-                    alpha = 1.0f - (h.deathTimer / h.corpseDuration);
-                }
-                
-                spriteBatch.setColor(1, 1, 1, alpha);
+                Color tint = getEntityTint(entity);
+                spriteBatch.setColor(tint);
                 spriteBatch.draw(texture, t.x - tex.width / 2, t.y - tex.height / 2, tex.width / 2, tex.height / 2, tex.width, tex.height, 1, 1, t.rotation - 90, 0, 0, texture.getWidth(), texture.getHeight(), false, false);
             }
         }
@@ -237,23 +204,34 @@ public class RenderSystem extends GameSystem {
             TextureRegion frame = anim.getCurrentKeyFrame();
             
             if (frame != null) {
-                float alpha = 1.0f;
-                HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
-                if (h != null && h.isDead) {
-                    alpha = 1.0f - (h.deathTimer / h.corpseDuration);
-                }
-                
-                spriteBatch.setColor(1, 1, 1, alpha);
+                Color tint = getEntityTint(entity);
+                spriteBatch.setColor(tint);
                 spriteBatch.draw(frame, t.x - anim.width / 2, t.y - anim.height / 2, anim.width / 2, anim.height / 2, anim.width, anim.height, 1, 1, t.rotation - 90);
             }
         }
+    }
+
+    private Color getEntityTint(Entity entity) {
+        float alpha = 1.0f;
+        HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
+        if (h != null && h.isDead) {
+            alpha = 1.0f - (h.deathTimer / h.corpseDuration);
+        }
+
+        RenderComponent r = entityManager.getComponent(entity, RenderComponent.class);
+        if (r != null) {
+            // Mix entity color with corpse alpha
+            return new Color(r.color.r, r.color.g, r.color.b, r.color.a * alpha);
+        }
+        
+        return new Color(1, 1, 1, alpha);
     }
 
     private void renderHealthBars() {
         List<Entity> enemies = entityManager.getEntitiesWithComponents(TransformComponent.class, HealthComponent.class);
         for (Entity entity : enemies) {
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
-            if (h.isDead) continue; // Don't draw health bars for corpses
+            if (h.isDead) continue;
             
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             float radius = 20f;
@@ -276,7 +254,7 @@ public class RenderSystem extends GameSystem {
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, TransformComponent.class);
         if (!players.isEmpty()) {
             TransformComponent tc = entityManager.getComponent(players.get(0), TransformComponent.class);
-            camera.position.lerp(new Vector3(tc.x, tc.y, 0), 0.1f); // Smooth camera
+            camera.position.lerp(new Vector3(tc.x, tc.y, 0), 0.1f);
             camera.update();
         }
     }
@@ -301,6 +279,39 @@ public class RenderSystem extends GameSystem {
                 shapeRenderer.rect(wx, wy, 32, 32);
             }
         }
+    }
+
+    private void renderDebugInfo() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+        if (showDebugHitboxes) {
+            shapeRenderer.setColor(Color.RED);
+            List<Entity> colliders = entityManager.getEntitiesWithComponents(TransformComponent.class, ColliderComponent.class);
+            for (Entity entity : colliders) {
+                TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
+                ColliderComponent c = entityManager.getComponent(entity, ColliderComponent.class);
+                shapeRenderer.circle(t.x, t.y, c.radius);
+            }
+        }
+
+        if (showDebugPaths) {
+            shapeRenderer.setColor(Color.CYAN);
+            List<Entity> aiEntities = entityManager.getEntitiesWithComponents(AIComponent.class);
+            for (Entity entity : aiEntities) {
+                AIComponent ai = entityManager.getComponent(entity, AIComponent.class);
+                if (ai.currentPath != null && ai.currentPath.getCount() > 0) {
+                    for (int i = 0; i < ai.currentPath.getCount() - 1; i++) {
+                        Node n1 = ai.currentPath.get(i);
+                        Node n2 = ai.currentPath.get(i + 1);
+                        // Convert node grid coordinates to world coordinates
+                        shapeRenderer.line(n1.x * 32 + 16, n1.y * 32 + 16, n2.x * 32 + 16, n2.y * 32 + 16);
+                    }
+                }
+            }
+        }
+
+        shapeRenderer.end();
     }
 
     @Override
