@@ -3,7 +3,7 @@
   "components": {
     "Transform": { "x": 0, "y": 0 },
     "Render": {
-      "color": { "r": 1, "g": 0, "b": 0, "a": 1 },
+      "color": { "r": 0.7, "g": 1, "b": 0.7, "a": 1 },
       "radius": 20,
       "isCircle": false
     },
@@ -15,14 +15,16 @@
       "corpseDuration": 5.0
     },
     "Collider": { "radius": 12 },
-    "AI": { "behavior": "CHASE", "detectRange": 1200 },
+    "AI": {
+      "behavior": "CHASE",
+      "detectRange": 1200,
+      "speed": 75.0
+    },
     "Velocity": { "vx": 0, "vy": 0 },
     "Weapon": {
       "type": "KNIFE",
       "fireRate": 1.0,
       "projectileSpeed": 0,
-      "spread": 0,
-      "projectilesPerShot": 1,
       "hasInfiniteAmmo": true
     }
   },
