@@ -9,6 +9,7 @@ import pl.shooter.engine.ecs.components.DestructibleComponent;
 import pl.shooter.engine.ecs.components.ObstacleComponent;
 import pl.shooter.engine.ecs.components.TransformComponent;
 import pl.shooter.engine.world.GameMap;
+import pl.shooter.engine.world.JsonMap;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,20 +19,27 @@ public class NavigationGraph implements IndexedGraph<Node> {
     private final GameMap map;
     private final Array<Node> nodes;
     private final Map<String, Node> nodeMap;
-    private final int range = 100; 
+    private final int range = 100;
+    private final int tileSize;
 
     public NavigationGraph(GameMap map) {
         this.map = map;
         this.nodes = new Array<>();
         this.nodeMap = new HashMap<>();
+        
+        if (map instanceof JsonMap jm) {
+            this.tileSize = jm.getDisplaySize();
+        } else {
+            this.tileSize = 32;
+        }
     }
 
     public void update(float centerX, float centerY, EntityManager entityManager) {
         nodes.clear();
         nodeMap.clear();
 
-        int gridCenterX = (int) Math.floor(centerX / 32);
-        int gridCenterY = (int) Math.floor(centerY / 32);
+        int gridCenterX = (int) Math.floor(centerX / tileSize);
+        int gridCenterY = (int) Math.floor(centerY / tileSize);
 
         // Pre-cache obstacles positions for performance
         Map<String, Boolean> obstacleTiles = new HashMap<>();
@@ -45,18 +53,19 @@ public class NavigationGraph implements IndexedGraph<Node> {
                 
                 if (blocks) {
                     TransformComponent t = entityManager.getComponent(e, TransformComponent.class);
-                    int gx = (int) Math.floor(t.x / 32);
-                    int gy = (int) Math.floor(t.y / 32);
+                    int gx = (int) Math.floor(t.x / tileSize);
+                    int gy = (int) Math.floor(t.y / tileSize);
                     obstacleTiles.put(gx + "," + gy, true);
                 }
             }
         }
 
         int index = 0;
+        float offset = tileSize / 2f;
         for (int x = gridCenterX - range; x <= gridCenterX + range; x++) {
             for (int y = gridCenterY - range; y <= gridCenterY + range; y++) {
                 // Check map and entity obstacles
-                if (map.isWalkable(x * 32 + 16, y * 32 + 16) && !obstacleTiles.containsKey(x + "," + y)) {
+                if (map.isWalkable(x * tileSize + offset, y * tileSize + offset) && !obstacleTiles.containsKey(x + "," + y)) {
                     Node node = new Node(x, y, index++);
                     nodes.add(node);
                     nodeMap.put(x + "," + y, node);
@@ -70,11 +79,12 @@ public class NavigationGraph implements IndexedGraph<Node> {
     }
 
     private void addConnections(Node from) {
+        float offset = tileSize / 2f;
         int[][] cardinal = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
         for (int[] n : cardinal) {
             Node to = nodeMap.get((from.x + n[0]) + "," + (from.y + n[1]));
             if (to != null) {
-                float speedMult = map.getSpeedMultiplier(to.x * 32 + 16, to.y * 32 + 16);
+                float speedMult = map.getSpeedMultiplier(to.x * tileSize + offset, to.y * tileSize + offset);
                 from.getConnections().add(new NodeConnection(from, to, 1.0f / Math.max(0.1f, speedMult)));
             }
         }
@@ -85,7 +95,7 @@ public class NavigationGraph implements IndexedGraph<Node> {
                 nodeMap.containsKey(from.x + "," + (from.y + n[1]))) {
                 Node to = nodeMap.get((from.x + n[0]) + "," + (from.y + n[1]));
                 if (to != null) {
-                    float speedMult = map.getSpeedMultiplier(to.x * 32 + 16, to.y * 32 + 16);
+                    float speedMult = map.getSpeedMultiplier(to.x * tileSize + offset, to.y * tileSize + offset);
                     from.getConnections().add(new NodeConnection(from, to, 1.414f / Math.max(0.1f, speedMult)));
                 }
             }
@@ -93,8 +103,8 @@ public class NavigationGraph implements IndexedGraph<Node> {
     }
 
     public Node getNodeAt(float worldX, float worldY) {
-        int gx = (int) Math.floor(worldX / 32);
-        int gy = (int) Math.floor(worldY / 32);
+        int gx = (int) Math.floor(worldX / tileSize);
+        int gy = (int) Math.floor(worldY / tileSize);
         
         for (int r = 0; r <= 3; r++) {
             for (int dx = -r; dx <= r; dx++) {
