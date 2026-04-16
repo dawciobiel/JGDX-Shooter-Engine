@@ -2,6 +2,7 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
@@ -26,7 +27,7 @@ import java.util.List;
 
 /**
  * Renders the game world, including entities, map, blood decals and dynamic lighting.
- * Supports color tinting for textured entities.
+ * Supports color tinting for textured entities and names above units.
  */
 public class RenderSystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
@@ -36,6 +37,7 @@ public class RenderSystem extends GameSystem {
     private final AssetService assetService;
     private final GameConfig config;
     private GameMap currentMap;
+    private final BitmapFont nameFont;
 
     private FrameBuffer sceneFbo;
     private ShaderProgram lightingShader;
@@ -51,6 +53,8 @@ public class RenderSystem extends GameSystem {
         this.spriteBatch = new SpriteBatch();
         this.camera = new OrthographicCamera();
         this.viewport = new ExtendViewport(800, 600, camera);
+        this.nameFont = new BitmapFont();
+        this.nameFont.getData().setScale(0.8f);
 
         initShaders();
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -100,11 +104,14 @@ public class RenderSystem extends GameSystem {
             renderHealthBars();
             shapeRenderer.end();
 
-            // Pass 4: Textures & Animations (with Tinting)
+            // Pass 4: Textures & Animations & Names (with Tinting)
             spriteBatch.setProjectionMatrix(camera.combined);
             spriteBatch.begin();
             renderTexturedEntities();
             renderAnimatedEntities();
+            if (config.gameplay.showUnitNames) {
+                renderUnitNames();
+            }
             spriteBatch.end();
             
             sceneFbo.end();
@@ -208,6 +215,24 @@ public class RenderSystem extends GameSystem {
                 spriteBatch.setColor(tint);
                 spriteBatch.draw(frame, t.x - anim.width / 2, t.y - anim.height / 2, anim.width / 2, anim.height / 2, anim.width, anim.height, 1, 1, t.rotation - 90);
             }
+        }
+    }
+
+    private void renderUnitNames() {
+        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, NameComponent.class);
+        for (Entity entity : entities) {
+            HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
+            if (h != null && h.isDead) continue;
+
+            TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
+            NameComponent n = entityManager.getComponent(entity, NameComponent.class);
+            
+            float radius = 20f;
+            if (entityManager.hasComponent(entity, RenderComponent.class)) radius = entityManager.getComponent(entity, RenderComponent.class).radius;
+            else if (entityManager.hasComponent(entity, AnimationComponent.class)) radius = entityManager.getComponent(entity, AnimationComponent.class).width / 2;
+
+            nameFont.setColor(1, 1, 1, 0.9f);
+            nameFont.draw(spriteBatch, n.name, t.x - (n.name.length() * 3), t.y + radius + 25);
         }
     }
 
@@ -330,5 +355,6 @@ public class RenderSystem extends GameSystem {
         spriteBatch.dispose();
         if (lightingShader != null) lightingShader.dispose();
         if (sceneFbo != null) sceneFbo.dispose();
+        if (nameFont != null) nameFont.dispose();
     }
 }

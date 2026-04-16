@@ -52,6 +52,7 @@ public class EntityFactory {
         componentAliases.put("Collider", ColliderComponent.class);
         componentAliases.put("AmmoPickup", AmmoPickupComponent.class);
         componentAliases.put("HealthPickup", HealthPickupComponent.class);
+        componentAliases.put("Name", NameComponent.class);
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {
@@ -82,14 +83,22 @@ public class EntityFactory {
                 }
             }
 
-            // 2. Animations
+            // 2. Names (Random selection from array)
+            JsonNode namesNode = root.get("names");
+            if (namesNode != null && namesNode.isArray() && namesNode.size() > 0) {
+                int index = random.nextInt(namesNode.size());
+                String selectedName = namesNode.get(index).asText();
+                entityManager.addComponent(entity, new NameComponent(selectedName));
+            }
+
+            // 3. Animations
             JsonNode animNode = root.get("animations");
             if (animNode != null) {
                 AnimationConfig animConfig = objectMapper.treeToValue(animNode, AnimationConfig.class);
                 setupAnimationsFromConfig(entity, animConfig);
             }
 
-            // 3. Sounds
+            // 4. Sounds
             JsonNode soundsNode = root.get("sounds");
             if (soundsNode != null && soundsNode.isObject()) {
                 SoundComponent soundComp = new SoundComponent();
