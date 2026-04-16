@@ -1,6 +1,16 @@
-# Lista zadań - Silnik Gry Shooter (Architektura ECS)
+# Lista zadań — Silnik Gry Shooter (Architektura ECS)
+
+## Etap 10: Architektura map i jednostek na mapie
+- [ ] **Architektura aktywowania jednostek na mapie** (Przenieść architekturę dodawania jednostek do mapy do zewnętrznego pliku poza kod Java)
+- [ ] **Architektura map** (Stworzyć architekturę tworzenia map i wczytywania ich za pomocą silnika)
+- [ ] **Wybór mapy przed rozpoczęciem rozgrywki**
 
 ## Etap 9: Szlify i Rozwój (W TRAKCIE)
+
+- [ ] **Dodać możliwość wyświetlania kursora myszy jako celownika** () 
+- [ ] **Wyświetlanie nazwy jednostki na mapie** (Dodać opcje w konfiguracji gry oraz funkcjonalność wyświetlana napisu nazwy jednostki na HUD nad paskiem życia tej jednostki. W pliku konfiguracyjnym wrogiej jednostki (np. "zombie.json") dodać też pole typu tablica, w którym można zdefiniować kilka nazw dla tej jednostki. Silnik gry wybierałby losowo jedną nazwę spośród wpisów w tej tablicy dla stworzonej i wyświetlanej jednostki)
+- [ ] **Nowa wroga jednostka** (Dodać nową jednostkę "Spider" typu jednostka mechaniczna)
+- [ ] **Wprowadzić obiekt który można przesunąć za pomocą gracza**
 - [x] **Refaktoryzacja struktury assets** (Podział na audio/sfx, graphics/textures, shaders)
 - [x] **System Fallback dla zasobów** (Automatyczne ładowanie domyślnych dźwięków i ikon broni)
 - [x] **Broń Melee: Nóż (Knife)** (Implementacja walki wręcz, zasięgu ataku i ikony w HUD)
@@ -9,10 +19,11 @@
 - [x] **Rozbudowany System Broni** (9 typów broni, inwentarz, brak resetu amunicji)
 - [x] **Dynamiczna Zmiana Broni** (Klawisze 1-9, Q/E, konfigurowalne)
 - [x] **Obsługa Fullscreen i Ustawień Ekranu** (Wczytywanie szerokości, wysokości i trybu pełnoekranowego z plików konfiguracyjnych)
-- [ ] **Różne typy przeciwników** (Szybsi biegacze, pancerni wrogowie)
+- [x] **Różne typy przeciwników** (Szybsi biegacze - Runner, pancerni wrogowie - Tank)
 - [ ] **System Drzwi i Przełączników** (Prosta interakcja ze światem)
-- [x] **Wyświetlanie HitBox** (W konfigu gry jest opcja "showHitboxes")
-- [x] **Wyświetlanie FPS** (W konfigu gry jest opcja "showFps")
+- [x] **Wyświetlanie HitBox** (W konfig-u gry jest opcja "showHitboxes")
+- [x] **Wyświetlanie FPS** (W konfig-u gry jest opcja "showFps")
+- [x] **Renderowanie ścieżek AI (Debug)** (W konfigu gry "showDebugPaths" wizualizuje ścieżki w czasie rzeczywistym)
 - [ ] **Zapisywanie Wyników** (Highscores do pliku)
 
 ## Etap 8: Rozgrywka i Detale (ZAKOŃCZONE)
