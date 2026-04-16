@@ -19,7 +19,7 @@
     "AI": {
       "behavior": "CHASE",
       "detectRange": 1500,
-      "speed": 150.0
+      "speed": 100.0
     },
     "Velocity": { "vx": 0, "vy": 0 },
     "Weapon": {
