@@ -3,14 +3,18 @@
 ## Etap 10: Architektura map i jednostek na mapie (W TRAKCIE)
 - [x] **Architektura aktywowania jednostek na mapie** (Przeniesiono spawnowanie do JSON mapy przez `MapService`)
 - [x] **Architektura map** (System wczytywania `map.json` z obsługą atlasów kafelków i skalowania)
-- [ ] **Wybór mapy przed rozpoczęciem rozgrywki** (Menu wyboru poziomu)
+- [x] **Wybór mapy przed rozpoczęciem rozgrywki** (Menu wyboru poziomu)
 
 ## Etap 9: Szlify i Rozwój (W TRAKCIE)
 
+- [ ] **Nowa wroga jednostka** (Dodać nową jednostkę "Combat Robot" typu jednostka mechaniczna)
+- [ ] **Dźwięki mapy typu "ambient" dla mapy** (Jeżeli gracz wkroczy na odpowiedni rejon mapy silnik powinien w tej części mapy odtwarzać wybrany dźwięk)
+- [ ] **Dźwięki gracza typu "multi kill"** (Po zabiciu kilku wrogów w krótkim czasie silnik powinien odtwarzać wybrany dźwięk. Dźwię powinien być definiowany w konfigu postaci gracza)
+- [ ] **Wprowadzić obiekt, który gracz możne przesunąć na mapie**
+- [ ] **System Drzwi i Przełączników** (Prosta interakcja ze światem)
+- [ ] **Zapisywanie Wyników** (Highscores do pliku)
 - [x] **Dodać możliwość wyświetlania kursora myszy jako celownika** (Konfigurowalna tekstura, rozmiar i kolor) 
 - [x] **Wyświetlanie nazwy jednostki na mapie** (Losowane imiona z tablicy w JSON, renderowane nad głowami)
-- [ ] **Nowa wroga jednostka** (Dodać nową jednostkę "Spider" typu jednostka mechaniczna)
-- [ ] **Wprowadzić obiekt, który gracz możne przesunąć na mapie**
 - [x] **Refaktoryzacja struktury assets** (Podział na audio/sfx, graphics/textures, shaders)
 - [x] **System Fallback dla zasobów** (Automatyczne ładowanie domyślnych dźwięków i ikon broni)
 - [x] **Broń Melee: Nóż (Knife)** (Implementacja walki wręcz, zasięgu ataku i ikony w HUD)
@@ -20,11 +24,9 @@
 - [x] **Dynamiczna Zmiana Broni** (Klawisze 1-9, Q/E, konfigurowalne)
 - [x] **Obsługa Fullscreen i Ustawień Ekranu** (Wczytywanie szerokości, wysokości i trybu pełnoekranowego z plików konfiguracyjnych)
 - [x] **Różne typy przeciwników** (Szybsi biegacze - Runner, pancerni wrogowie - Tank)
-- [ ] **System Drzwi i Przełączników** (Prosta interakcja ze światem)
 - [x] **Wyświetlanie HitBox** (W konfig-u gry jest opcja "showHitboxes")
 - [x] **Wyświetlanie FPS** (W konfig-u gry jest opcja "showFps")
 - [x] **Renderowanie ścieżek AI (Debug)** (W konfigu gry "showDebugPaths" wizualizuje ścieżki w czasie rzeczywistym)
-- [ ] **Zapisywanie Wyników** (Highscores do pliku)
 
 ## Etap 8: Rozgrywka i Detale (ZAKOŃCZONE)
 ... (reszta bez zmian)
