@@ -1,6 +1,6 @@
 {
   "type": "Player",
-  "names": ["dawciobiel", "Sierżant Rekin", "Komando", "Ostatni Ocalały", "Szeregowiec Ryan", "Rambo", "Commando", "Janusz Korwin"],
+  "names": ["dawciobiel", "Ostatni Ocalały", "Szeregowiec Ryan", "Rambo", "Commando", "Janusz Korwin"],
   "components": {
     "Player": { "speed": 200.0 },
     "Transform": { "x": 0, "y": 0 },

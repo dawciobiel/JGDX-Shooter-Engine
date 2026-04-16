@@ -26,5 +26,14 @@
   },
   "effects" : {
     "showBloodDecals" : true
+  },
+  "ui": {
+    "useCustomCursor": true,
+    "cursorImagePath": "assets/graphics/textures/ui/Crosshairs 64/image0013.png",
+    "cursorSize": 64.0,
+    "cursorRed": 1.0,
+    "cursorGreen": 1.0,
+    "cursorBlue": 0.0,
+    "cursorAlpha": 1.0
   }
 }
