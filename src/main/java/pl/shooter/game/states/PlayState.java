@@ -19,7 +19,8 @@ import pl.shooter.engine.ecs.systems.*;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 import pl.shooter.engine.world.GameMap;
-import pl.shooter.engine.world.TestingMap;
+import pl.shooter.engine.world.MapConfig;
+import pl.shooter.engine.world.MapService;
 
 import java.util.List;
 
@@ -29,6 +30,7 @@ public class PlayState extends GameState {
     private AudioService audioService;
     private ConfigService configService;
     private EntityFactory entityFactory;
+    private MapService mapService;
     private boolean isGameOver = false;
     private GameConfig config;
 
@@ -46,6 +48,7 @@ public class PlayState extends GameState {
         this.assetService = new AssetService();
         this.audioService = new AudioService();
         this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService);
+        this.mapService = new MapService(engine.getEntityManager(), entityFactory, assetService);
         this.isGameOver = false;
 
         init();
@@ -53,7 +56,14 @@ public class PlayState extends GameState {
     }
 
     private void init() {
-        // Load unit animations
+        // 1. Load the map first to know which assets are needed
+        MapConfig mapConfig = mapService.loadMap("assets/maps/testing_room/map.json");
+        if (mapConfig == null) {
+            Gdx.app.error("PlayState", "CRITICAL: Could not load map config!");
+            return;
+        }
+
+        // 2. Load common assets (could be moved to a global preloader later)
         assetService.loadTexture("assets/graphics/textures/characters/soldier/walk.png");
         for (int i = 0; i <= 16; i++) {
             assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_" + i + ".png");
@@ -61,18 +71,20 @@ public class PlayState extends GameState {
         }
         for (int i = 0; i <= 8; i++) assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_" + i + ".png");
         
-        // Load custom cursor if enabled
         if (config.ui.useCustomCursor && config.ui.cursorImagePath != null && !config.ui.cursorImagePath.isEmpty()) {
             assetService.loadTexture(config.ui.cursorImagePath);
         }
 
         assetService.finishLoading();
 
+        // 3. Audio
         audioService.loadSound("assets/audio/sfx/characters/soldier/hit.wav");
         audioService.loadSound("assets/audio/sfx/characters/soldier/death.wav");
 
         WeaponConfig weaponConfig = configService.getWeaponConfig();
-        GameMap map = new TestingMap();
+        
+        // 4. Create GameMap and System
+        GameMap map = mapService.createGameMap(mapConfig);
         
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
         renderSystem.setMap(map);
@@ -80,17 +92,24 @@ public class PlayState extends GameState {
         renderSystem.setShowDebugHitboxes(config.debug.showHitboxes);
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager());
-        lightSystem.setAmbientColor(config.graphics.ambientRed, config.graphics.ambientGreen, config.graphics.ambientBlue, config.graphics.ambientBrightness);
+        // Apply ambient color from map config
+        lightSystem.setAmbientColor(
+            mapConfig.settings.ambientColor.r, 
+            mapConfig.settings.ambientColor.g, 
+            mapConfig.settings.ambientColor.b, 
+            mapConfig.settings.ambientColor.a
+        );
         renderSystem.setLightSystem(lightSystem);
 
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
         uiSystem.setShowFps(config.debug.showFps);
 
+        // 5. Setup Systems
         engine.addSystem(new InputSystem(engine.getEntityManager(), engine.getEventBus(), renderSystem.getCamera()));
         engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new AISystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new SteeringSystem(engine.getEntityManager())); 
-        engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, configService));
+        engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, configService, map));
         engine.addSystem(new ProjectileSystem(engine.getEntityManager()));
         engine.addSystem(new ParticleUpdateSystem(engine.getEntityManager()));
         engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
@@ -103,12 +122,16 @@ public class PlayState extends GameState {
         engine.addSystem(renderSystem);
         engine.addSystem(uiSystem);
 
-        // --- PLAYER INITIALIZATION WITH INVENTORY ---
-        Entity player = entityFactory.loadFromJson("assets/entities/player.json", 200, 200);
-        if (player != null) {
+        // 6. Spawn Entities from Map
+        mapService.spawnEntities(mapConfig);
+
+        // Optional: Post-spawn initialization (like adding lights to player)
+        List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
+        if (!players.isEmpty()) {
+            Entity player = players.get(0);
             engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
             
-            // Create and fill inventory
+            // Create and fill inventory (this logic could eventually be moved to a PlayerService or JSON)
             InventoryComponent inv = new InventoryComponent();
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.KNIFE, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PISTOL, weaponConfig));
@@ -120,29 +143,15 @@ public class PlayState extends GameState {
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.LIGHTNING_GUN, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.RAIL_GUN, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.GRENADE, weaponConfig));
-            
-            // Set starting weapon to PLASMA_GUN (index 5)
             inv.currentWeaponIndex = 5;
             
             engine.getEntityManager().addComponent(player, inv);
-            // Ensure the starting weapon is the active one on the entity
             engine.getEntityManager().addComponent(player, inv.getActiveWeapon());
         }
 
-        for (int i = 0; i < 5; i++) {
-            float zx, zy;
-            do {
-                zx = MathUtils.random(100, 1400);
-                zy = MathUtils.random(100, 1400);
-            } while (!map.isWalkable(zx, zy));
-            entityFactory.loadFromJson("assets/entities/zombie.json", zx, zy);
-        }
-
+        // We can still add some random crates or keep it fully data-driven
         for (int i = 0; i < 15; i++) {
             createCrate(MathUtils.random(300, 1200), MathUtils.random(300, 1200), true);
-        }
-        for (int i = 0; i < 10; i++) {
-            createCrate(MathUtils.random(300, 1200), MathUtils.random(300, 1200), false);
         }
     }
 
@@ -165,7 +174,6 @@ public class PlayState extends GameState {
         }
 
         if (isGameOver) {
-            // Explicitly render background world THEN UI on top during Game Over
             RenderSystem rs = null;
             UISystem ui = null;
             for (pl.shooter.engine.ecs.GameSystem system : engine.getSystems()) {
@@ -184,7 +192,6 @@ public class PlayState extends GameState {
     }
 
     private void checkGameOver() {
-        // Player is dead if they have no PlayerComponent OR HealthComponent says they are dead
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
         if (players.isEmpty()) {
             isGameOver = true;
@@ -204,7 +211,6 @@ public class PlayState extends GameState {
         if (assetService != null) assetService.dispose();
         if (audioService != null) audioService.dispose();
 
-        // Restore system cursor when PlayState is disposed
         if (config != null && config.ui.useCustomCursor) {
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
         }
