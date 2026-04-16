@@ -18,6 +18,7 @@ public class WeaponConfig {
         public int magazineSize;
         public float reloadTime;
         public boolean hasInfiniteAmmo;
+        public float range = 50f; // Added for melee weapons
         public ProjectileData projectile;
     }
 
