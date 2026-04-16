@@ -1,35 +1,66 @@
 package pl.shooter.engine.ecs.systems;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.math.MathUtils;
 import pl.shooter.engine.assets.AudioService;
+import pl.shooter.engine.config.ConfigService;
+import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.SoundComponent;
 import pl.shooter.engine.ecs.components.WeaponComponent;
-import pl.shooter.engine.events.BulletFiredEvent;
-import pl.shooter.engine.events.EmptyWeaponEvent;
-import pl.shooter.engine.events.EventBus;
-import pl.shooter.engine.events.PickupEvent;
+import pl.shooter.engine.events.*;
 import pl.shooter.events.HitEvent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Listens to game events and plays specific sounds for each entity,
- * supporting dedicated weapon sounds with a default fallback system.
+ * supporting dedicated weapon sounds and random taunts.
  */
 public class SoundSystem extends GameSystem {
     private final AudioService audioService;
+    private final GameConfig config;
+    private final List<String> tauntFiles = new ArrayList<>();
     private static final String DEFAULT_WEAPONS_PATH = "assets/audio/sfx/weapons/default/";
     private static final String WEAPONS_BASE_PATH = "assets/audio/sfx/weapons/";
 
     public SoundSystem(EntityManager entityManager, EventBus eventBus, AudioService audioService) {
         super(entityManager);
         this.audioService = audioService;
+        this.config = new ConfigService().getConfig();
+
+        // Discover and preload taunt sounds
+        discoverTaunts();
 
         // Subscribe to events
         eventBus.subscribe(BulletFiredEvent.class, this::handleBulletFired);
         eventBus.subscribe(HitEvent.class, this::handleHitSound);
         eventBus.subscribe(EmptyWeaponEvent.class, this::handleEmptyClick);
         eventBus.subscribe(PickupEvent.class, this::handlePickupSound);
+        eventBus.subscribe(TauntEvent.class, event -> handleTaunt());
+    }
+
+    private void discoverTaunts() {
+        FileHandle dir = Gdx.files.internal(config.audio.tauntsDir);
+        if (dir.exists() && dir.isDirectory()) {
+            for (FileHandle file : dir.list()) {
+                if (file.extension().equalsIgnoreCase("wav") || file.extension().equalsIgnoreCase("mp3")) {
+                    tauntFiles.add(file.path());
+                    audioService.loadSound(file.path());
+                }
+            }
+        }
+    }
+
+    private void handleTaunt() {
+        if (!tauntFiles.isEmpty()) {
+            String randomTaunt = tauntFiles.get(MathUtils.random(tauntFiles.size() - 1));
+            audioService.playSound(randomTaunt, 0.8f);
+        }
     }
 
     private void handleBulletFired(BulletFiredEvent event) {
@@ -37,12 +68,10 @@ public class SoundSystem extends GameSystem {
         if (weapon != null) {
             String weaponFolder = weapon.type.name().toLowerCase();
             String preferred = WEAPONS_BASE_PATH + weaponFolder + "/" + weaponFolder + ".wav";
-            // Also try a generic "shoot.wav" in the weapon folder
             String preferredShoot = WEAPONS_BASE_PATH + weaponFolder + "/shoot.wav";
             String fallback = DEFAULT_WEAPONS_PATH + "shoot.wav";
             
             audioService.playSoundWithFallback(preferred, preferredShoot, 0.4f);
-            // If the weapon-named file doesn't exist, try shoot.wav in weapon folder, then default/shoot.wav
             if (!audioService.isSoundLoaded(preferred) && !audioService.isSoundLoaded(preferredShoot)) {
                 audioService.playSound(fallback, 0.4f);
             }
@@ -68,7 +97,6 @@ public class SoundSystem extends GameSystem {
     }
 
     private void handlePickupSound(PickupEvent event) {
-        // Pickups are usually generic, but we can also use fallback
         String preferred = DEFAULT_WEAPONS_PATH + "pickup.wav";
         audioService.playSound(preferred, 0.5f);
     }

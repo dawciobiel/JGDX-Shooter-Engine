@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 /**
  * Main configuration object for the game.
  */
+@SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GameConfig {
     
@@ -32,6 +33,7 @@ public class GameConfig {
         public float masterVolume = 1.0f;
         public float sfxVolume = 1.0f;
         public float musicVolume = 0.5f;
+        public String tauntsDir = "assets/audio/sfx/characters/taunt";
     }
 
     public static class DebugConfig {
@@ -42,6 +44,10 @@ public class GameConfig {
     }
 
     public static class InputConfig {
+        public int moveUpKey = Input.Keys.W;
+        public int moveDownKey = Input.Keys.S;
+        public int moveLeftKey = Input.Keys.A;
+        public int moveRightKey = Input.Keys.D;
         public int prevWeaponKey = Input.Keys.Q;
         public int nextWeaponKey = Input.Keys.E;
     }
@@ -52,6 +58,8 @@ public class GameConfig {
 
     public static class GameplayConfig {
         public boolean showUnitNames = true;
+        public int multiKillThreshold = 3;
+        public float multiKillWindow = 3.0f;
     }
 
     public static class UIConfig {

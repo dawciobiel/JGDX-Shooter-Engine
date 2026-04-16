@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor;
-import com.badlogic.gdx.math.MathUtils;
 import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
@@ -28,11 +27,11 @@ public class PlayState extends GameState {
     private Engine engine;
     private AssetService assetService;
     private AudioService audioService;
-    private ConfigService configService;
+    private final ConfigService configService;
     private EntityFactory entityFactory;
     private MapService mapService;
     private boolean isGameOver = false;
-    private GameConfig config;
+    private final GameConfig config;
     private final String mapPath;
 
     public PlayState(GameStateManager gsm, String mapPath) {
@@ -64,17 +63,13 @@ public class PlayState extends GameState {
             return;
         }
 
-        // --- PRELOAD COMMON ASSETS ---
         assetService.loadTexture("assets/graphics/textures/characters/soldier/walk.png");
-        
-        // Zombie animations
         for (int i = 0; i <= 16; i++) {
             assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_" + i + ".png");
             assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-move_" + i + ".png");
         }
         for (int i = 0; i <= 8; i++) assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_" + i + ".png");
         
-        // Combat Robot animations
         assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-walk.png");
         assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-shoot.png");
         assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-explode.png");
@@ -85,7 +80,6 @@ public class PlayState extends GameState {
 
         assetService.finishLoading();
 
-        // Audio
         audioService.loadSound("assets/audio/sfx/characters/soldier/hit.wav");
         audioService.loadSound("assets/audio/sfx/characters/soldier/death.wav");
 
@@ -124,6 +118,8 @@ public class PlayState extends GameState {
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
+        engine.addSystem(new MultiKillSystem(engine.getEntityManager(), engine.getEventBus()));
+        engine.addSystem(new TauntSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
         engine.addSystem(new AnimationSystem(engine.getEntityManager()));
         engine.addSystem(new WaveSystem(engine.getEntityManager(), entityFactory, map));
         engine.addSystem(renderSystem);
