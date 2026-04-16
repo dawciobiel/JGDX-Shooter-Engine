@@ -1,5 +1,6 @@
 {
   "type": "Zombie",
+  "names": ["Zgniłek", "Szwendacz", "Gryzoń", "Truposz"],
   "components": {
     "Transform": { "x": 0, "y": 0 },
     "Render": {
@@ -8,10 +9,10 @@
       "isCircle": false
     },
     "Health": {
-      "hp": 50,
-      "maxHp": 50,
+      "hp": 100,
+      "maxHp": 100,
       "hasBlood": true,
-      "bloodColor": { "r": 0.5, "g": 0.1, "b": 0.1, "a": 1 },
+      "bloodColor": { "r": 0.5, "g": 0.1, "b": 0, "a": 1 },
       "corpseDuration": 5.0
     },
     "Collider": { "radius": 12 },
@@ -29,27 +30,12 @@
     }
   },
   "animations": {
-    "width": 50.0,
-    "height": 50.0,
+    "width": 55.0,
+    "height": 55.0,
     "states": {
-      "IDLE": {
-        "type": "FILES",
-        "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_",
-        "count": 16,
-        "frameDuration": 0.05
-      },
-      "WALK": {
-        "type": "FILES",
-        "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-move_",
-        "count": 16,
-        "frameDuration": 0.05
-      },
-      "SHOOT": {
-        "type": "FILES",
-        "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_",
-        "count": 8,
-        "frameDuration": 0.08
-      }
+      "IDLE": { "type": "FILES", "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_", "count": 16, "frameDuration": 0.1 },
+      "WALK": { "type": "FILES", "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-move_", "count": 16, "frameDuration": 0.1 },
+      "SHOOT": { "type": "FILES", "path": "assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_", "count": 8, "frameDuration": 0.15 }
     }
   },
   "sounds": {
