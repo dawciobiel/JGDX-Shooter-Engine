@@ -64,19 +64,28 @@ public class PlayState extends GameState {
             return;
         }
 
+        // --- PRELOAD COMMON ASSETS ---
         assetService.loadTexture("assets/graphics/textures/characters/soldier/walk.png");
+        
+        // Zombie animations
         for (int i = 0; i <= 16; i++) {
             assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_" + i + ".png");
             assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-move_" + i + ".png");
         }
         for (int i = 0; i <= 8; i++) assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_" + i + ".png");
         
+        // Combat Robot animations
+        assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-walk.png");
+        assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-shoot.png");
+        assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-explode.png");
+
         if (config.ui.useCustomCursor && config.ui.cursorImagePath != null && !config.ui.cursorImagePath.isEmpty()) {
             assetService.loadTexture(config.ui.cursorImagePath);
         }
 
         assetService.finishLoading();
 
+        // Audio
         audioService.loadSound("assets/audio/sfx/characters/soldier/hit.wav");
         audioService.loadSound("assets/audio/sfx/characters/soldier/death.wav");
 
@@ -100,7 +109,6 @@ public class PlayState extends GameState {
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
         uiSystem.setShowFps(config.debug.showFps);
 
-        // AISystem setup with map for Line of Sight checks
         AISystem aiSystem = new AISystem(engine.getEntityManager(), engine.getEventBus());
         aiSystem.setMap(map);
 

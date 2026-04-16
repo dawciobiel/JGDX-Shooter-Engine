@@ -12,6 +12,7 @@ import java.util.List;
 
 /**
  * Updates animation timers and manages current animation state (IDLE, WALK, SHOOT).
+ * Safely handles missing animations.
  */
 public class AnimationSystem extends GameSystem {
 
@@ -26,7 +27,6 @@ public class AnimationSystem extends GameSystem {
         for (Entity entity : entities) {
             AnimationComponent anim = entityManager.getComponent(entity, AnimationComponent.class);
             VelocityComponent velocity = entityManager.getComponent(entity, VelocityComponent.class);
-            WeaponComponent weapon = entityManager.getComponent(entity, WeaponComponent.class);
 
             // 1. Advance the animation timer
             anim.stateTime += deltaTime;
@@ -42,10 +42,23 @@ public class AnimationSystem extends GameSystem {
                 }
             }
             
-            // Priority: Shooting overrides Walking/Idle for NPCs (set in AISystem)
-            // For Player, we use a simple timer check
-            if (anim.currentState == AnimationComponent.State.SHOOT && !anim.animations.get(AnimationComponent.State.SHOOT).isAnimationFinished(anim.stateTime)) {
-                nextState = AnimationComponent.State.SHOOT;
+            // Priority: Shooting overrides Walking/Idle (if animation exists)
+            if (anim.currentState == AnimationComponent.State.SHOOT) {
+                var shootAnim = anim.animations.get(AnimationComponent.State.SHOOT);
+                if (shootAnim != null && !shootAnim.isAnimationFinished(anim.stateTime)) {
+                    nextState = AnimationComponent.State.SHOOT;
+                }
+            }
+
+            // Safety check: ensure nextState exists in this entity
+            if (anim.animations.get(nextState) == null) {
+                // If IDLE is missing, fallback to first available animation or stay in current
+                if (nextState != AnimationComponent.State.IDLE && anim.animations.get(AnimationComponent.State.IDLE) != null) {
+                    nextState = AnimationComponent.State.IDLE;
+                } else if (anim.animations.size() > 0) {
+                    // Just take any available
+                    nextState = anim.animations.keySet().iterator().next();
+                }
             }
 
             // Apply state change and reset timer if state changed
