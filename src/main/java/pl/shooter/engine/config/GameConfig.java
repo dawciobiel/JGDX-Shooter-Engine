@@ -58,5 +58,9 @@ public class GameConfig {
         public boolean useCustomCursor = true;
         public String cursorImagePath = "assets/graphics/textures/ui/Crosshairs 64/image0013.png";
         public float cursorSize = 32f;
+        public float cursorRed = 1.0f;
+        public float cursorGreen = 1.0f;
+        public float cursorBlue = 1.0f;
+        public float cursorAlpha = 1.0f;
     }
 }

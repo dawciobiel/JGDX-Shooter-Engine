@@ -145,7 +145,7 @@ public class RenderSystem extends GameSystem {
             spriteBatch.setProjectionMatrix(camera.combined);
             spriteBatch.setShader(null); // No lighting shader for the cursor
             spriteBatch.begin();
-            spriteBatch.setColor(Color.WHITE);
+            spriteBatch.setColor(config.ui.cursorRed, config.ui.cursorGreen, config.ui.cursorBlue, config.ui.cursorAlpha);
             float size = config.ui.cursorSize;
             spriteBatch.draw(cursorTex, mouseBuffer.x - size/2, mouseBuffer.y - size/2, size, size);
             spriteBatch.end();
