@@ -2,6 +2,7 @@ package pl.shooter.game.states;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -23,6 +24,9 @@ public class MenuState extends GameState {
 
     public MenuState(GameStateManager gsm) {
         super(gsm);
+        // Ensure system cursor is visible in menu
+        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+
         // Use FitViewport to maintain 800x600 ratio regardless of screen size
         this.stage = new Stage(new FitViewport(800, 600));
         this.skin = createBasicSkin();

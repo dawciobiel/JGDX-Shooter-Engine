@@ -3,6 +3,7 @@ package pl.shooter.game.states;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -14,15 +15,23 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import pl.shooter.engine.config.ConfigService;
+import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 
 public class PauseState extends GameState {
     private final Stage stage;
     private final Skin skin;
+    private final GameConfig config;
 
     public PauseState(GameStateManager gsm) {
         super(gsm);
+        this.config = new ConfigService().getConfig();
+        
+        // Ensure system cursor is visible in pause menu
+        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+
         this.stage = new Stage(new FitViewport(800, 600));
         this.skin = createBasicSkin();
         Gdx.input.setInputProcessor(stage);
@@ -88,9 +97,11 @@ public class PauseState extends GameState {
     }
 
     private void resumeGame() {
+        // Hide system cursor again if using custom cursor
+        if (config.ui.useCustomCursor) {
+            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.None);
+        }
         gsm.pop();
-        // Restore input processor to whatever PlayState uses (likely InputSystem)
-        // Note: PlayState will handle this in its update/render cycle if needed
     }
 
     @Override

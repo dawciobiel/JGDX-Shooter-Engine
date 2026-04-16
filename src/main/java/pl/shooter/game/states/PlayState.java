@@ -3,6 +3,7 @@ package pl.shooter.game.states;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.math.MathUtils;
 import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
@@ -29,9 +30,12 @@ public class PlayState extends GameState {
     private ConfigService configService;
     private EntityFactory entityFactory;
     private boolean isGameOver = false;
+    private GameConfig config;
 
     public PlayState(GameStateManager gsm) {
         super(gsm);
+        this.configService = new ConfigService();
+        this.config = configService.getConfig();
         resetState();
     }
 
@@ -41,7 +45,6 @@ public class PlayState extends GameState {
         this.engine = new Engine();
         this.assetService = new AssetService();
         this.audioService = new AudioService();
-        this.configService = new ConfigService();
         this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService);
         this.isGameOver = false;
 
@@ -50,18 +53,24 @@ public class PlayState extends GameState {
     }
 
     private void init() {
+        // Load unit animations
         assetService.loadTexture("assets/graphics/textures/characters/soldier/walk.png");
         for (int i = 0; i <= 16; i++) {
             assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_" + i + ".png");
             assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-move_" + i + ".png");
         }
         for (int i = 0; i <= 8; i++) assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_" + i + ".png");
+        
+        // Load custom cursor if enabled
+        if (config.ui.useCustomCursor && config.ui.cursorImagePath != null && !config.ui.cursorImagePath.isEmpty()) {
+            assetService.loadTexture(config.ui.cursorImagePath);
+        }
+
         assetService.finishLoading();
 
         audioService.loadSound("assets/audio/sfx/characters/soldier/hit.wav");
         audioService.loadSound("assets/audio/sfx/characters/soldier/death.wav");
 
-        GameConfig config = configService.getConfig();
         WeaponConfig weaponConfig = configService.getWeaponConfig();
         GameMap map = new TestingMap();
         
@@ -194,5 +203,10 @@ public class PlayState extends GameState {
         if (engine != null) engine.dispose();
         if (assetService != null) assetService.dispose();
         if (audioService != null) audioService.dispose();
+
+        // Restore system cursor when PlayState is disposed
+        if (config != null && config.ui.useCustomCursor) {
+            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+        }
     }
 }
