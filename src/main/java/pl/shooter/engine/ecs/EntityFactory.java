@@ -53,6 +53,7 @@ public class EntityFactory {
         componentAliases.put("AmmoPickup", AmmoPickupComponent.class);
         componentAliases.put("HealthPickup", HealthPickupComponent.class);
         componentAliases.put("Name", NameComponent.class);
+        componentAliases.put("Trigger", TriggerComponent.class);
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {
@@ -180,6 +181,14 @@ public class EntityFactory {
         entityManager.addComponent(pickup, new ColliderComponent(8f));
         entityManager.addComponent(pickup, new HealthPickupComponent(amount));
         return pickup;
+    }
+
+    public Entity createTrigger(float x, float y, float radius, TriggerComponent.TriggerType type, String value) {
+        Entity trigger = entityManager.createEntity();
+        entityManager.addComponent(trigger, new TransformComponent(x, y));
+        entityManager.addComponent(trigger, new ColliderComponent(radius));
+        entityManager.addComponent(trigger, new TriggerComponent(type, value));
+        return trigger;
     }
 
     private Animation<TextureRegion> createAnimationFromSheet(String path, int rows, int cols, float frameDuration) {
