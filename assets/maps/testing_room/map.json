@@ -1,0 +1,31 @@
+{
+  "id": "testing_room",
+  "name": "Testing Room",
+  "settings": {
+    "width": 3000,
+    "height": 3000,
+    "ambientColor": { "r": 9.1, "g": 9.1, "b": 9.15, "a": 0.4 }
+  },
+  "tileLayer": {
+    "tilesetPath": "assets/graphics/textures/environment/environment-city.png",
+    "tileSize": 132,
+    "displaySize": 32,
+    "collidableTiles": [0, 25],
+    "data": [
+      [25, 25, 25, 25, 25, 25, 25, 25],
+      [25, 295, 295, 295, 295, 295, 295, 25],
+      [25, 295, 25, 25, 25, 25, 295, 25],
+      [25, 295, 295, 295, 295, 25, 295, 25],
+      [25, 295, 25, 295, 295, 25, 295, 295],
+      [25, 295, 25, 25, 25, 25, 295, 25],
+      [25, 295, 295, 295, 295, 295, 295, 25],
+      [25, 25, 25, 25, 25, 25, 25, 25]
+    ]
+  },
+  "playerSpawn": { "x": 100, "y": 100 },
+  "entities": [
+    { "type": "zombie", "x": 800, "y": 800 },
+    { "type": "zombie_runner", "x": 1000, "y": 400 },
+    { "type": "zombie_tank", "x": 400, "y": 1000 }
+  ]
+}

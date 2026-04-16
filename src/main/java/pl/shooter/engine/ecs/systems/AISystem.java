@@ -15,20 +15,26 @@ import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
+import pl.shooter.engine.world.GameMap;
 
 import java.util.List;
 
 /**
  * Manages NPC behaviors, including chasing, shooting and melee attacks.
- * Now respects weapon range and AI-defined speed.
+ * Now respects weapon range, AI-defined speed and Line of Sight (walls).
  */
 public class AISystem extends GameSystem {
     private final EventBus eventBus;
     private final Vector2 tempTarget = new Vector2();
+    private GameMap map;
 
     public AISystem(EntityManager entityManager, EventBus eventBus) {
         super(entityManager);
         this.eventBus = eventBus;
+    }
+
+    public void setMap(GameMap map) {
+        this.map = map;
     }
 
     @Override
@@ -51,23 +57,22 @@ public class AISystem extends GameSystem {
             WeaponComponent weapon = entityManager.getComponent(enemy, WeaponComponent.class);
             
             SteeringComponent sc = getOrAddSteering(enemy, enemyTrans, enemyVel, enemies, ai.speed);
-            
-            // Sync speed in case it changed in JSON
             sc.setMaxLinearSpeed(ai.speed);
 
             float distanceToPlayer = Vector2.dst(enemyTrans.x, enemyTrans.y, playerTrans.x, playerTrans.y);
 
             if (distanceToPlayer < ai.detectRange) {
-                // Point towards player
                 enemyTrans.rotation = MathUtils.atan2(playerTrans.y - enemyTrans.y, playerTrans.x - enemyTrans.x) * MathUtils.radiansToDegrees;
                 
-                // Tactics: Shooting/Melee logic based on weapon range
                 boolean isAttacking = false;
                 if (weapon != null) {
                     float attackRange = (weapon.type == WeaponComponent.Type.KNIFE) ? weapon.range + 10f : 400f;
                     if (distanceToPlayer <= attackRange) {
-                        eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
-                        isAttacking = true;
+                        // Check if path to player is clear of walls
+                        if (isLineOfSightClear(enemyTrans.x, enemyTrans.y, playerTrans.x, playerTrans.y)) {
+                            eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
+                            isAttacking = true;
+                        }
                     }
                 }
 
@@ -79,6 +84,23 @@ public class AISystem extends GameSystem {
                 if (anim != null) anim.currentState = AnimationComponent.State.IDLE;
             }
         }
+    }
+
+    private boolean isLineOfSightClear(float x1, float y1, float x2, float y2) {
+        if (map == null) return true;
+        float dist = Vector2.dst(x1, y1, x2, y2);
+        if (dist < 10) return true;
+        
+        int steps = (int) (dist / 8); 
+        float dx = (x2 - x1) / steps;
+        float dy = (y2 - y1) / steps;
+        
+        for (int i = 1; i < steps; i++) {
+            if (!map.isWalkable(x1 + dx * i, y1 + dy * i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private SteeringComponent getOrAddSteering(Entity enemy, TransformComponent t, VelocityComponent v, List<Entity> allEnemies, float maxSpeed) {
@@ -112,8 +134,6 @@ public class AISystem extends GameSystem {
     private void handleTacticalMovement(Entity enemy, AIComponent ai, SteeringComponent sc,
                                         TransformComponent playerTrans, AnimationComponent anim, 
                                         float distanceToPlayer, boolean isAttacking) {
-        
-        // 1. Should we stop because we are attacking?
         if (ai.stopToShoot && isAttacking) {
             sc.behavior = null;
             sc.velocity.vx = 0;
@@ -122,7 +142,6 @@ public class AISystem extends GameSystem {
             return;
         }
 
-        // 2. Should we stop because we reached preferred distance?
         if (distanceToPlayer < ai.preferredRange) {
             sc.behavior = null;
             sc.velocity.vx = 0;
@@ -131,14 +150,12 @@ public class AISystem extends GameSystem {
             return;
         }
 
-        // 3. Animation trigger based on attack state
         if (isAttacking) {
             if (anim != null) anim.currentState = AnimationComponent.State.SHOOT;
         } else {
             if (anim != null) anim.currentState = AnimationComponent.State.WALK;
         }
 
-        // 4. Normal Pathfinding / Chase
         if (ai.behavior == AIComponent.Behavior.CHASE) {
             boolean usingPathNode = false;
             if (ai.currentPath != null && ai.currentPath.getCount() > 1) {

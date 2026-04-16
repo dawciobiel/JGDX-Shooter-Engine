@@ -26,7 +26,8 @@ public class WeaponComponent implements Component {
     public float projectileSpeed;
     public float spread;        
     public int projectilesPerShot = 1;
-    public float range = 50f; // Added for melee weapons like KNIFE
+    public float range = 50f; 
+    public int damage = 10; // New field for direct damage (melee)
     
     // Ammo system
     public int currentAmmo = 0;      
@@ -54,6 +55,10 @@ public class WeaponComponent implements Component {
         this.magazineAmmo = data.magazineSize;
         this.reloadTime = data.reloadTime;
         this.hasInfiniteAmmo = data.hasInfiniteAmmo;
+        this.range = data.range;
+        if (data.projectile != null) {
+            this.damage = data.projectile.damage;
+        }
     }
 
     public static WeaponComponent create(Type type, WeaponConfig config) {
@@ -70,9 +75,10 @@ public class WeaponComponent implements Component {
             wc.magazineAmmo = 10;
             wc.hasInfiniteAmmo = (type == Type.PISTOL || type == Type.KNIFE);
             if (type == Type.KNIFE) {
-                wc.projectileSpeed = 0; // Knife doesn't shoot projectiles in traditional sense
+                wc.projectileSpeed = 0;
                 wc.fireRate = 0.3f;
                 wc.range = 40f;
+                wc.damage = 25;
             }
         }
         return wc;

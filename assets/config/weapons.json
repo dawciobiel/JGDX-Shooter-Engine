@@ -1,5 +1,23 @@
 {
   "weapons": {
+    "KNIFE": {
+      "fireRate": 0.6,
+      "projectileSpeed": 0.0,
+      "spread": 0.0,
+      "projectilesPerShot": 1,
+      "maxAmmo": 0,
+      "magazineSize": 0,
+      "reloadTime": 0.0,
+      "hasInfiniteAmmo": true,
+      "range": 40.0,
+      "projectile": {
+        "color": "WHITE",
+        "radius": 0.0,
+        "lifetime": 0.0,
+        "damage": 25,
+        "behavior": "NORMAL"
+      }
+    },
     "PISTOL": {
       "fireRate": 0.4,
       "projectileSpeed": 450.0,

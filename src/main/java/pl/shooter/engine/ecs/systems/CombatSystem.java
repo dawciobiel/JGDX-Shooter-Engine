@@ -14,29 +14,32 @@ import pl.shooter.engine.events.BulletFiredEvent;
 import pl.shooter.engine.events.EmptyWeaponEvent;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
+import pl.shooter.engine.world.GameMap;
 import pl.shooter.events.HitEvent;
 
 import java.util.List;
 
 /**
  * Handles combat logic, including weapon types, firing patterns, ammo consumption, and reloading.
- * Now supports melee attacks for weapons like KNIFE.
+ * Now supports melee attacks for weapons like KNIFE and respects map obstacles.
  */
 public class CombatSystem extends GameSystem {
     private final EventBus eventBus;
     private final EntityFactory entityFactory;
     private final ConfigService configService;
+    private final GameMap map;
     private float totalTime = 0;
 
-    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory) {
-        this(entityManager, eventBus, entityFactory, new ConfigService());
+    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory, GameMap map) {
+        this(entityManager, eventBus, entityFactory, new ConfigService(), map);
     }
 
-    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory, ConfigService configService) {
+    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory, ConfigService configService, GameMap map) {
         super(entityManager);
         this.eventBus = eventBus;
         this.entityFactory = entityFactory;
         this.configService = configService;
+        this.map = map;
         eventBus.subscribe(ShootEvent.class, this::handleShoot);
     }
 
@@ -97,12 +100,10 @@ public class CombatSystem extends GameSystem {
 
         float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
 
-        // Shell ejection (only for bullet-based weapons)
         if (entityFactory != null && isBallistic(weapon.type)) {
             entityFactory.createShellEjection(shooterTransform.x, shooterTransform.y, baseAngle);
         }
 
-        // Get projectile data from config if available
         WeaponConfig.ProjectileData projData = null;
         WeaponConfig weaponConfig = configService.getWeaponConfig();
         if (weaponConfig != null && weaponConfig.weapons.containsKey(weapon.type.name())) {
@@ -119,13 +120,12 @@ public class CombatSystem extends GameSystem {
     }
 
     private void handleMeleeAttack(Entity shooter, TransformComponent t, WeaponComponent weapon, float targetX, float targetY) {
-        eventBus.publish(new BulletFiredEvent(shooter)); // Triggers attack sound
+        eventBus.publish(new BulletFiredEvent(shooter)); 
 
         float angle = MathUtils.atan2(targetY - t.y, targetX - t.x) * MathUtils.radiansToDegrees;
         float cos = MathUtils.cosDeg(angle);
         float sin = MathUtils.sinDeg(angle);
         
-        // Find entities in front of the shooter
         List<Entity> targets = entityManager.getEntitiesWithComponents(TransformComponent.class, HealthComponent.class, ColliderComponent.class);
         for (Entity victim : targets) {
             if (victim.getId() == shooter.getId()) continue;
@@ -138,13 +138,34 @@ public class CombatSystem extends GameSystem {
             float dist = (float) Math.sqrt(dx*dx + dy*dy);
             
             if (dist <= weapon.range + vc.radius) {
-                // Check if target is roughly in the direction of attack (within ~90 degrees arc)
+                // 1. Line of sight check (Simple Raycast)
+                if (!isLineOfSightClear(t.x, t.y, vt.x, vt.y)) {
+                    continue; // Something blocks the attack
+                }
+
+                // 2. Direction check
                 float dot = (dx/dist) * cos + (dy/dist) * sin;
-                if (dot > 0.7f) { // ~45 degrees each side
-                    eventBus.publish(new HitEvent(victim, shooter.getId(), 15)); // Corrected HitEvent constructor usage
+                if (dot > 0.7f) { 
+                    eventBus.publish(new HitEvent(victim, shooter.getId(), weapon.damage)); 
                 }
             }
         }
+    }
+
+    private boolean isLineOfSightClear(float x1, float y1, float x2, float y2) {
+        if (map == null) return true;
+        
+        float dist = Vector2.dst(x1, y1, x2, y2);
+        int steps = (int) (dist / 8); // Check every 8 units
+        float dx = (x2 - x1) / steps;
+        float dy = (y2 - y1) / steps;
+        
+        for (int i = 1; i < steps; i++) {
+            if (!map.isWalkable(x1 + dx * i, y1 + dy * i)) {
+                return false; // Obstacle found
+            }
+        }
+        return true;
     }
 
     private boolean isBallistic(WeaponComponent.Type type) {

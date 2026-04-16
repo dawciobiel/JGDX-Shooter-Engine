@@ -21,13 +21,14 @@ import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.world.GameMap;
+import pl.shooter.engine.world.JsonMap;
 import pl.shooter.engine.ai.pathfinding.Node;
 
 import java.util.List;
 
 /**
  * Renders the game world, including entities, map, blood decals and dynamic lighting.
- * Supports color tinting for textured entities and names above units.
+ * Supports tilesets and names above units.
  */
 public class RenderSystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
@@ -45,6 +46,9 @@ public class RenderSystem extends GameSystem {
     private LightSystem lightSystem;
     private boolean showDebugPaths = false;
     private boolean showDebugHitboxes = false;
+
+    private TextureRegion[][] cachedTiles;
+    private String lastTilesetPath;
 
     public RenderSystem(EntityManager entityManager, AssetService assetService) {
         super(entityManager);
@@ -85,21 +89,29 @@ public class RenderSystem extends GameSystem {
             Gdx.gl.glEnable(GL20.GL_BLEND);
             Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
-            shapeRenderer.setProjectionMatrix(camera.combined);
-            
-            // Pass 1: Map
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            if (currentMap != null) renderMap(currentMap);
-            shapeRenderer.end();
+            // Pass 1: Map Background
+            if (currentMap instanceof JsonMap jm && jm.getTilesetPath() != null) {
+                spriteBatch.setProjectionMatrix(camera.combined);
+                spriteBatch.begin();
+                renderJsonMap(jm);
+                spriteBatch.end();
+            } else {
+                shapeRenderer.setProjectionMatrix(camera.combined);
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+                if (currentMap != null) renderMapLegacy(currentMap);
+                shapeRenderer.end();
+            }
 
             // Pass 2: Blood Decals
             if (config.effects.showBloodDecals) {
+                shapeRenderer.setProjectionMatrix(camera.combined);
                 shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
                 renderBloodDecals();
                 shapeRenderer.end();
             }
 
             // Pass 3: Primitives & Health Bars
+            shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             renderPrimitiveEntities();
             renderHealthBars();
@@ -129,21 +141,86 @@ public class RenderSystem extends GameSystem {
             renderDebugInfo();
         }
 
-        // Pass 5: UI Overlay (Custom Cursor) - Rendered AFTER lighting/final pass to be always visible
         if (config.ui.useCustomCursor) {
             renderCustomCursor();
+        }
+    }
+
+    private void renderJsonMap(JsonMap map) {
+        int[][] data = map.getTileData();
+        if (data == null) return;
+
+        int ts = map.getTileSize();
+        int ds = map.getDisplaySize();
+        Texture tileset = assetService.getTexture(map.getTilesetPath());
+        if (tileset == null) return;
+
+        // Cache tileset regions if changed
+        if (cachedTiles == null || !map.getTilesetPath().equals(lastTilesetPath)) {
+            int safeTsW = Math.min(ts, tileset.getWidth());
+            int safeTsH = Math.min(ts, tileset.getHeight());
+            cachedTiles = TextureRegion.split(tileset, safeTsW, safeTsH);
+            lastTilesetPath = map.getTilesetPath();
+        }
+
+        // Only render visible tiles
+        float startX = camera.position.x - viewport.getWorldWidth() / 2 - ds;
+        float startY = camera.position.y - viewport.getWorldHeight() / 2 - ds;
+        float endX = camera.position.x + viewport.getWorldWidth() / 2 + ds;
+        float endY = camera.position.y + viewport.getWorldHeight() / 2 + ds;
+
+        int startGridX = Math.max(0, (int) (startX / ds));
+        int startGridY = Math.max(0, (int) (startY / ds));
+        int endGridX = Math.min(data[0].length, (int) (endX / ds) + 1);
+        int endGridY = Math.min(data.length, (int) (endY / ds) + 1);
+
+        int colsInTileset = tileset.getWidth() / ts;
+        if (colsInTileset <= 0) colsInTileset = 1;
+
+        spriteBatch.setColor(Color.WHITE);
+        for (int y = startGridY; y < endGridY; y++) {
+            for (int x = startGridX; x < endGridX; x++) {
+                int tileId = data[y][x];
+                int row = tileId / colsInTileset;
+                int col = tileId % colsInTileset;
+                
+                if (row >= 0 && row < cachedTiles.length && col >= 0 && col < cachedTiles[0].length) {
+                    spriteBatch.draw(cachedTiles[row][col], x * ds, y * ds, ds, ds);
+                }
+            }
+        }
+    }
+
+    private void renderMapLegacy(GameMap map) {
+        float startX = camera.position.x - viewport.getWorldWidth() / 2 - 32;
+        float startY = camera.position.y - viewport.getWorldHeight() / 2 - 32;
+        float endX = camera.position.x + viewport.getWorldWidth() / 2 + 32;
+        float endY = camera.position.y + viewport.getWorldHeight() / 2 + 32;
+        for (float x = startX; x < endX; x += 32) {
+            for (float y = startY; y < endY; y += 32) {
+                int gx = (int) Math.floor(x / 32);
+                int gy = (int) Math.floor(y / 32);
+                float wx = gx * 32;
+                float wy = gy * 32;
+                float speed = map.getSpeedMultiplier(wx + 16, wy + 16);
+                boolean isWalkable = map.isWalkable(wx + 16, wy + 16);
+                if (!isWalkable) shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 1);
+                else if (speed < 0.4f) shapeRenderer.setColor(0.1f, 0.2f, 0.4f, 1);
+                else if (speed < 0.7f) shapeRenderer.setColor(0.25f, 0.15f, 0.05f, 1);
+                else shapeRenderer.setColor(0.15f, 0.15f, 0.15f, 1);
+                shapeRenderer.rect(wx, wy, 32, 32);
+            }
         }
     }
 
     private void renderCustomCursor() {
         Texture cursorTex = assetService.getTexture(config.ui.cursorImagePath);
         if (cursorTex != null) {
-            // Unproject mouse to world coords to draw at mouse position
             mouseBuffer.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(mouseBuffer);
             
             spriteBatch.setProjectionMatrix(camera.combined);
-            spriteBatch.setShader(null); // No lighting shader for the cursor
+            spriteBatch.setShader(null);
             spriteBatch.begin();
             spriteBatch.setColor(config.ui.cursorRed, config.ui.cursorGreen, config.ui.cursorBlue, config.ui.cursorAlpha);
             float size = config.ui.cursorSize;
@@ -173,7 +250,7 @@ public class RenderSystem extends GameSystem {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         
         spriteBatch.getProjectionMatrix().idt();
-        spriteBatch.setColor(Color.WHITE); // Reset to pure white for final pass
+        spriteBatch.setColor(Color.WHITE);
         spriteBatch.setShader(lightingShader);
         spriteBatch.begin();
         
@@ -268,7 +345,6 @@ public class RenderSystem extends GameSystem {
 
         RenderComponent r = entityManager.getComponent(entity, RenderComponent.class);
         if (r != null) {
-            // Mix entity color with corpse alpha
             return new Color(r.color.r, r.color.g, r.color.b, r.color.a * alpha);
         }
         
@@ -307,28 +383,6 @@ public class RenderSystem extends GameSystem {
         }
     }
 
-    private void renderMap(GameMap map) {
-        float startX = camera.position.x - viewport.getWorldWidth() / 2 - 32;
-        float startY = camera.position.y - viewport.getWorldHeight() / 2 - 32;
-        float endX = camera.position.x + viewport.getWorldWidth() / 2 + 32;
-        float endY = camera.position.y + viewport.getWorldHeight() / 2 + 32;
-        for (float x = startX; x < endX; x += 32) {
-            for (float y = startY; y < endY; y += 32) {
-                int gx = (int) Math.floor(x / 32);
-                int gy = (int) Math.floor(y / 32);
-                float wx = gx * 32;
-                float wy = gy * 32;
-                float speed = map.getSpeedMultiplier(wx + 16, wy + 16);
-                boolean isWalkable = map.isWalkable(wx + 16, wy + 16);
-                if (!isWalkable) shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 1);
-                else if (speed < 0.4f) shapeRenderer.setColor(0.1f, 0.2f, 0.4f, 1);
-                else if (speed < 0.7f) shapeRenderer.setColor(0.25f, 0.15f, 0.05f, 1);
-                else shapeRenderer.setColor(0.15f, 0.15f, 0.15f, 1);
-                shapeRenderer.rect(wx, wy, 32, 32);
-            }
-        }
-    }
-
     private void renderDebugInfo() {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
@@ -352,7 +406,6 @@ public class RenderSystem extends GameSystem {
                     for (int i = 0; i < ai.currentPath.getCount() - 1; i++) {
                         Node n1 = ai.currentPath.get(i);
                         Node n2 = ai.currentPath.get(i + 1);
-                        // Convert node grid coordinates to world coordinates
                         shapeRenderer.line(n1.x * 32 + 16, n1.y * 32 + 16, n2.x * 32 + 16, n2.y * 32 + 16);
                     }
                 }
