@@ -114,10 +114,12 @@ public class PlayState extends GameState {
         engine.addSystem(new ProjectileSystem(engine.getEntityManager()));
         engine.addSystem(new ParticleUpdateSystem(engine.getEntityManager()));
         engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
-        engine.addSystem(new MapSystem(engine.getEntityManager(), map));
+        engine.addSystem(new MapSystem(engine.getEntityManager(), map, engine.getEventBus()));
+        engine.addSystem(new TriggerSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
+        engine.addSystem(new AmbientSoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
         engine.addSystem(new MultiKillSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new TauntSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
         engine.addSystem(new AnimationSystem(engine.getEntityManager()));

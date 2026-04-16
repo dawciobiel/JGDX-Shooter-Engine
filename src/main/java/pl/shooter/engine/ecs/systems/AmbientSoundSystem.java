@@ -1,7 +1,6 @@
 package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Sound;
 import pl.shooter.engine.assets.AudioService;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
@@ -74,29 +73,36 @@ public class AmbientSoundSystem extends GameSystem {
     private void startAmbiance(String path, float volume) {
         if (path == null || activeLoops.containsKey(path)) return;
 
-        audioService.loadSound(path);
-        // We need to access the Sound object to loop it.
-        // For simplicity in this engine version, we'll use a hack or assume AudioService can be extended.
-        // Let's play it via a direct call if possible or just log it for now.
-        Gdx.app.log("AmbientSound", "Starting ambiance loop: " + path);
-        // Note: Real implementation would need AudioService to return soundId for looping control.
+        long id = audioService.playLoop(path, volume);
+        if (id != -1) {
+            activeLoops.put(path, id);
+        }
     }
 
     private void stopAmbiance(String path) {
         if (path == null || !activeLoops.containsKey(path)) return;
-        Gdx.app.log("AmbientSound", "Stopping ambiance loop: " + path);
-        activeLoops.remove(path);
+        
+        Long id = activeLoops.remove(path);
+        if (id != null) {
+            audioService.stopInstance(path, id);
+        }
     }
 
     private void playMusic(String path) {
         if (path == null || path.equals(currentMusicPath)) return;
-        Gdx.app.log("AmbientSound", "Changing music to: " + path);
+        
+        // Stop previous music if any
+        if (currentMusicPath != null && currentMusicId != -1) {
+            audioService.stopInstance(currentMusicPath, currentMusicId);
+        }
+
         currentMusicPath = path;
-        // Logic to fade out old music and fade in new music
+        currentMusicId = audioService.playLoop(path, 0.6f);
+        Gdx.app.log("AmbientSound", "Changing music to: " + path);
     }
 
     @Override
     public void update(float deltaTime) {
-        // Could be used for smooth volume fading
+        // Future: Add logic for smooth volume fading
     }
 }
