@@ -33,9 +33,11 @@ public class PlayState extends GameState {
     private MapService mapService;
     private boolean isGameOver = false;
     private GameConfig config;
+    private final String mapPath;
 
-    public PlayState(GameStateManager gsm) {
+    public PlayState(GameStateManager gsm, String mapPath) {
         super(gsm);
+        this.mapPath = mapPath;
         this.configService = new ConfigService();
         this.config = configService.getConfig();
         resetState();
@@ -56,14 +58,12 @@ public class PlayState extends GameState {
     }
 
     private void init() {
-        // 1. Load the map first to know which assets are needed
-        MapConfig mapConfig = mapService.loadMap("assets/maps/testing_room/map.json");
+        MapConfig mapConfig = mapService.loadMap(mapPath);
         if (mapConfig == null) {
-            Gdx.app.error("PlayState", "CRITICAL: Could not load map config!");
+            Gdx.app.error("PlayState", "CRITICAL: Could not load map: " + mapPath);
             return;
         }
 
-        // 2. Load common assets (could be moved to a global preloader later)
         assetService.loadTexture("assets/graphics/textures/characters/soldier/walk.png");
         for (int i = 0; i <= 16; i++) {
             assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_" + i + ".png");
@@ -77,13 +77,10 @@ public class PlayState extends GameState {
 
         assetService.finishLoading();
 
-        // 3. Audio
         audioService.loadSound("assets/audio/sfx/characters/soldier/hit.wav");
         audioService.loadSound("assets/audio/sfx/characters/soldier/death.wav");
 
         WeaponConfig weaponConfig = configService.getWeaponConfig();
-        
-        // 4. Create GameMap and System
         GameMap map = mapService.createGameMap(mapConfig);
         
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
@@ -92,7 +89,6 @@ public class PlayState extends GameState {
         renderSystem.setShowDebugHitboxes(config.debug.showHitboxes);
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager());
-        // Apply ambient color from map config
         lightSystem.setAmbientColor(
             mapConfig.settings.ambientColor.r, 
             mapConfig.settings.ambientColor.g, 
@@ -104,10 +100,13 @@ public class PlayState extends GameState {
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
         uiSystem.setShowFps(config.debug.showFps);
 
-        // 5. Setup Systems
+        // AISystem setup with map for Line of Sight checks
+        AISystem aiSystem = new AISystem(engine.getEntityManager(), engine.getEventBus());
+        aiSystem.setMap(map);
+
         engine.addSystem(new InputSystem(engine.getEntityManager(), engine.getEventBus(), renderSystem.getCamera()));
         engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map)); 
-        engine.addSystem(new AISystem(engine.getEntityManager(), engine.getEventBus()));
+        engine.addSystem(aiSystem);
         engine.addSystem(new SteeringSystem(engine.getEntityManager())); 
         engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, configService, map));
         engine.addSystem(new ProjectileSystem(engine.getEntityManager()));
@@ -122,16 +121,13 @@ public class PlayState extends GameState {
         engine.addSystem(renderSystem);
         engine.addSystem(uiSystem);
 
-        // 6. Spawn Entities from Map
         mapService.spawnEntities(mapConfig);
 
-        // Optional: Post-spawn initialization (like adding lights to player)
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
         if (!players.isEmpty()) {
             Entity player = players.get(0);
             engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
             
-            // Create and fill inventory (this logic could eventually be moved to a PlayerService or JSON)
             InventoryComponent inv = new InventoryComponent();
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.KNIFE, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PISTOL, weaponConfig));
@@ -143,27 +139,11 @@ public class PlayState extends GameState {
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.LIGHTNING_GUN, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.RAIL_GUN, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.GRENADE, weaponConfig));
-            inv.currentWeaponIndex = 5;
+            inv.currentWeaponIndex = 1;
             
             engine.getEntityManager().addComponent(player, inv);
             engine.getEntityManager().addComponent(player, inv.getActiveWeapon());
         }
-
-        // We can still add some random crates or keep it fully data-driven
-        for (int i = 0; i < 15; i++) {
-            createCrate(MathUtils.random(300, 1200), MathUtils.random(300, 1200), true);
-        }
-    }
-
-    private void createCrate(float x, float y, boolean blocks) {
-        Entity crate = engine.getEntityManager().createEntity();
-        engine.getEntityManager().addComponent(crate, new TransformComponent(x, y));
-        Color color = blocks ? new Color(0.6f, 0.4f, 0.2f, 1f) : new Color(0.2f, 0.6f, 0.2f, 1f);
-        engine.getEntityManager().addComponent(crate, new RenderComponent(color, 16f, false));
-        engine.getEntityManager().addComponent(crate, new ColliderComponent(16f));
-        engine.getEntityManager().addComponent(crate, new HealthComponent(30f, 30f));
-        engine.getEntityManager().addComponent(crate, new DestructibleComponent(blocks));
-        if (blocks) engine.getEntityManager().addComponent(crate, new ObstacleComponent());
     }
 
     @Override

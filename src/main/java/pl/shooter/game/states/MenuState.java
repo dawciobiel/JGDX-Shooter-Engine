@@ -1,6 +1,7 @@
 package pl.shooter.game.states;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -9,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -18,20 +20,19 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MenuState extends GameState {
     private final Stage stage;
     private final Skin skin;
 
     public MenuState(GameStateManager gsm) {
         super(gsm);
-        // Ensure system cursor is visible in menu
         Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
-
-        // Use FitViewport to maintain 800x600 ratio regardless of screen size
         this.stage = new Stage(new FitViewport(800, 600));
         this.skin = createBasicSkin();
         Gdx.input.setInputProcessor(stage);
-
         initUI();
     }
 
@@ -45,6 +46,7 @@ public class MenuState extends GameState {
         pixmap.fill();
         newSkin.add("white", new Texture(pixmap));
 
+        // Button Style
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.up = newSkin.newDrawable("white", Color.DARK_GRAY);
         buttonStyle.down = newSkin.newDrawable("white", Color.GRAY);
@@ -52,31 +54,52 @@ public class MenuState extends GameState {
         buttonStyle.font = newSkin.getFont("default");
         newSkin.add("default", buttonStyle);
 
+        // Label Style
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = newSkin.getFont("default");
         labelStyle.fontColor = Color.YELLOW;
         newSkin.add("default", labelStyle);
 
+        // ScrollPane Style (Missing this caused the crash)
+        ScrollPane.ScrollPaneStyle scrollStyle = new ScrollPane.ScrollPaneStyle();
+        scrollStyle.background = newSkin.newDrawable("white", new Color(0.1f, 0.1f, 0.1f, 0.5f));
+        newSkin.add("default", scrollStyle);
+
         return newSkin;
     }
 
     private void initUI() {
-        Table table = new Table();
-        table.setFillParent(true);
-        stage.addActor(table);
+        Table root = new Table();
+        root.setFillParent(true);
+        stage.addActor(root);
 
         Label title = new Label("SHOOTER ENGINE", skin);
         title.setFontScale(2.5f);
-        table.add(title).padBottom(50).row();
+        root.add(title).padBottom(30).row();
 
-        TextButton playButton = new TextButton("START GAME", skin);
-        playButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                gsm.setState(new PlayState(gsm));
-            }
-        });
-        table.add(playButton).width(200).height(50).padBottom(10).row();
+        Label selectMapLabel = new Label("SELECT MAP:", skin);
+        selectMapLabel.setFontScale(1.2f);
+        root.add(selectMapLabel).padBottom(10).row();
+
+        // Map list table
+        Table mapTable = new Table();
+        List<String> maps = discoverMaps();
+        
+        for (String mapPath : maps) {
+            String mapName = mapPath.substring(mapPath.lastIndexOf("/") + 1);
+            TextButton mapBtn = new TextButton(mapName.toUpperCase().replace("_", " "), skin);
+            mapBtn.addListener(new ClickListener() {
+                @Override
+                public void clicked(InputEvent event, float x, float y) {
+                    gsm.setState(new PlayState(gsm, mapPath + "/map.json"));
+                }
+            });
+            mapTable.add(mapBtn).width(300).height(40).padBottom(5).row();
+        }
+
+        ScrollPane scroll = new ScrollPane(mapTable, skin);
+        scroll.setFadeScrollBars(false);
+        root.add(scroll).width(350).height(250).padBottom(20).row();
 
         TextButton exitButton = new TextButton("EXIT", skin);
         exitButton.addListener(new ClickListener() {
@@ -85,7 +108,23 @@ public class MenuState extends GameState {
                 Gdx.app.exit();
             }
         });
-        table.add(exitButton).width(200).height(50);
+        root.add(exitButton).width(200).height(50);
+    }
+
+    private List<String> discoverMaps() {
+        List<String> mapFolders = new ArrayList<>();
+        FileHandle mapsDir = Gdx.files.internal("assets/maps");
+        if (mapsDir.exists() && mapsDir.isDirectory()) {
+            for (FileHandle folder : mapsDir.list()) {
+                if (folder.isDirectory() && folder.child("map.json").exists()) {
+                    mapFolders.add(folder.path());
+                }
+            }
+        }
+        if (mapFolders.isEmpty()) {
+            mapFolders.add("assets/maps/testing_room");
+        }
+        return mapFolders;
     }
 
     @Override
