@@ -5,7 +5,7 @@
 # Script:  convert-audio-file.fish
 #
 # Description:
-#   Recursively converts all *.wav audio files in assets/sfx/ into a
+#   Recursively converts all *.wav audio files in assets/audio/sfx/ into a
 #   LibGDX-compatible format (PCM 16-bit, 44.1kHz, mono).
 #
 #   The script:
@@ -28,7 +28,7 @@ set script_dir (dirname (realpath (status filename)))
 set project_root (realpath "$script_dir/..")
 
 # Target directory
-set target_dir "$project_root/assets/sfx"
+set target_dir "$project_root/assets/audio/sfx/characters/taunt"
 
 # Validate target directory
 if not test -d "$target_dir"
