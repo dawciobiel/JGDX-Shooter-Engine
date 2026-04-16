@@ -15,6 +15,7 @@ public class GameConfig {
     public InputConfig controls = new InputConfig();
     public EffectsConfig effects = new EffectsConfig();
     public GameplayConfig gameplay = new GameplayConfig();
+    public UIConfig ui = new UIConfig();
 
     public static class GraphicsConfig {
         public int width = 800;
@@ -51,5 +52,11 @@ public class GameConfig {
 
     public static class GameplayConfig {
         public boolean showUnitNames = true;
+    }
+
+    public static class UIConfig {
+        public boolean useCustomCursor = true;
+        public String cursorImagePath = "assets/graphics/textures/ui/Crosshairs 64/image0013.png";
+        public float cursorSize = 32f;
     }
 }

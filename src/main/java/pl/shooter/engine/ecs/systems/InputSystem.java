@@ -2,6 +2,7 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
@@ -31,6 +32,11 @@ public class InputSystem extends GameSystem {
         this.eventBus = eventBus;
         this.camera = camera;
         this.config = new ConfigService().getConfig(); // Load config for controls
+        
+        if (config.ui.useCustomCursor) {
+            Gdx.input.setCursorCatched(false);
+            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.None);
+        }
     }
 
     @Override

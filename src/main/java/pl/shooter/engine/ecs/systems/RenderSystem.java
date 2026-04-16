@@ -38,6 +38,7 @@ public class RenderSystem extends GameSystem {
     private final GameConfig config;
     private GameMap currentMap;
     private final BitmapFont nameFont;
+    private final Vector3 mouseBuffer = new Vector3();
 
     private FrameBuffer sceneFbo;
     private ShaderProgram lightingShader;
@@ -126,6 +127,28 @@ public class RenderSystem extends GameSystem {
         
         if (showDebugPaths || showDebugHitboxes) {
             renderDebugInfo();
+        }
+
+        // Pass 5: UI Overlay (Custom Cursor) - Rendered AFTER lighting/final pass to be always visible
+        if (config.ui.useCustomCursor) {
+            renderCustomCursor();
+        }
+    }
+
+    private void renderCustomCursor() {
+        Texture cursorTex = assetService.getTexture(config.ui.cursorImagePath);
+        if (cursorTex != null) {
+            // Unproject mouse to world coords to draw at mouse position
+            mouseBuffer.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            camera.unproject(mouseBuffer);
+            
+            spriteBatch.setProjectionMatrix(camera.combined);
+            spriteBatch.setShader(null); // No lighting shader for the cursor
+            spriteBatch.begin();
+            spriteBatch.setColor(Color.WHITE);
+            float size = config.ui.cursorSize;
+            spriteBatch.draw(cursorTex, mouseBuffer.x - size/2, mouseBuffer.y - size/2, size, size);
+            spriteBatch.end();
         }
     }
 
