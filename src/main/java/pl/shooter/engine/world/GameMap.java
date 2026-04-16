@@ -16,4 +16,9 @@ public interface GameMap {
      * Returns the speed multiplier of the tile at given coordinates.
      */
     float getSpeedMultiplier(float x, float y);
+
+    /**
+     * Returns the Tile type at given coordinates.
+     */
+    Tile getTile(float x, float y);
 }

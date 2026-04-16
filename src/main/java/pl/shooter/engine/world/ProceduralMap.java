@@ -21,17 +21,18 @@ public class ProceduralMap implements GameMap {
 
     @Override
     public boolean isWalkable(float x, float y) {
-        Tile tile = getTileAt(x, y);
+        Tile tile = getTile(x, y);
         return tile != null && tile.walkable;
     }
 
     @Override
     public float getSpeedMultiplier(float x, float y) {
-        Tile tile = getTileAt(x, y);
+        Tile tile = getTile(x, y);
         return (tile != null) ? tile.speedMultiplier : 1.0f;
     }
 
-    private Tile getTileAt(float x, float y) {
+    @Override
+    public Tile getTile(float x, float y) {
         // Global tile coordinates
         int gx = (int) Math.floor(x / TILE_SIZE);
         int gy = (int) Math.floor(y / TILE_SIZE);

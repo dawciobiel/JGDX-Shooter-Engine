@@ -31,4 +31,12 @@ public class StaticMap implements GameMap {
     public float getSpeedMultiplier(float x, float y) {
         return 1.0f; // Default constant speed for static maps
     }
+
+    @Override
+    public Tile getTile(float x, float y) {
+        if (x >= 0 && x <= width && y >= 0 && y <= height) {
+            return Tile.GROUND;
+        }
+        return Tile.WALL;
+    }
 }

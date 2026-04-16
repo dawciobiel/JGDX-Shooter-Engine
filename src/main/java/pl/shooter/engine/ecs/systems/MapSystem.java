@@ -3,23 +3,26 @@ package pl.shooter.engine.ecs.systems;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
-import pl.shooter.engine.ecs.components.ColliderComponent;
-import pl.shooter.engine.ecs.components.ProjectileComponent;
-import pl.shooter.engine.ecs.components.TransformComponent;
-import pl.shooter.engine.ecs.components.VelocityComponent;
+import pl.shooter.engine.ecs.components.*;
+import pl.shooter.engine.events.EventBus;
+import pl.shooter.engine.events.TerrainChangeEvent;
 import pl.shooter.engine.world.GameMap;
+import pl.shooter.engine.world.Tile;
 
 import java.util.List;
 
 /**
- * Handles collisions between entities and the game map (walls) and applies terrain speed modifiers.
+ * Handles collisions between entities and the game map (walls), applies terrain speed modifiers,
+ * and triggers TerrainChangeEvents.
  */
 public class MapSystem extends GameSystem {
     private final GameMap currentMap;
+    private final EventBus eventBus;
 
-    public MapSystem(EntityManager entityManager, GameMap map) {
+    public MapSystem(EntityManager entityManager, GameMap map, EventBus eventBus) {
         super(entityManager);
         this.currentMap = map;
+        this.eventBus = eventBus;
     }
 
     @Override
@@ -35,11 +38,16 @@ public class MapSystem extends GameSystem {
             
             float radius = (collider != null) ? collider.radius : 0f;
 
-            // 1. Terrain Speed Modification
-            // Calculate speed multiplier based on the tile at entity's center
-            float terrainMultiplier = currentMap.getSpeedMultiplier(transform.x, transform.y);
+            // 1. Terrain Detection & Speed Modification
+            Tile tileAtCenter = currentMap.getTile(transform.x, transform.y);
+            float terrainMultiplier = (tileAtCenter != null) ? tileAtCenter.speedMultiplier : 1.0f;
+
+            // 2. Terrain Change Event logic (for players or tagged entities)
+            if (entityManager.hasComponent(entity, PlayerComponent.class)) {
+                handleTerrainChange(entity, tileAtCenter);
+            }
             
-            // 2. Projectile handling
+            // 3. Projectile handling
             if (entityManager.hasComponent(entity, ProjectileComponent.class)) {
                 if (!isAreaWalkable(transform.x, transform.y, radius)) {
                     entityManager.removeEntity(entity);
@@ -47,7 +55,7 @@ public class MapSystem extends GameSystem {
                 continue;
             }
 
-            // 3. Character Sliding Logic & Velocity Apply
+            // 4. Character Sliding Logic & Velocity Apply
             // Apply terrain multiplier to the step
             float stepX = (velocity.vx * terrainMultiplier) * deltaTime;
             float nextX = transform.x + stepX;
@@ -60,6 +68,23 @@ public class MapSystem extends GameSystem {
             if (isAreaWalkable(transform.x, nextY, radius)) {
                 transform.y = nextY;
             }
+        }
+    }
+
+    private void handleTerrainChange(Entity entity, Tile currentTile) {
+        TerrainStateComponent terrainState = entityManager.getComponent(entity, TerrainStateComponent.class);
+        
+        if (terrainState == null) {
+            terrainState = new TerrainStateComponent();
+            terrainState.currentTile = currentTile;
+            entityManager.addComponent(entity, terrainState);
+            return;
+        }
+
+        if (terrainState.currentTile != currentTile) {
+            Tile oldTile = terrainState.currentTile;
+            terrainState.currentTile = currentTile;
+            eventBus.publish(new TerrainChangeEvent(entity, oldTile, currentTile));
         }
     }
 
