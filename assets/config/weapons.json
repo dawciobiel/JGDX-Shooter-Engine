@@ -10,7 +10,6 @@
       "reloadTime": 0.0,
       "hasInfiniteAmmo": true,
       "range": 40.0,
-      "damage": 25,
       "projectile": {
         "color": "WHITE",
         "radius": 0.0,
