@@ -1,5 +1,6 @@
 {
   "type": "ZombieRunner",
+  "names": ["Maratończyk", "Szybki Lopez", "Xenomorph", "Szachrajka"],
   "components": {
     "Transform": { "x": 0, "y": 0 },
     "Render": {
