@@ -3,31 +3,12 @@
   "names": ["Maratończyk", "Szybki Lopez", "Xenomorph", "Szachrajka"],
   "components": {
     "Transform": { "x": 0, "y": 0 },
-    "Render": {
-      "color": { "r": 1, "g": 0.5, "b": 0, "a": 1 },
-      "radius": 16,
-      "isCircle": false
-    },
-    "Health": {
-      "hp": 30,
-      "maxHp": 30,
-      "hasBlood": true,
-      "bloodColor": { "r": 0.7, "g": 0.1, "b": 0, "a": 1 },
-      "corpseDuration": 4.0
-    },
+    "Render": { "color": { "r": 1, "g": 0.6, "b": 0.2, "a": 1 }, "radius": 16, "isCircle": false },
+    "Health": { "hp": 30, "maxHp": 30, "hasBlood": true, "bloodColor": { "r": 0.7, "g": 0.1, "b": 0, "a": 1 }, "corpseDuration": 4.0 },
     "Collider": { "radius": 10 },
-    "AI": {
-      "behavior": "CHASE",
-      "detectRange": 1500,
-      "speed": 100.0
-    },
+    "AI": { "behavior": "CHASE", "detectRange": 1500, "speed": 100.0 },
     "Velocity": { "vx": 0, "vy": 0 },
-    "Weapon": {
-      "type": "KNIFE",
-      "fireRate": 0.8,
-      "projectileSpeed": 0,
-      "hasInfiniteAmmo": true
-    }
+    "Weapon": { "type": "KNIFE", "fireRate": 0.8, "hasInfiniteAmmo": true }
   },
   "animations": {
     "width": 40.0,

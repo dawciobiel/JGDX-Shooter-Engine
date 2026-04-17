@@ -1,6 +1,6 @@
 {
   "type": "Zombie",
-  "names": ["Zgniłek", "Szwendacz", "Gryzoń", "Truposz"],
+  "names": ["Szwendacz", "Truposz"],
   "components": {
     "Transform": { "x": 0, "y": 0 },
     "Render": {

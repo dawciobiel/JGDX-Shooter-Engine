@@ -1,21 +1,49 @@
 {
   "type": "CombatRobot",
-  "names": ["Unit-01", "B-Dama", "Steel-Guard", "Mech-A"],
+  "names": ["C-Bot", "Sentry", "Steel Guard", "Enforcer"],
   "components": {
     "Transform": { "x": 0, "y": 0 },
-    "Render": { "color": { "r": 0.8, "g": 0.8, "b": 1, "a": 1 }, "radius": 24, "isCircle": false },
-    "Health": { "hp": 300, "maxHp": 300, "hasBlood": false, "corpseDuration": 10.0 },
+    "Render": {
+      "color": { "r": 0.8, "g": 0.8, "b": 0.9, "a": 1 },
+      "radius": 20,
+      "isCircle": false
+    },
+    "Health": {
+      "hp": 150,
+      "maxHp": 150,
+      "hasBlood": true,
+      "bloodColor": { "r": 0.5, "g": 0.5, "b": 0.5, "a": 1 },
+      "corpseDuration": 8.0
+    },
     "Collider": { "radius": 18 },
-    "AI": { "behavior": "CHASE", "detectRange": 1500, "speed": 60.0 },
+    "AI": {
+      "behavior": "CHASE",
+      "detectRange": 1200,
+      "speed": 90.0,
+      "preferredRange": 300,
+      "stopToShoot": true
+    },
     "Velocity": { "vx": 0, "vy": 0 },
-    "Weapon": { "type": "PLASMA_GUN", "fireRate": 1.5, "hasInfiniteAmmo": true }
+    "Weapon": {
+      "type": "PISTOL",
+      "fireRate": 0.8,
+      "projectileSpeed": 400,
+      "hasInfiniteAmmo": true
+    }
   },
   "animations": {
-    "width": 64.0,
-    "height": 64.0,
+    "width": 60.0,
+    "height": 60.0,
     "states": {
-      "WALK": { "type": "SHEET", "path": "assets/graphics/textures/characters/combat-robot/combat-robot-walk.png", "rows": 1, "cols": 1, "frameDuration": 0.1 },
-      "SHOOT": { "type": "SHEET", "path": "assets/graphics/textures/characters/combat-robot/combat-robot-shoot.png", "rows": 1, "cols": 1, "frameDuration": 0.1 }
+      "IDLE": { "type": "SHEET", "path": "assets/graphics/textures/characters/combat-robot/combat-robot-walk.png", "rows": 1, "cols": 12, "frameDuration": 0.1 },
+      "WALK": { "type": "SHEET", "path": "assets/graphics/textures/characters/combat-robot/combat-robot-walk.png", "rows": 1, "cols": 12, "frameDuration": 0.08 },
+      "SHOOT": { "type": "SHEET", "path": "assets/graphics/textures/characters/combat-robot/combat-robot-shoot.png", "rows": 1, "cols": 8, "frameDuration": 0.2 },
+      "DIE": { "type": "SHEET", "path": "assets/graphics/textures/characters/combat-robot/combat-robot-explode.png", "rows": 1, "cols": 7, "frameDuration": 0.1 }
     }
+  },
+  "sounds": {
+    "SHOOT": "assets/audio/sfx/weapons/pistol/pistol.wav",
+    "HIT": "assets/audio/sfx/characters/zombies/skeleton/zombie_hit.wav",
+    "DIE": "assets/audio/sfx/characters/zombies/skeleton/death.wav"
   }
 }

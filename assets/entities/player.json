@@ -1,42 +1,21 @@
 {
   "type": "Player",
-  "names": ["dawciobiel", "Ostatni Ocalały", "Szeregowiec Ryan", "Rambo", "Commando", "Janusz Korwin"],
   "components": {
-    "Player": { "speed": 200.0 },
     "Transform": { "x": 0, "y": 0 },
+    "Render": { "color": { "r": 1, "g": 1, "b": 1, "a": 1 }, "radius": 16, "isCircle": false },
+    "Health": { "hp": 100, "maxHp": 100, "hasBlood": true, "bloodColor": { "r": 1, "g": 0, "b": 0, "a": 1 } },
+    "Collider": { "radius": 10 },
+    "Player": { "speed": 150.0 },
     "Velocity": { "vx": 0, "vy": 0 },
-    "Collider": { "radius": 15.0 },
-    "Health": {
-      "hp": 100.0,
-      "maxHp": 100.0,
-      "hasBlood": true,
-      "bloodColor": { "r": 1, "g": 0, "b": 0, "a": 1 },
-      "corpseDuration": 10.0
-    },
-    "Score": {}
+    "Score": { "score": 0, "kills": 0, "wave": 1 },
+    "Inventory": {}
   },
   "animations": {
-    "width": 40.0,
-    "height": 40.0,
+    "width": 55.0,
+    "height": 55.0,
     "states": {
-      "WALK": {
-        "type": "SHEET",
-        "path": "assets/graphics/textures/characters/soldier/walk.png",
-        "rows": 1,
-        "cols": 4,
-        "frameDuration": 0.1
-      },
-      "IDLE": {
-        "type": "SHEET",
-        "path": "assets/graphics/textures/characters/soldier/walk.png",
-        "rows": 1,
-        "cols": 4,
-        "frameDuration": 0.1
-      }
+      "WALK": { "type": "SHEET", "path": "assets/graphics/textures/characters/soldier/walk.png", "rows": 1, "cols": 4, "frameDuration": 0.1 },
+      "SHOOT": { "type": "SHEET", "path": "assets/graphics/textures/characters/soldier/hit.png", "rows": 1, "cols": 4, "frameDuration": 0.1 }
     }
-  },
-  "sounds": {
-    "HIT": "assets/audio/sfx/characters/soldier/hit.wav",
-    "DIE": "assets/audio/sfx/characters/soldier/death.wav"
   }
 }
