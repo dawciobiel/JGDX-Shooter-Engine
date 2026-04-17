@@ -2,7 +2,6 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ai.pfa.DefaultGraphPath;
-import com.badlogic.gdx.ai.pfa.GraphPath;
 import com.badlogic.gdx.ai.pfa.indexed.IndexedAStarPathFinder;
 import pl.shooter.engine.ai.pathfinding.DistanceHeuristic;
 import pl.shooter.engine.ai.pathfinding.NavigationGraph;
@@ -10,10 +9,7 @@ import pl.shooter.engine.ai.pathfinding.Node;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
-import pl.shooter.engine.ecs.components.AIComponent;
-import pl.shooter.engine.ecs.components.DestructibleComponent;
-import pl.shooter.engine.ecs.components.PlayerComponent;
-import pl.shooter.engine.ecs.components.TransformComponent;
+import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.world.GameMap;
 
 import java.util.List;
@@ -24,6 +20,8 @@ public class PathfindingSystem extends GameSystem {
     private final DistanceHeuristic heuristic;
     private float graphRefreshTimer = 0;
     private int lastObstacleCount = -1;
+    private float lastCenterX = -1000;
+    private float lastCenterY = -1000;
 
     public PathfindingSystem(EntityManager entityManager, GameMap map) {
         super(entityManager);
@@ -39,16 +37,18 @@ public class PathfindingSystem extends GameSystem {
         Entity player = players.get(0);
         TransformComponent playerTrans = entityManager.getComponent(player, TransformComponent.class);
 
-        // Periodically check if we need to refresh the graph (e.g. if a crate was destroyed)
+        // Refresh graph if objects were destroyed or player moved significantly
         graphRefreshTimer += deltaTime;
-        if (graphRefreshTimer > 1.0f) {
-            int currentObstacles = entityManager.getEntitiesWithComponents(DestructibleComponent.class).size();
-            if (currentObstacles != lastObstacleCount) {
-                graph.update(800, 800, entityManager);
-                this.pathFinder = new IndexedAStarPathFinder<>(graph);
-                this.lastObstacleCount = currentObstacles;
-                Gdx.app.log("PathfindingSystem", "Graph refreshed due to obstacle change.");
-            }
+        
+        float distToLastCenter = (float) Math.sqrt(Math.pow(playerTrans.x - lastCenterX, 2) + Math.pow(playerTrans.y - lastCenterY, 2));
+        int currentObstacles = entityManager.getEntitiesWithComponents(ObstacleComponent.class).size();
+
+        if (graphRefreshTimer > 1.0f || distToLastCenter > 200f || currentObstacles != lastObstacleCount) {
+            graph.update(playerTrans.x, playerTrans.y, entityManager);
+            this.pathFinder = new IndexedAStarPathFinder<>(graph);
+            this.lastObstacleCount = currentObstacles;
+            this.lastCenterX = playerTrans.x;
+            this.lastCenterY = playerTrans.y;
             graphRefreshTimer = 0;
         }
 
@@ -83,7 +83,6 @@ public class PathfindingSystem extends GameSystem {
                     for (int i = 0; i < tempPath.getCount(); i++) {
                         ai.currentPath.add(tempPath.get(i));
                     }
-                    if (ai.currentPathIndex >= ai.currentPath.getCount()) ai.currentPathIndex = 1;
                 }
             } catch (Exception e) {}
         }
