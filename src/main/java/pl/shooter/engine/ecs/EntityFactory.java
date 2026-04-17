@@ -54,6 +54,9 @@ public class EntityFactory {
         componentAliases.put("HealthPickup", HealthPickupComponent.class);
         componentAliases.put("Name", NameComponent.class);
         componentAliases.put("Trigger", TriggerComponent.class);
+        componentAliases.put("Pushable", PushableComponent.class);
+        componentAliases.put("Obstacle", ObstacleComponent.class);
+        componentAliases.put("Destructible", DestructibleComponent.class);
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {
