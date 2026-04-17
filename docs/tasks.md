@@ -1,16 +1,16 @@
 # Lista zadań — Silnik Gry Shooter (Architektura ECS)
 
-## Etap 10: Architektura map i jednostek na mapie (W TRAKCIE)
+## Etap 10: Architektura map i jednostek na mapie (ZAKOŃCZONE)
 - [x] **Architektura aktywowania jednostek na mapie** (Przeniesiono spawnowanie do JSON mapy przez `MapService`)
 - [x] **Architektura map** (System wczytywania `map.json` z obsługą atlasów kafelków i skalowania)
 - [x] **Wybór mapy przed rozpoczęciem rozgrywki** (Menu wyboru poziomu)
 
 ## Etap 9: Szlify i Rozwój (W TRAKCIE)
 
-- [ ] **Nowa wroga jednostka** (Dodać nową jednostkę "Combat Robot" typu jednostka mechaniczna)
-- [ ] **Dźwięki mapy typu "ambient" dla mapy** (Jeżeli gracz wkroczy na odpowiedni rejon mapy silnik powinien w tej części mapy odtwarzać wybrany dźwięk)
-- [ ] **Dźwięki gracza typu "multi kill"** (Po zabiciu kilku wrogów w krótkim czasie silnik powinien odtwarzać wybrany dźwięk. Dźwię powinien być definiowany w konfigu postaci gracza)
-- [ ] **Wprowadzić obiekt, który gracz możne przesunąć na mapie**
+- [x] **Nowa wroga jednostka** (Dodać nową jednostkę "Combat Robot" typu jednostka mechaniczna)
+- [x] **Dźwięki mapy typu "ambient" dla mapy** (Jeżeli gracz wkroczy na odpowiedni rejon mapy silnik powinien w tej części mapy odtwarzać wybrany dźwięk)
+- [x] **Dźwięki gracza typu "multi kill"** (Po zabiciu kilku wrogów w krótkim czasie silnik powinien odtwarzać wybrany dźwięk. Dźwię powinien być definiowany w konfigu postaci gracza)
+- [x] **Wprowadzić obiekt, który gracz możne przesunąć na mapie** (Beczki i skrzynie z fizyką pchania i omijaniem przez AI)
 - [ ] **System Drzwi i Przełączników** (Prosta interakcja ze światem)
 - [ ] **Zapisywanie Wyników** (Highscores do pliku)
 - [x] **Dodać możliwość wyświetlania kursora myszy jako celownika** (Konfigurowalna tekstura, rozmiar i kolor) 

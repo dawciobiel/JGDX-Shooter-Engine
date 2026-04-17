@@ -13,6 +13,20 @@
     { "type": "trigger_mud", "x": 768, "y": 768 },
     { "type": "trigger_metal", "x": 256, "y": 256 },
     { "type": "trigger_fire", "x": 768, "y": 256 },
-    { "type": "trigger_music_change", "x": 512, "y": 512 }
+    { "type": "trigger_music_change", "x": 512, "y": 512 },
+
+    { "type": "barrel", "x": 600, "y": 500 },
+    { "type": "barrel", "x": 600, "y": 530 },
+    { "type": "barrel", "x": 600, "y": 560 },
+    { "type": "barrel", "x": 600, "y": 590 },
+
+    { "type": "crate", "x": 400, "y": 500 },
+    { "type": "crate", "x": 400, "y": 525 },
+    { "type": "crate", "x": 400, "y": 550 },
+    { "type": "crate", "x": 400, "y": 575 },
+    { "type": "crate", "x": 400, "y": 595 },
+    { "type": "crate", "x": 400, "y": 615 },
+    { "type": "crate", "x": 400, "y": 635 }
+
   ]
 }
