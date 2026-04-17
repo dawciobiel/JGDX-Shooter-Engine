@@ -8,6 +8,7 @@ import pl.shooter.engine.ecs.components.PlayerComponent;
 import pl.shooter.engine.ecs.components.TransformComponent;
 import pl.shooter.engine.ecs.components.TriggerComponent;
 import pl.shooter.engine.events.EventBus;
+import pl.shooter.engine.events.MessageEvent;
 import pl.shooter.engine.events.TriggerEvent;
 
 import java.util.List;
@@ -36,7 +37,6 @@ public class TriggerSystem extends GameSystem {
 
             for (Entity triggerEntity : triggers) {
                 TriggerComponent trigger = entityManager.getComponent(triggerEntity, TriggerComponent.class);
-                
                 if (trigger.oneShot && trigger.activated) continue;
 
                 TransformComponent tt = entityManager.getComponent(triggerEntity, TransformComponent.class);
@@ -45,12 +45,16 @@ public class TriggerSystem extends GameSystem {
                 boolean isInside = checkCollision(pt, pc, tt, tc);
 
                 if (isInside && !trigger.isPlayerInside) {
-                    // Entered
                     trigger.isPlayerInside = true;
                     if (trigger.oneShot) trigger.activated = true;
+                    
+                    // Handle Message type
+                    if (trigger.type == TriggerComponent.TriggerType.MESSAGE && trigger.value != null) {
+                        eventBus.publish(new MessageEvent(trigger.value, 3.0f));
+                    }
+                    
                     eventBus.publish(new TriggerEvent(player, triggerEntity, TriggerEvent.State.ENTER, trigger));
                 } else if (!isInside && trigger.isPlayerInside) {
-                    // Exited
                     trigger.isPlayerInside = false;
                     eventBus.publish(new TriggerEvent(player, triggerEntity, TriggerEvent.State.EXIT, trigger));
                 }

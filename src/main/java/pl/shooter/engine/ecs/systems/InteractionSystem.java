@@ -8,6 +8,7 @@ import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.InteractionEvent;
+import pl.shooter.engine.events.MessageEvent;
 
 import java.util.List;
 
@@ -24,7 +25,6 @@ public class InteractionSystem extends GameSystem {
 
     @Override
     public void update(float deltaTime) {
-        // Interaction triggered by SPACE, Left Control, or Right Mouse Button
         boolean interactPressed = Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || 
                                  Gdx.input.isKeyJustPressed(Input.Keys.CONTROL_LEFT) ||
                                  Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT);
@@ -59,9 +59,11 @@ public class InteractionSystem extends GameSystem {
     }
 
     private void handleInteraction(Entity player, Entity interactable, InteractableComponent ic) {
-        Gdx.app.log("InteractionSystem", "Interaction triggered: " + ic.type + " (targetId: " + ic.targetId + ")");
+        Gdx.app.log("InteractionSystem", "Interaction triggered: " + ic.type);
         
-        if (ic.targetId != null) {
+        if (ic.type == InteractableComponent.Type.MESSAGE && ic.targetId != null) {
+            eventBus.publish(new MessageEvent(ic.targetId, 3.0f));
+        } else if (ic.targetId != null) {
             List<Entity> doorEntities = entityManager.getEntitiesWithComponents(DoorComponent.class);
             for (Entity doorEntity : doorEntities) {
                 DoorComponent door = entityManager.getComponent(doorEntity, DoorComponent.class);
@@ -78,26 +80,16 @@ public class InteractionSystem extends GameSystem {
 
     private void toggleDoor(Entity doorEntity, DoorComponent door) {
         door.isOpen = !door.isOpen;
-        
         if (door.isOpen) {
-            Gdx.app.log("InteractionSystem", "Door " + door.doorId + " opened!");
             entityManager.removeComponent(doorEntity, ColliderComponent.class);
             entityManager.removeComponent(doorEntity, ObstacleComponent.class);
-            
             TextureComponent tc = entityManager.getComponent(doorEntity, TextureComponent.class);
-            if (tc != null && door.openTexture != null) {
-                tc.assetPath = door.openTexture;
-            }
+            if (tc != null && door.openTexture != null) tc.assetPath = door.openTexture;
         } else {
-            Gdx.app.log("InteractionSystem", "Door " + door.doorId + " closed!");
-            // Re-adding components. Using a standard radius for now.
             entityManager.addComponent(doorEntity, new ColliderComponent(24f));
             entityManager.addComponent(doorEntity, new ObstacleComponent());
-            
             TextureComponent tc = entityManager.getComponent(doorEntity, TextureComponent.class);
-            if (tc != null && door.closedTexture != null) {
-                tc.assetPath = door.closedTexture;
-            }
+            if (tc != null && door.closedTexture != null) tc.assetPath = door.closedTexture;
         }
     }
 }
