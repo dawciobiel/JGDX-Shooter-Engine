@@ -4,7 +4,7 @@
   "settings": {
     "width": 2000,
     "height": 2000,
-    "ambientColor": { "r": 9.05, "g": 9.15, "b": 9.05, "a": 0.6 }
+    "ambientColor": { "r": 0.05, "g": 0.15, "b": 0.05, "a": 0.6 }
   },
   "tileLayer": {
     "tilesetPath": "assets/graphics/textures/environment/environment-city.png",
@@ -27,7 +27,7 @@
   "entities": [
     { "type": "zombie_runner", "x": 500, "y": 500 },
     { "type": "zombie_runner", "x": 600, "y": 200 },
-    { "type": "zombie_tank", "x": 800, "y": 800 },
-    { "type": "combat-robot", "x": 350, "y": 350 }
+    { "type": "zombie_fat", "x": 800, "y": 800 },
+    { "type": "combat_robot", "x": 350, "y": 350 }
   ]
 }

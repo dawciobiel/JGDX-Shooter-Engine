@@ -4,10 +4,10 @@
     "height" : 600,
     "fullscreen" : true,
     "targetFps" : 60,
-    "ambientBrightness" : 10.5,
-    "ambientRed" : 10.1,
-    "ambientGreen" : 10.1,
-    "ambientBlue" : 10.2
+    "ambientBrightness" : 0.5,
+    "ambientRed" : 0.1,
+    "ambientGreen" : 0.1,
+    "ambientBlue" : 0.2
   },
   "audio" : {
     "masterVolume" : 1.0,

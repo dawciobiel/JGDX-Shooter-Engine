@@ -4,7 +4,7 @@
     "height": 600,
     "fullscreen": true,
     "targetFps": 60,
-    "ambientBrightness": 0.5,
+    "ambientBrightness": 1.0,
     "ambientRed": 0.1,
     "ambientGreen": 0.1,
     "ambientBlue": 0.2
