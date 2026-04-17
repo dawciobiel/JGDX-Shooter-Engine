@@ -2,6 +2,6 @@
   "components": {
     "Transform": {},
     "Collider": { "radius": 250 },
-    "Trigger": { "type": "MESSAGE", "value": "You entered on WATER zone", "oneShot": true }
+    "Trigger": { "type": "MESSAGE", "value": "You entered on WATER zone", "oneShot": false }
   }
 }

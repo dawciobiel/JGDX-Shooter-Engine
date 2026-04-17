@@ -29,7 +29,11 @@
     { "type": "crate", "x": 400, "y": 635 },
 
     { "type": "switch", "x": 400, "y": 800 },
-    { "type": "door", "x": 600, "y": 800 }
+    { "type": "door", "x": 600, "y": 800 },
 
+    { "type": "trigger_msg_water", "x": 256, "y": 768 },
+    { "type": "trigger_msg_mud", "x": 768, "y": 768 },
+    { "type": "trigger_msg_metal", "x": 256, "y": 256 },
+    { "type": "trigger_msg_fire", "x": 768, "y": 256 }
   ]
 }
