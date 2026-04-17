@@ -66,7 +66,9 @@ public class AmbientSoundSystem extends GameSystem {
         return switch (tile) {
             case WATER -> "assets/audio/ambience/water_loop.wav";
             case MUD -> "assets/audio/ambience/mud_loop.wav";
-            default -> null;
+            case METAL -> "assets/audio/ambience/metal_loop.wav";
+            case FIRE -> "assets/audio/ambience/fire_loop.wav";
+            default -> null; // GROUND doesn't have a constant loop by default
         };
     }
 
@@ -91,7 +93,6 @@ public class AmbientSoundSystem extends GameSystem {
     private void playMusic(String path) {
         if (path == null || path.equals(currentMusicPath)) return;
         
-        // Stop previous music if any
         if (currentMusicPath != null && currentMusicId != -1) {
             audioService.stopInstance(currentMusicPath, currentMusicId);
         }
@@ -103,6 +104,5 @@ public class AmbientSoundSystem extends GameSystem {
 
     @Override
     public void update(float deltaTime) {
-        // Future: Add logic for smooth volume fading
     }
 }

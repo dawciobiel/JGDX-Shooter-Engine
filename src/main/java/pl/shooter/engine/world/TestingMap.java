@@ -60,17 +60,24 @@ public class TestingMap implements GameMap {
 
     @Override
     public boolean isWalkable(float x, float y) {
-        int gx = (int) Math.floor(x / 32f);
-        int gy = (int) Math.floor(y / 32f);
-        
-        if (gx < 0 || gx >= widthInTiles || gy < 0 || gy >= heightInTiles) {
-            return false;
-        }
-        return walkable[gx][gy];
+        Tile tile = getTile(x, y);
+        return tile != null && tile.walkable;
     }
 
     @Override
     public float getSpeedMultiplier(float x, float y) {
-        return 1.0f;
+        Tile tile = getTile(x, y);
+        return (tile != null) ? tile.speedMultiplier : 1.0f;
+    }
+
+    @Override
+    public Tile getTile(float x, float y) {
+        int gx = (int) Math.floor(x / 32f);
+        int gy = (int) Math.floor(y / 32f);
+        
+        if (gx < 0 || gx >= widthInTiles || gy < 0 || gy >= heightInTiles) {
+            return Tile.WALL;
+        }
+        return walkable[gx][gy] ? Tile.GROUND : Tile.WALL;
     }
 }

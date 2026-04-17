@@ -20,6 +20,9 @@ public class TriggerComponent implements Component {
     public boolean activated = false;
     public boolean isPlayerInside = false;
 
+    // Default constructor for JSON deserialization
+    public TriggerComponent() {}
+
     public TriggerComponent(TriggerType type, String value) {
         this.type = type;
         this.value = value;

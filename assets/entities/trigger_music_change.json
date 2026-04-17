@@ -1,0 +1,7 @@
+{
+  "components": {
+    "Transform": {},
+    "Collider": { "radius": 100 },
+    "Trigger": { "type": "MUSIC_CHANGE", "value": "assets/audio/ambience/dark_ambient.wav" }
+  }
+}
