@@ -1,0 +1,7 @@
+{
+  "components": {
+    "Transform": {},
+    "Collider": { "radius": 150 },
+    "Trigger": { "type": "MESSAGE", "value": "Placeholder", "oneShot": true }
+  }
+}

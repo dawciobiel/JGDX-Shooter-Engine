@@ -102,6 +102,7 @@ public class PlayState extends GameState {
 
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
         uiSystem.setShowFps(config.debug.showFps);
+        uiSystem.init(engine.getEventBus()); // Setup message listener
 
         AISystem aiSystem = new AISystem(engine.getEntityManager(), engine.getEventBus());
         aiSystem.setMap(map);

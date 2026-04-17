@@ -1,0 +1,7 @@
+{
+  "components": {
+    "Transform": {},
+    "Collider": { "radius": 250 },
+    "Trigger": { "type": "MESSAGE", "value": "You entered on MUD zone", "oneShot": true }
+  }
+}
