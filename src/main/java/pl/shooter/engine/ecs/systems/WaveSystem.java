@@ -79,7 +79,7 @@ public class WaveSystem extends GameSystem {
             if (MathUtils.randomBoolean()) {
                 enemyJson = "assets/entities/zombie_runner.json";
             } else {
-                enemyJson = "assets/entities/zombie_tank.json";
+                enemyJson = "assets/entities/zombie_fat.json";
             }
             
             entityFactory.loadFromJson(enemyJson, spawnX, spawnY);

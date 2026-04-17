@@ -4,9 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.math.Vector2;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
@@ -15,11 +13,16 @@ import pl.shooter.engine.ecs.components.TransformComponent;
 
 import java.util.List;
 
+/**
+ * Manages the dynamic lighting pass by rendering radial lights into a FrameBuffer.
+ * Optimized and hardened against color reference corruption.
+ */
 public class LightSystem extends GameSystem {
     private FrameBuffer lightMap;
     private final SpriteBatch batch;
     private final Texture lightTexture;
     private final Color ambientColor = new Color(0.1f, 0.1f, 0.2f, 0.5f);
+    private final Matrix4 projectionMatrix = new Matrix4();
 
     public LightSystem(EntityManager entityManager) {
         super(entityManager);
@@ -30,16 +33,12 @@ public class LightSystem extends GameSystem {
 
     private Texture createRadialGradient(int size) {
         Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
-        float centerX = size / 2f;
-        float centerY = size / 2f;
-        float maxDist = size / 2f;
-
+        float centerX = size / 2f, centerY = size / 2f, maxDist = size / 2f;
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                float dist = Vector2.dst(x, y, centerX, centerY);
+                float dist = (float) Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
                 float alpha = Math.max(0, 1 - (dist / maxDist));
-                alpha = alpha * alpha; 
-                pixmap.setColor(1, 1, 1, alpha);
+                pixmap.setColor(1, 1, 1, alpha * alpha);
                 pixmap.drawPixel(x, y);
             }
         }
@@ -52,20 +51,17 @@ public class LightSystem extends GameSystem {
     @Override
     public void update(float deltaTime) {
         if (lightMap == null) return;
-
         List<Entity> lights = entityManager.getEntitiesWithComponents(TransformComponent.class, LightComponent.class);
         
         lightMap.begin();
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
+        batch.setProjectionMatrix(projectionMatrix);
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-        
         batch.begin();
         for (Entity entity : lights) {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             LightComponent lc = entityManager.getComponent(entity, LightComponent.class);
-            
             batch.setColor(lc.color.r, lc.color.g, lc.color.b, lc.intensity);
             float d = lc.radius * 2;
             batch.draw(lightTexture, t.x - lc.radius, t.y - lc.radius, d, d);
@@ -74,25 +70,19 @@ public class LightSystem extends GameSystem {
         lightMap.end();
     }
 
-    /**
-     * Sets the global ambient light color and intensity.
-     * Alpha channel controls overall brightness (0 = dark, 1 = bright).
-     */
     public void setAmbientColor(float r, float g, float b, float a) {
-        this.ambientColor.set(r, g, b, a);
+        // Clamp values to valid range 0-1 to prevent shader glitches
+        this.ambientColor.set(
+            Math.max(0, Math.min(1, r)),
+            Math.max(0, Math.min(1, g)),
+            Math.max(0, Math.min(1, b)),
+            Math.max(0, Math.min(1, a))
+        );
     }
 
-    public void setProjectionMatrix(Matrix4 matrix) {
-        batch.setProjectionMatrix(matrix);
-    }
-
-    public Texture getLightMapTexture() {
-        return lightMap.getColorBufferTexture();
-    }
-
-    public Color getAmbientColor() {
-        return ambientColor;
-    }
+    public void setProjectionMatrix(Matrix4 matrix) { this.projectionMatrix.set(matrix); }
+    public Texture getLightMapTexture() { return lightMap.getColorBufferTexture(); }
+    public Color getAmbientColor() { return ambientColor; }
 
     @Override
     public void resize(int width, int height) {

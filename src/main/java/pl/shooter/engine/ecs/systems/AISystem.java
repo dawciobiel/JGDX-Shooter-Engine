@@ -21,12 +21,14 @@ import java.util.List;
 
 /**
  * Manages NPC behaviors, including chasing, shooting and melee attacks.
- * Now respects weapon range, AI-defined speed and Line of Sight (walls).
+ * Optimized for better performance and cleaner logic.
  */
 public class AISystem extends GameSystem {
     private final EventBus eventBus;
     private final Vector2 tempTarget = new Vector2();
     private GameMap map;
+    private float separationUpdateTimer = 0;
+    private static final float SEPARATION_UPDATE_INTERVAL = 0.2f; // Update neighbors 5 times per second
 
     public AISystem(EntityManager entityManager, EventBus eventBus) {
         super(entityManager);
@@ -49,6 +51,10 @@ public class AISystem extends GameSystem {
                 AIComponent.class, TransformComponent.class, VelocityComponent.class
         );
 
+        separationUpdateTimer += deltaTime;
+        boolean updateSeparation = separationUpdateTimer >= SEPARATION_UPDATE_INTERVAL;
+        if (updateSeparation) separationUpdateTimer = 0;
+
         for (Entity enemy : enemies) {
             AIComponent ai = entityManager.getComponent(enemy, AIComponent.class);
             TransformComponent enemyTrans = entityManager.getComponent(enemy, TransformComponent.class);
@@ -56,12 +62,13 @@ public class AISystem extends GameSystem {
             AnimationComponent anim = entityManager.getComponent(enemy, AnimationComponent.class);
             WeaponComponent weapon = entityManager.getComponent(enemy, WeaponComponent.class);
             
-            SteeringComponent sc = getOrAddSteering(enemy, enemyTrans, enemyVel, enemies, ai.speed);
+            SteeringComponent sc = getOrAddSteering(enemy, enemyTrans, enemyVel, enemies, ai.speed, updateSeparation);
             sc.setMaxLinearSpeed(ai.speed);
 
             float distanceToPlayer = Vector2.dst(enemyTrans.x, enemyTrans.y, playerTrans.x, playerTrans.y);
 
             if (distanceToPlayer < ai.detectRange) {
+                // Look at player
                 enemyTrans.rotation = MathUtils.atan2(playerTrans.y - enemyTrans.y, playerTrans.x - enemyTrans.x) * MathUtils.radiansToDegrees;
                 
                 boolean isAttacking = false;
@@ -90,7 +97,9 @@ public class AISystem extends GameSystem {
         float dist = Vector2.dst(x1, y1, x2, y2);
         if (dist < 10) return true;
         
-        int steps = (int) (dist / 8); 
+        int steps = (int) (dist / 16); // Increased step size for performance
+        if (steps < 2) steps = 2;
+        
         float dx = (x2 - x1) / steps;
         float dy = (y2 - y1) / steps;
         
@@ -102,7 +111,8 @@ public class AISystem extends GameSystem {
         return true;
     }
 
-    private SteeringComponent getOrAddSteering(Entity enemy, TransformComponent t, VelocityComponent v, List<Entity> allEnemies, float maxSpeed) {
+    private SteeringComponent getOrAddSteering(Entity enemy, TransformComponent t, VelocityComponent v, 
+                                              List<Entity> allEnemies, float maxSpeed, boolean updateNeighbors) {
         SteeringComponent sc = entityManager.getComponent(enemy, SteeringComponent.class);
         if (sc == null) {
             sc = new SteeringComponent(t, v);
@@ -116,9 +126,10 @@ public class AISystem extends GameSystem {
             sc.prioritySteering.add(sc.seekBehavior);
             sc.behavior = sc.prioritySteering;
             entityManager.addComponent(enemy, sc);
+            updateNeighbors = true; // Force update for new component
         }
         
-        if (sc.separationBehavior != null) {
+        if (updateNeighbors && sc.separationBehavior != null) {
             Array<Steerable<Vector2>> agents = (Array<Steerable<Vector2>>) ((RadiusProximity<Vector2>)sc.separationBehavior.getProximity()).getAgents();
             agents.clear();
             for (Entity e : allEnemies) {
@@ -163,8 +174,6 @@ public class AISystem extends GameSystem {
                 float tx = targetNode.x * 32 + 16;
                 float ty = targetNode.y * 32 + 16;
 
-                // REDUCED THRESHOLD: Must be closer to node center before switching to next node.
-                // This prevents "corner cutting" and wall bumping.
                 if (Vector2.dst(sc.transform.x, sc.transform.y, tx, ty) < 6f) {
                     if (ai.currentPathIndex < ai.currentPath.getCount() - 1) {
                         ai.currentPathIndex++;

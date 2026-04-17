@@ -18,6 +18,7 @@ import java.util.Random;
 
 /**
  * Creates entities from external JSON definitions with support for dynamic animations and sounds.
+ * DEBUG VERSION: Enforces specific colors for groups to trace lighting glitches.
  */
 public class EntityFactory {
     private final EntityManager entityManager;
@@ -76,31 +77,26 @@ public class EntityFactory {
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> entry = fields.next();
                     String alias = entry.getKey();
-                    JsonNode data = entry.getValue();
                     Class<? extends Component> clazz = componentAliases.get(alias);
                     if (clazz == null) continue;
 
-                    Component component = objectMapper.treeToValue(data, clazz);
+                    Component component = objectMapper.treeToValue(entry.getValue(), clazz);
                     if (component instanceof TransformComponent tc) {
                         tc.x = x;
                         tc.y = y;
                     }
-                    
-                    // Preload texture if found in component
                     if (component instanceof TextureComponent tex && assetService != null) {
                         assetService.loadTexture(tex.assetPath);
                     }
-
                     entityManager.addComponent(entity, component);
                 }
             }
 
-            // 2. Names (Random selection from array)
+            // 2. Names
             JsonNode namesNode = root.get("names");
             if (namesNode != null && namesNode.isArray() && namesNode.size() > 0) {
                 int index = random.nextInt(namesNode.size());
-                String selectedName = namesNode.get(index).asText();
-                entityManager.addComponent(entity, new NameComponent(selectedName));
+                entityManager.addComponent(entity, new NameComponent(namesNode.get(index).asText()));
             }
 
             // 3. Animations
@@ -117,8 +113,10 @@ public class EntityFactory {
                 Iterator<Map.Entry<String, JsonNode>> soundFields = soundsNode.fields();
                 while (soundFields.hasNext()) {
                     Map.Entry<String, JsonNode> entry = soundFields.next();
-                    SoundComponent.Action action = SoundComponent.Action.valueOf(entry.getKey());
-                    soundComp.addSound(action, entry.getValue().asText());
+                    try {
+                        SoundComponent.Action action = SoundComponent.Action.valueOf(entry.getKey());
+                        soundComp.addSound(action, entry.getValue().asText());
+                    } catch (Exception e) {}
                 }
                 entityManager.addComponent(entity, soundComp);
             }
@@ -156,7 +154,8 @@ public class EntityFactory {
             float vx = (random.nextFloat() - 0.5f) * 200f;
             float vy = (random.nextFloat() - 0.5f) * 200f;
             entityManager.addComponent(p, new VelocityComponent(vx, vy));
-            entityManager.addComponent(p, new RenderComponent(new Color(color.r, color.g, color.b, 1.0f), 2f + random.nextFloat() * 4f, true));
+            // DEBUG: Explosion color orange-ish
+            entityManager.addComponent(p, new RenderComponent(new Color(1, 0.5f, 0, 1.0f), 2f + random.nextFloat() * 4f, true));
             entityManager.addComponent(p, new ParticleComponent(1.5f, 2.0f));
         }
     }
@@ -164,21 +163,17 @@ public class EntityFactory {
     public void createShellEjection(float x, float y, float angle) {
         Entity shell = entityManager.createEntity();
         entityManager.addComponent(shell, new TransformComponent(x, y, angle));
-        
-        // Eject shell to the side (relative to firing angle)
         float ejectAngle = angle - 90 + (random.nextFloat() - 0.5f) * 30f;
         float speed = 100f + random.nextFloat() * 50f;
-        float vx = (float)Math.cos(Math.toRadians(ejectAngle)) * speed;
-        float vy = (float)Math.sin(Math.toRadians(ejectAngle)) * speed;
-        
-        entityManager.addComponent(shell, new VelocityComponent(vx, vy));
-        entityManager.addComponent(shell, new RenderComponent(Color.GOLD, 1.5f, false)); // Small rectangle
-        entityManager.addComponent(shell, new ParticleComponent(0.5f, 0.8f)); // Short life
+        entityManager.addComponent(shell, new VelocityComponent((float)Math.cos(Math.toRadians(ejectAngle)) * speed, (float)Math.sin(Math.toRadians(ejectAngle)) * speed));
+        entityManager.addComponent(shell, new RenderComponent(Color.GOLD, 1.5f, false));
+        entityManager.addComponent(shell, new ParticleComponent(0.5f, 0.8f));
     }
 
     public Entity createAmmoPickup(float x, float y, int amount) {
         Entity pickup = entityManager.createEntity();
         entityManager.addComponent(pickup, new TransformComponent(x, y));
+        // DEBUG: BLUE for pickups
         entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
         entityManager.addComponent(pickup, new ColliderComponent(8f));
         entityManager.addComponent(pickup, new AmmoPickupComponent(amount));
@@ -188,7 +183,8 @@ public class EntityFactory {
     public Entity createHealthPickup(float x, float y, float amount) {
         Entity pickup = entityManager.createEntity();
         entityManager.addComponent(pickup, new TransformComponent(x, y));
-        entityManager.addComponent(pickup, new RenderComponent(Color.GREEN, 8f, true));
+        // DEBUG: BLUE for pickups
+        entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
         entityManager.addComponent(pickup, new ColliderComponent(8f));
         entityManager.addComponent(pickup, new HealthPickupComponent(amount));
         return pickup;
@@ -203,30 +199,25 @@ public class EntityFactory {
     }
 
     private Animation<TextureRegion> createAnimationFromSheet(String path, int rows, int cols, float frameDuration) {
+        if (assetService == null) return null;
         Texture texture = assetService.getTexture(path);
-        if (texture == null) return null;
-        int tileWidth = texture.getWidth() / cols;
-        int tileHeight = texture.getHeight() / rows;
-        TextureRegion[][] temp = TextureRegion.split(texture, tileWidth, tileHeight);
+        if (texture == null) { assetService.loadTexture(path); return null; }
+        TextureRegion[][] temp = TextureRegion.split(texture, texture.getWidth() / cols, texture.getHeight() / rows);
         TextureRegion[] frames = new TextureRegion[rows * cols];
         int index = 0;
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                frames[index++] = temp[i][j];
-            }
-        }
+        for (int i = 0; i < rows; i++) for (int j = 0; j < cols; j++) frames[index++] = temp[i][j];
         return new Animation<>(frameDuration, frames);
     }
 
     private Animation<TextureRegion> createAnimationFromFiles(String prefix, int count, float frameDuration) {
+        if (assetService == null) return null;
         TextureRegion[] frames = new TextureRegion[count + 1];
         boolean foundAny = false;
         for (int i = 0; i <= count; i++) {
-            Texture tex = assetService.getTexture(prefix + i + ".png");
-            if (tex != null) {
-                frames[i] = new TextureRegion(tex);
-                foundAny = true;
-            }
+            String path = prefix + i + ".png";
+            Texture tex = assetService.getTexture(path);
+            if (tex == null) { assetService.loadTexture(path); continue; }
+            frames[i] = new TextureRegion(tex); foundAny = true;
         }
         return foundAny ? new Animation<>(frameDuration, frames) : null;
     }

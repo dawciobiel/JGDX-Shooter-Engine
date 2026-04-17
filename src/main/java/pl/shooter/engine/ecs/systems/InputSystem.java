@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Handles player input for movement, aiming, and weapon management.
- * Now respects the death state of the player entity and uses configurable keys.
+ * Respects the death state of the player entity and uses configurable keys.
  */
 public class InputSystem extends GameSystem {
     private final EventBus eventBus;
@@ -31,7 +31,7 @@ public class InputSystem extends GameSystem {
         super(entityManager);
         this.eventBus = eventBus;
         this.camera = camera;
-        this.config = new ConfigService().getConfig(); // Load config for controls
+        this.config = new ConfigService().getConfig();
         
         if (config.ui.useCustomCursor) {
             Gdx.input.setCursorCatched(false);
@@ -41,11 +41,11 @@ public class InputSystem extends GameSystem {
 
     @Override
     public void update(float deltaTime) {
+        // Requirement: Player must have Transform and Velocity for basic movement
         List<Entity> players = entityManager.getEntitiesWithComponents(
                 PlayerComponent.class,
                 TransformComponent.class,
-                VelocityComponent.class,
-                InventoryComponent.class
+                VelocityComponent.class
         );
 
         mouseBuffer.set(Gdx.input.getX(), Gdx.input.getY(), 0);
@@ -55,22 +55,21 @@ public class InputSystem extends GameSystem {
 
         for (Entity player : players) {
             HealthComponent health = entityManager.getComponent(player, HealthComponent.class);
-            if (health != null && health.isDead) {
-                continue;
-            }
+            if (health != null && health.isDead) continue;
 
             PlayerComponent pc = entityManager.getComponent(player, PlayerComponent.class);
             VelocityComponent vc = entityManager.getComponent(player, VelocityComponent.class);
             TransformComponent tc = entityManager.getComponent(player, TransformComponent.class);
             InventoryComponent inv = entityManager.getComponent(player, InventoryComponent.class);
 
-            // 1. Movement using configurable keys
+            // 1. Movement
             float vx = 0;
             float vy = 0;
             if (Gdx.input.isKeyPressed(config.controls.moveUpKey)) vy += pc.speed;
             if (Gdx.input.isKeyPressed(config.controls.moveDownKey)) vy -= pc.speed;
             if (Gdx.input.isKeyPressed(config.controls.moveLeftKey)) vx -= pc.speed;
             if (Gdx.input.isKeyPressed(config.controls.moveRightKey)) vx += pc.speed;
+            
             vc.vx = vx;
             vc.vy = vy;
 
@@ -82,25 +81,27 @@ public class InputSystem extends GameSystem {
                 eventBus.publish(new ShootEvent(player, worldMouseX, worldMouseY));
             }
 
-            // 4. Inventory / Weapon Selection
+            // 4. Inventory (Optional)
             if (inv != null) {
-                // Number keys for direct access
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) inv.currentWeaponIndex = 0;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) && inv.weapons.size() > 1) inv.currentWeaponIndex = 1;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3) && inv.weapons.size() > 2) inv.currentWeaponIndex = 2;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4) && inv.weapons.size() > 3) inv.currentWeaponIndex = 3;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_5) && inv.weapons.size() > 4) inv.currentWeaponIndex = 4;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_6) && inv.weapons.size() > 5) inv.currentWeaponIndex = 5;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_7) && inv.weapons.size() > 6) inv.currentWeaponIndex = 6;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_8) && inv.weapons.size() > 7) inv.currentWeaponIndex = 7;
-                if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_9) && inv.weapons.size() > 8) inv.currentWeaponIndex = 8;
-
-                // Cycle keys from config
-                if (Gdx.input.isKeyJustPressed(config.controls.prevWeaponKey)) inv.previousWeapon();
-                if (Gdx.input.isKeyJustPressed(config.controls.nextWeaponKey)) inv.nextWeapon();
-                
-                entityManager.addComponent(player, inv.getActiveWeapon());
+                handleWeaponSelection(inv, player);
             }
         }
+    }
+
+    private void handleWeaponSelection(InventoryComponent inv, Entity player) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) inv.currentWeaponIndex = 0;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) && inv.weapons.size() > 1) inv.currentWeaponIndex = 1;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3) && inv.weapons.size() > 2) inv.currentWeaponIndex = 2;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4) && inv.weapons.size() > 3) inv.currentWeaponIndex = 3;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_5) && inv.weapons.size() > 4) inv.currentWeaponIndex = 4;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_6) && inv.weapons.size() > 5) inv.currentWeaponIndex = 5;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_7) && inv.weapons.size() > 6) inv.currentWeaponIndex = 6;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_8) && inv.weapons.size() > 7) inv.currentWeaponIndex = 7;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_9) && inv.weapons.size() > 8) inv.currentWeaponIndex = 8;
+
+        if (Gdx.input.isKeyJustPressed(config.controls.prevWeaponKey)) inv.previousWeapon();
+        if (Gdx.input.isKeyJustPressed(config.controls.nextWeaponKey)) inv.nextWeapon();
+        
+        entityManager.addComponent(player, inv.getActiveWeapon());
     }
 }

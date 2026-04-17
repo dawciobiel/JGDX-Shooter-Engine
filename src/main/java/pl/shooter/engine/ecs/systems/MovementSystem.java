@@ -10,7 +10,7 @@ import java.util.List;
 
 public class MovementSystem extends GameSystem {
     private final GameMap map;
-    private static final float MAX_COLLISION_RADIUS = 14f; // Cap physical radius to fit through tiles
+    private static final float MAX_COLLISION_RADIUS = 14f;
 
     public MovementSystem(EntityManager entityManager, GameMap map) {
         super(entityManager);
@@ -23,6 +23,10 @@ public class MovementSystem extends GameSystem {
                 TransformComponent.class,
                 VelocityComponent.class
         );
+        
+        // Optimization: Get obstacles once per frame, not per entity
+        List<Entity> obstacles = entityManager.getEntitiesWithComponents(
+                TransformComponent.class, ColliderComponent.class, ObstacleComponent.class);
 
         for (Entity entity : entities) {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
@@ -30,7 +34,6 @@ public class MovementSystem extends GameSystem {
             ColliderComponent collider = entityManager.getComponent(entity, ColliderComponent.class);
             boolean isProjectile = entityManager.hasComponent(entity, ProjectileComponent.class);
 
-            // Use clamped radius for movement checks against walls/obstacles
             float rawRadius = (collider != null) ? collider.radius : (isProjectile ? 2f : 6f);
             float physicalRadius = Math.min(rawRadius, MAX_COLLISION_RADIUS);
             
@@ -39,14 +42,16 @@ public class MovementSystem extends GameSystem {
 
             if (Math.abs(dx) < 0.001f && Math.abs(dy) < 0.001f) continue;
 
-            if (isAreaClear(t.x + dx, t.y, physicalRadius, entity)) {
+            // X Movement
+            if (isAreaClear(t.x + dx, t.y, physicalRadius, entity, obstacles)) {
                 t.x += dx;
             } else if (isProjectile) {
                 entityManager.removeEntity(entity);
                 continue;
             }
 
-            if (isAreaClear(t.x, t.y + dy, physicalRadius, entity)) {
+            // Y Movement
+            if (isAreaClear(t.x, t.y + dy, physicalRadius, entity, obstacles)) {
                 t.y += dy;
             } else if (isProjectile) {
                 entityManager.removeEntity(entity);
@@ -54,10 +59,11 @@ public class MovementSystem extends GameSystem {
         }
     }
 
-    private boolean isAreaClear(float x, float y, float radius, Entity movingEntity) {
+    private boolean isAreaClear(float x, float y, float radius, Entity movingEntity, List<Entity> obstacles) {
+        // 1. Map collision (Static)
         if (!isMapWalkable(x, y, radius)) return false;
 
-        List<Entity> obstacles = entityManager.getEntitiesWithComponents(TransformComponent.class, ColliderComponent.class, ObstacleComponent.class);
+        // 2. Obstacle collision (Dynamic)
         for (Entity obstacle : obstacles) {
             if (obstacle.getId() == movingEntity.getId()) continue;
             if (isPlayerPushingObject(movingEntity, obstacle)) continue;
@@ -65,15 +71,15 @@ public class MovementSystem extends GameSystem {
             TransformComponent ot = entityManager.getComponent(obstacle, TransformComponent.class);
             ColliderComponent oc = entityManager.getComponent(obstacle, ColliderComponent.class);
 
-            // Also clamp obstacle radius for consistency
             float obstacleRadius = Math.min(oc.radius, MAX_COLLISION_RADIUS);
+            float minDistance = radius + obstacleRadius;
+            
+            // Fast AABB check before expensive distance squared calculation
+            if (Math.abs(x - ot.x) > minDistance || Math.abs(y - ot.y) > minDistance) continue;
 
             float dx = x - ot.x;
             float dy = y - ot.y;
-            float distanceSq = dx * dx + dy * dy;
-            float minDistance = radius + obstacleRadius;
-
-            if (distanceSq < minDistance * minDistance) {
+            if ((dx * dx + dy * dy) < (minDistance * minDistance)) {
                 return false;
             }
         }

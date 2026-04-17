@@ -102,7 +102,7 @@ public class PlayState extends GameState {
 
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
         uiSystem.setShowFps(config.debug.showFps);
-        uiSystem.init(engine.getEventBus()); // Setup message listener
+        uiSystem.init(engine.getEventBus());
 
         AISystem aiSystem = new AISystem(engine.getEntityManager(), engine.getEventBus());
         aiSystem.setMap(map);
@@ -117,7 +117,7 @@ public class PlayState extends GameState {
         engine.addSystem(new PushingSystem(engine.getEntityManager(), map));
         engine.addSystem(new InteractionSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new MapSystem(engine.getEntityManager(), map, engine.getEventBus()));
-        engine.addSystem(new MovementSystem(engine.getEntityManager(), map));
+        engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new TriggerSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
@@ -136,7 +136,8 @@ public class PlayState extends GameState {
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
         if (!players.isEmpty()) {
             Entity player = players.get(0);
-            engine.getEntityManager().addComponent(player, new LightComponent(200f, new Color(1, 0.9f, 0.7f, 1f), 0.8f));
+            // ENHANCED PLAYER LIGHT: Radius 400, brighter color
+            engine.getEntityManager().addComponent(player, new LightComponent(400f, new Color(1, 1, 0.9f, 1f), 0.9f));
             
             InventoryComponent inv = new InventoryComponent();
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.KNIFE, weaponConfig));

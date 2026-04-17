@@ -8,11 +8,11 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import pl.shooter.engine.ai.pathfinding.Node;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.GameConfig;
@@ -22,13 +22,12 @@ import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.world.GameMap;
 import pl.shooter.engine.world.JsonMap;
-import pl.shooter.engine.ai.pathfinding.Node;
 
 import java.util.List;
 
 /**
  * Renders the game world, including entities, map, blood decals and dynamic lighting.
- * Supports tilesets and names above units.
+ * Optimized for performance and fixed color bleeding bugs.
  */
 public class RenderSystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
@@ -83,16 +82,22 @@ public class RenderSystem extends GameSystem {
     public void update(float deltaTime) {
         updateCamera();
 
+        List<Entity> texturedEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, TextureComponent.class);
+        List<Entity> animatedEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, AnimationComponent.class);
+        List<Entity> primitiveEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, RenderComponent.class);
+        List<Entity> healthEntities = entityManager.getEntitiesWithComponents(HealthComponent.class, TransformComponent.class);
+        List<Entity> namedEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, NameComponent.class);
+
         if (sceneFbo != null) {
             sceneFbo.begin();
             ScreenUtils.clear(0.05f, 0.05f, 0.05f, 1);
             Gdx.gl.glEnable(GL20.GL_BLEND);
             Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
-            // Pass 1: Map Background
             if (currentMap instanceof JsonMap jm && jm.getTilesetPath() != null) {
                 spriteBatch.setProjectionMatrix(camera.combined);
                 spriteBatch.begin();
+                spriteBatch.setColor(Color.WHITE); // RESET COLOR
                 renderJsonMap(jm);
                 spriteBatch.end();
             } else {
@@ -102,28 +107,25 @@ public class RenderSystem extends GameSystem {
                 shapeRenderer.end();
             }
 
-            // Pass 2: Blood Decals
             if (config.effects.showBloodDecals) {
                 shapeRenderer.setProjectionMatrix(camera.combined);
                 shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                renderBloodDecals();
+                renderBloodDecals(healthEntities);
                 shapeRenderer.end();
             }
 
-            // Pass 3: Primitives & Health Bars
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            renderPrimitiveEntities();
-            renderHealthBars();
+            renderPrimitiveEntities(primitiveEntities);
+            renderHealthBars(healthEntities);
             shapeRenderer.end();
 
-            // Pass 4: Textures & Animations & Names (with Tinting)
             spriteBatch.setProjectionMatrix(camera.combined);
             spriteBatch.begin();
-            renderTexturedEntities();
-            renderAnimatedEntities();
+            renderTexturedEntities(texturedEntities);
+            renderAnimatedEntities(animatedEntities);
             if (config.gameplay.showUnitNames) {
-                renderUnitNames();
+                renderUnitNames(namedEntities);
             }
             spriteBatch.end();
             
@@ -149,41 +151,28 @@ public class RenderSystem extends GameSystem {
     private void renderJsonMap(JsonMap map) {
         int[][] data = map.getTileData();
         if (data == null) return;
-
         int ts = map.getTileSize();
         int ds = map.getDisplaySize();
         Texture tileset = assetService.getTexture(map.getTilesetPath());
         if (tileset == null) return;
-
-        // Cache tileset regions if changed
         if (cachedTiles == null || !map.getTilesetPath().equals(lastTilesetPath)) {
-            int safeTsW = Math.min(ts, tileset.getWidth());
-            int safeTsH = Math.min(ts, tileset.getHeight());
-            cachedTiles = TextureRegion.split(tileset, safeTsW, safeTsH);
+            cachedTiles = TextureRegion.split(tileset, ts, ts);
             lastTilesetPath = map.getTilesetPath();
         }
-
-        // Only render visible tiles
         float startX = camera.position.x - viewport.getWorldWidth() / 2 - ds;
         float startY = camera.position.y - viewport.getWorldHeight() / 2 - ds;
         float endX = camera.position.x + viewport.getWorldWidth() / 2 + ds;
         float endY = camera.position.y + viewport.getWorldHeight() / 2 + ds;
-
         int startGridX = Math.max(0, (int) (startX / ds));
         int startGridY = Math.max(0, (int) (startY / ds));
         int endGridX = Math.min(data[0].length, (int) (endX / ds) + 1);
         int endGridY = Math.min(data.length, (int) (endY / ds) + 1);
-
         int colsInTileset = tileset.getWidth() / ts;
-        if (colsInTileset <= 0) colsInTileset = 1;
-
-        spriteBatch.setColor(Color.WHITE);
         for (int y = startGridY; y < endGridY; y++) {
             for (int x = startGridX; x < endGridX; x++) {
                 int tileId = data[y][x];
                 int row = tileId / colsInTileset;
                 int col = tileId % colsInTileset;
-                
                 if (row >= 0 && row < cachedTiles.length && col >= 0 && col < cachedTiles[0].length) {
                     spriteBatch.draw(cachedTiles[row][col], x * ds, y * ds, ds, ds);
                 }
@@ -192,23 +181,20 @@ public class RenderSystem extends GameSystem {
     }
 
     private void renderMapLegacy(GameMap map) {
-        float startX = camera.position.x - viewport.getWorldWidth() / 2 - 32;
-        float startY = camera.position.y - viewport.getWorldHeight() / 2 - 32;
-        float endX = camera.position.x + viewport.getWorldWidth() / 2 + 32;
-        float endY = camera.position.y + viewport.getWorldHeight() / 2 + 32;
-        for (float x = startX; x < endX; x += 32) {
-            for (float y = startY; y < endY; y += 32) {
-                int gx = (int) Math.floor(x / 32);
-                int gy = (int) Math.floor(y / 32);
-                float wx = gx * 32;
-                float wy = gy * 32;
-                float speed = map.getSpeedMultiplier(wx + 16, wy + 16);
-                boolean isWalkable = map.isWalkable(wx + 16, wy + 16);
-                if (!isWalkable) shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 1);
+        float ts = 32f;
+        float startX = camera.position.x - viewport.getWorldWidth() / 2 - ts;
+        float startY = camera.position.y - viewport.getWorldHeight() / 2 - ts;
+        float endX = camera.position.x + viewport.getWorldWidth() / 2 + ts;
+        float endY = camera.position.y + viewport.getWorldHeight() / 2 + ts;
+        for (float x = startX; x < endX; x += ts) {
+            for (float y = startY; y < endY; y += ts) {
+                float wx = (float)Math.floor(x / ts) * ts;
+                float wy = (float)Math.floor(y / ts) * ts;
+                float speed = map.getSpeedMultiplier(wx + ts/2, wy + ts/2);
+                if (!map.isWalkable(wx + ts/2, wy + ts/2)) shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 1);
                 else if (speed < 0.4f) shapeRenderer.setColor(0.1f, 0.2f, 0.4f, 1);
-                else if (speed < 0.7f) shapeRenderer.setColor(0.25f, 0.15f, 0.05f, 1);
                 else shapeRenderer.setColor(0.15f, 0.15f, 0.15f, 1);
-                shapeRenderer.rect(wx, wy, 32, 32);
+                shapeRenderer.rect(wx, wy, ts, ts);
             }
         }
     }
@@ -218,10 +204,10 @@ public class RenderSystem extends GameSystem {
         if (cursorTex != null) {
             mouseBuffer.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(mouseBuffer);
-            
             spriteBatch.setProjectionMatrix(camera.combined);
             spriteBatch.setShader(null);
             spriteBatch.begin();
+            // RESET TO CONFIG COLOR EXPLICITLY
             spriteBatch.setColor(config.ui.cursorRed, config.ui.cursorGreen, config.ui.cursorBlue, config.ui.cursorAlpha);
             float size = config.ui.cursorSize;
             spriteBatch.draw(cursorTex, mouseBuffer.x - size/2, mouseBuffer.y - size/2, size, size);
@@ -229,9 +215,8 @@ public class RenderSystem extends GameSystem {
         }
     }
 
-    private void renderBloodDecals() {
-        List<Entity> deadEntities = entityManager.getEntitiesWithComponents(HealthComponent.class, TransformComponent.class);
-        for (Entity entity : deadEntities) {
+    private void renderBloodDecals(List<Entity> healthEntities) {
+        for (Entity entity : healthEntities) {
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
             if (h.isDead && h.hasBlood) {
                 TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
@@ -245,133 +230,78 @@ public class RenderSystem extends GameSystem {
         }
     }
 
-    private void renderFinalPass() {
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        
-        spriteBatch.getProjectionMatrix().idt();
-        spriteBatch.setColor(Color.WHITE);
-        spriteBatch.setShader(lightingShader);
-        spriteBatch.begin();
-        
-        if (lightSystem != null) {
-            lightSystem.getLightMapTexture().bind(1);
-            lightingShader.setUniformi("u_lightmap", 1);
-            lightingShader.setUniformf("u_ambientColor", lightSystem.getAmbientColor());
-            Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
-        }
-        
-        if (sceneFbo != null) {
-            Texture fboTexture = sceneFbo.getColorBufferTexture();
-            spriteBatch.draw(fboTexture, -1, -1, 2, 2, 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
-        }
-        
-        spriteBatch.end();
-        spriteBatch.setShader(null);
-    }
-
-    private void renderPrimitiveEntities() {
-        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, RenderComponent.class);
+    private void renderPrimitiveEntities(List<Entity> entities) {
         for (Entity entity : entities) {
             if (entityManager.hasComponent(entity, TextureComponent.class) || entityManager.hasComponent(entity, AnimationComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             RenderComponent r = entityManager.getComponent(entity, RenderComponent.class);
-            
-            float alpha = 1.0f;
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
-            if (h != null && h.isDead) {
-                alpha = 1.0f - (h.deathTimer / h.corpseDuration);
-            }
-            
+            float alpha = (h != null && h.isDead) ? (1.0f - (h.deathTimer / h.corpseDuration)) : 1.0f;
             shapeRenderer.setColor(r.color.r, r.color.g, r.color.b, r.color.a * alpha);
             if (r.isCircle) shapeRenderer.circle(t.x, t.y, r.radius);
             else shapeRenderer.rect(t.x - r.radius, t.y - r.radius, r.radius * 2, r.radius * 2);
         }
     }
 
-    private void renderTexturedEntities() {
-        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, TextureComponent.class);
+    private void renderTexturedEntities(List<Entity> entities) {
         for (Entity entity : entities) {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             TextureComponent tex = entityManager.getComponent(entity, TextureComponent.class);
             Texture texture = assetService.getTexture(tex.assetPath);
             if (texture != null) {
-                Color tint = getEntityTint(entity);
-                spriteBatch.setColor(tint);
+                spriteBatch.setColor(getEntityTint(entity));
                 spriteBatch.draw(texture, t.x - tex.width / 2, t.y - tex.height / 2, tex.width / 2, tex.height / 2, tex.width, tex.height, 1, 1, t.rotation - 90, 0, 0, texture.getWidth(), texture.getHeight(), false, false);
             }
         }
     }
 
-    private void renderAnimatedEntities() {
-        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, AnimationComponent.class);
+    private void renderAnimatedEntities(List<Entity> entities) {
         for (Entity entity : entities) {
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             AnimationComponent anim = entityManager.getComponent(entity, AnimationComponent.class);
             TextureRegion frame = anim.getCurrentKeyFrame();
-            
             if (frame != null) {
-                Color tint = getEntityTint(entity);
-                spriteBatch.setColor(tint);
+                spriteBatch.setColor(getEntityTint(entity));
                 spriteBatch.draw(frame, t.x - anim.width / 2, t.y - anim.height / 2, anim.width / 2, anim.height / 2, anim.width, anim.height, 1, 1, t.rotation - 90);
             }
         }
     }
 
-    private void renderUnitNames() {
-        List<Entity> entities = entityManager.getEntitiesWithComponents(TransformComponent.class, NameComponent.class);
+    private void renderUnitNames(List<Entity> entities) {
         for (Entity entity : entities) {
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
             if (h != null && h.isDead) continue;
-
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             NameComponent n = entityManager.getComponent(entity, NameComponent.class);
-            
-            float radius = 20f;
-            if (entityManager.hasComponent(entity, RenderComponent.class)) radius = entityManager.getComponent(entity, RenderComponent.class).radius;
-            else if (entityManager.hasComponent(entity, AnimationComponent.class)) radius = entityManager.getComponent(entity, AnimationComponent.class).width / 2;
-
+            float offset = 40f;
             nameFont.setColor(1, 1, 1, 0.9f);
-            nameFont.draw(spriteBatch, n.name, t.x - (n.name.length() * 3), t.y + radius + 25);
+            nameFont.draw(spriteBatch, n.name, t.x - (n.name.length() * 3), t.y + offset);
         }
     }
 
     private Color getEntityTint(Entity entity) {
-        float alpha = 1.0f;
         HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
-        if (h != null && h.isDead) {
-            alpha = 1.0f - (h.deathTimer / h.corpseDuration);
-        }
-
+        float alpha = (h != null && h.isDead) ? Math.max(0, 1.0f - (h.deathTimer / h.corpseDuration)) : 1.0f;
         RenderComponent r = entityManager.getComponent(entity, RenderComponent.class);
-        if (r != null) {
-            return new Color(r.color.r, r.color.g, r.color.b, r.color.a * alpha);
-        }
-        
+        if (r != null) return new Color(r.color.r, r.color.g, r.color.b, r.color.a * alpha);
         return new Color(1, 1, 1, alpha);
     }
 
-    private void renderHealthBars() {
-        List<Entity> enemies = entityManager.getEntitiesWithComponents(TransformComponent.class, HealthComponent.class);
-        for (Entity entity : enemies) {
+    private void renderHealthBars(List<Entity> healthEntities) {
+        for (Entity entity : healthEntities) {
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
-            if (h.isDead) continue;
-            
+            if (h.isDead || entityManager.hasComponent(entity, PlayerComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
-            float radius = 20f;
-            if (entityManager.hasComponent(entity, RenderComponent.class)) radius = entityManager.getComponent(entity, RenderComponent.class).radius;
-            else if (entityManager.hasComponent(entity, AnimationComponent.class)) radius = entityManager.getComponent(entity, AnimationComponent.class).width / 2;
-            drawHealthBar(t.x, t.y + radius + 10, radius * 2, h);
+            drawHealthBar(t.x, t.y + 30, 40, h);
         }
     }
 
     private void drawHealthBar(float x, float y, float width, HealthComponent health) {
         float barHeight = 4f;
-        float halfWidth = width / 1.2f;
-        shapeRenderer.setColor(1, 0, 0, 0.7f);
-        shapeRenderer.rect(x - halfWidth, y, halfWidth * 2, barHeight);
-        shapeRenderer.setColor(0, 1, 0, 0.8f);
-        shapeRenderer.rect(x - halfWidth, y, halfWidth * 2 * (health.hp / health.maxHp), barHeight);
+        shapeRenderer.setColor(Color.RED);
+        shapeRenderer.rect(x - width/2, y, width, barHeight);
+        shapeRenderer.setColor(Color.GREEN);
+        shapeRenderer.rect(x - width/2, y, width * (health.hp / health.maxHp), barHeight);
     }
 
     private void updateCamera() {
@@ -383,10 +313,37 @@ public class RenderSystem extends GameSystem {
         }
     }
 
+    private void renderFinalPass() {
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        
+        spriteBatch.getProjectionMatrix().idt();
+        spriteBatch.setShader(lightingShader);
+        spriteBatch.begin();
+        
+        // CRITICAL FIX: Ensure batch color is neutral WHITE before drawing FBO
+        spriteBatch.setColor(Color.WHITE);
+        
+        if (lightSystem != null) {
+            lightSystem.getLightMapTexture().bind(1);
+            lightingShader.setUniformi("u_lightmap", 1);
+            Color amb = lightSystem.getAmbientColor();
+            lightingShader.setUniformf("u_ambientColor", amb.r, amb.g, amb.b, amb.a);
+            Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
+        }
+        
+        if (sceneFbo != null) {
+            Texture fboTexture = sceneFbo.getColorBufferTexture();
+            spriteBatch.draw(fboTexture, -1, -1, 2, 2, 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
+        }
+
+        spriteBatch.end();
+        spriteBatch.setShader(null);
+    }
+
     private void renderDebugInfo() {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-
         if (showDebugHitboxes) {
             shapeRenderer.setColor(Color.RED);
             List<Entity> colliders = entityManager.getEntitiesWithComponents(TransformComponent.class, ColliderComponent.class);
@@ -396,7 +353,6 @@ public class RenderSystem extends GameSystem {
                 shapeRenderer.circle(t.x, t.y, c.radius);
             }
         }
-
         if (showDebugPaths) {
             shapeRenderer.setColor(Color.CYAN);
             List<Entity> aiEntities = entityManager.getEntitiesWithComponents(AIComponent.class);
@@ -411,7 +367,6 @@ public class RenderSystem extends GameSystem {
                 }
             }
         }
-
         shapeRenderer.end();
     }
 
@@ -419,7 +374,7 @@ public class RenderSystem extends GameSystem {
     public void resize(int width, int height) {
         viewport.update(width, height);
         if (sceneFbo != null) sceneFbo.dispose();
-        sceneFbo = new FrameBuffer(Pixmap.Format.RGBA8888, Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), false);
+        sceneFbo = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
         if (lightSystem != null) lightSystem.resize(width, height);
     }
 

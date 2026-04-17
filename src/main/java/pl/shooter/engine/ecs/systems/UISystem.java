@@ -13,10 +13,7 @@ import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
-import pl.shooter.engine.ecs.components.HealthComponent;
-import pl.shooter.engine.ecs.components.PlayerComponent;
-import pl.shooter.engine.ecs.components.ScoreComponent;
-import pl.shooter.engine.ecs.components.WeaponComponent;
+import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.MessageEvent;
 
@@ -24,6 +21,7 @@ import java.util.List;
 
 /**
  * Handles the On-Screen Display (HUD) and messages.
+ * Refactored for better performance and resource management.
  */
 public class UISystem extends GameSystem {
     private final SpriteBatch batch;
@@ -37,6 +35,10 @@ public class UISystem extends GameSystem {
     // Message system
     private String currentMessage = null;
     private float messageTimer = 0;
+
+    // Cached weapon info
+    private WeaponComponent.Type lastWeaponType = null;
+    private Texture cachedWeaponIcon = null;
 
     private static final String WEAPON_ICONS_BASE = "assets/graphics/textures/weapons/";
     private static final String DEFAULT_ICON = "assets/graphics/textures/weapons/default/icon.png";
@@ -54,7 +56,6 @@ public class UISystem extends GameSystem {
     public void init(EventBus eventBus) {
         if (eventBus != null) {
             eventBus.subscribe(MessageEvent.class, event -> {
-                Gdx.app.log("UISystem", "Received message: " + event.text);
                 this.currentMessage = event.text;
                 this.messageTimer = event.duration;
             });
@@ -91,130 +92,103 @@ public class UISystem extends GameSystem {
         ScoreComponent score = entityManager.getComponent(player, ScoreComponent.class);
         WeaponComponent weapon = entityManager.getComponent(player, WeaponComponent.class);
 
-        renderHUD(health, score, weapon);
-        
-        if (currentMessage != null) {
-            renderMessage();
-        }
-
-        if (showFps) {
-            renderFps();
-        }
-    }
-
-    private void renderHUD(HealthComponent health, ScoreComponent score, WeaponComponent weapon) {
-        float x = 20;
-        float y = 600 - 40;
-        float barWidth = 200;
-        float barHeight = 20;
-
+        // Render pass 1: Shapes
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        renderHealthBar(health, weapon);
+        shapeRenderer.end();
+
+        // Render pass 2: Text & Icons
+        batch.setProjectionMatrix(viewport.getCamera().combined);
+        batch.begin();
+        renderHUDText(health, score, weapon);
+        if (currentMessage != null) renderMessage();
+        if (showFps) renderFps();
+        batch.end();
+    }
+
+    private void renderHealthBar(HealthComponent health, WeaponComponent weapon) {
+        float x = 20, y = 600 - 40, w = 200, h = 20;
         
         shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.rect(x - 2, y - 2, barWidth + 4, barHeight + 4);
+        shapeRenderer.rect(x - 2, y - 2, w + 4, h + 4);
         shapeRenderer.setColor(Color.DARK_GRAY);
-        shapeRenderer.rect(x, y, barWidth, barHeight);
+        shapeRenderer.rect(x, y, w, h);
 
         if (health != null) {
-            float displayHp = Math.max(0, health.hp);
-            float healthPercent = Math.max(0, Math.min(1, displayHp / health.maxHp));
+            float healthPercent = Math.max(0, Math.min(1, health.hp / health.maxHp));
             Color healthColor = Color.GREEN;
             if (healthPercent < 0.6f) healthColor = Color.YELLOW;
             if (healthPercent < 0.3f) healthColor = Color.RED;
             shapeRenderer.setColor(healthColor);
-            shapeRenderer.rect(x, y, barWidth * healthPercent, barHeight);
+            shapeRenderer.rect(x, y, w * healthPercent, h);
         }
 
         if (weapon != null && weapon.isReloading) {
             float ry = y - 35;
             float reloadPercent = Math.min(1, weapon.reloadTimer / weapon.reloadTime);
             shapeRenderer.setColor(Color.BLACK);
-            shapeRenderer.rect(x - 2, ry - 2, barWidth + 4, 12);
-            shapeRenderer.setColor(Color.GRAY);
-            shapeRenderer.rect(x, ry, barWidth, 8);
+            shapeRenderer.rect(x - 2, ry - 2, w + 4, 12);
             shapeRenderer.setColor(Color.CYAN);
-            shapeRenderer.rect(x, ry, barWidth * reloadPercent, 8);
+            shapeRenderer.rect(x, ry, w * reloadPercent, 8);
         }
-        shapeRenderer.end();
+    }
 
-        batch.setProjectionMatrix(viewport.getCamera().combined);
-        batch.begin();
+    private void renderHUDText(HealthComponent health, ScoreComponent score, WeaponComponent weapon) {
         if (health != null) {
             font.setColor(Color.WHITE);
-            int displayHp = (int) Math.max(0, health.hp);
-            font.draw(batch, "HEALTH: " + displayHp, x, y + barHeight + 15);
+            font.draw(batch, "HEALTH: " + (int)Math.max(0, health.hp), 20, 600 - 5);
         }
 
         if (score != null) {
             font.setColor(Color.YELLOW);
-            font.draw(batch, "SCORE: " + score.score, x, y - 45);
+            font.draw(batch, "SCORE: " + score.score, 20, 515);
             font.setColor(Color.RED);
-            font.draw(batch, "KILLS: " + score.kills, x, y - 65);
+            font.draw(batch, "KILLS: " + score.kills, 20, 495);
             font.setColor(Color.WHITE);
-            font.draw(batch, "WAVE: " + score.wave, 400 - 40, 600 - 20);
+            font.draw(batch, "WAVE: " + score.wave, 360, 580);
         }
 
         if (weapon != null) {
-            renderWeaponInfo(weapon);
+            renderWeaponIcon(weapon);
+            font.setColor(Color.CYAN);
+            String ammo = weapon.hasInfiniteAmmo ? "INF" : weapon.magazineAmmo + "/" + weapon.currentAmmo;
+            if (weapon.isReloading) {
+                font.setColor(Color.ORANGE);
+                font.draw(batch, "RELOADING...", 620, 580);
+            } else {
+                font.draw(batch, weapon.type + " [" + ammo + "]", 500, 580);
+            }
         }
-        batch.end();
     }
 
-    private void renderWeaponInfo(WeaponComponent weapon) {
-        String typeName = weapon.type.name().toLowerCase();
-        String iconPath = WEAPON_ICONS_BASE + typeName + "/" + typeName + ".png";
-        
-        Texture icon = assetService.getTexture(iconPath);
-        if (icon == null && Gdx.files.internal(iconPath).exists()) {
-            assetService.loadTexture(iconPath);
-            assetService.finishLoading();
-            icon = assetService.getTexture(iconPath);
+    private void renderWeaponIcon(WeaponComponent weapon) {
+        if (lastWeaponType != weapon.type) {
+            lastWeaponType = weapon.type;
+            String typeName = weapon.type.name().toLowerCase();
+            String path = WEAPON_ICONS_BASE + typeName + "/" + typeName + ".png";
+            cachedWeaponIcon = assetService.getTexture(path);
+            if (cachedWeaponIcon == null) cachedWeaponIcon = assetService.getTexture(DEFAULT_ICON);
         }
 
-        float iconX = 800 - 380;
-        float iconY = 600 - 55;
-        float iconSize = 48;
-
-        if (icon != null) {
+        if (cachedWeaponIcon != null) {
             batch.setColor(Color.WHITE);
-            batch.draw(icon, iconX, iconY, iconSize, iconSize);
-        }
-
-        font.setColor(Color.CYAN);
-        String ammoText = weapon.hasInfiniteAmmo ? weapon.magazineAmmo + " / INF" : weapon.magazineAmmo + " / " + weapon.currentAmmo;
-        
-        if (weapon.isReloading) {
-            font.setColor(Color.ORANGE);
-            font.draw(batch, "RELOADING...", 800 - 180, 600 - 20);
-        } else {
-            font.draw(batch, "WEAPON: " + weapon.type + " [" + ammoText + "]", 
-                     iconX + iconSize + 10, 600 - 20);
+            batch.draw(cachedWeaponIcon, 420, 600 - 55, 48, 48);
         }
     }
 
     private void renderMessage() {
-        batch.setProjectionMatrix(viewport.getCamera().combined);
-        batch.begin();
         float alpha = Math.min(1.0f, messageTimer / 0.5f);
         font.setColor(1, 1, 0, alpha);
         font.getData().setScale(1.5f);
-        
         layout.setText(font, currentMessage);
-        float x = (800 - layout.width) / 2;
-        float y = 450;
-        
-        font.draw(batch, currentMessage, x, y);
+        font.draw(batch, currentMessage, (800 - layout.width) / 2, 450);
         font.getData().setScale(1.1f);
-        batch.end();
     }
 
     private void renderFps() {
-        batch.setProjectionMatrix(viewport.getCamera().combined);
-        batch.begin();
         font.setColor(Color.GREEN);
         font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 10, 20);
-        batch.end();
     }
 
     private void renderGameOver() {
@@ -222,10 +196,10 @@ public class UISystem extends GameSystem {
         batch.begin();
         font.setColor(Color.RED);
         font.getData().setScale(2.5f);
-        font.draw(batch, "GAME OVER", 400 - 140, 350);
+        font.draw(batch, "GAME OVER", 260, 350);
         font.getData().setScale(1.1f);
         font.setColor(Color.WHITE);
-        font.draw(batch, "PRESS R OR SPACE TO RESTART", 400 - 160, 280);
+        font.draw(batch, "PRESS R OR SPACE TO RESTART", 240, 280);
         batch.end();
     }
 
