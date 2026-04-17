@@ -47,10 +47,22 @@ public class JsonMap implements GameMap {
 
     @Override
     public boolean isWalkable(float x, float y) {
-        // 1. Bounds check
-        if (x < 0 || x >= width || y < 0 || y >= height) return false;
+        Tile tile = getTile(x, y);
+        return tile != null && tile.walkable;
+    }
 
-        // 2. Tile collision check
+    @Override
+    public float getSpeedMultiplier(float x, float y) {
+        Tile tile = getTile(x, y);
+        return (tile != null) ? tile.speedMultiplier : 1.0f;
+    }
+
+    @Override
+    public Tile getTile(float x, float y) {
+        // 1. Bounds check
+        if (x < 0 || x >= width || y < 0 || y >= height) return null;
+
+        // 2. Tile data check
         if (tileData != null) {
             int gridX = (int) (x / displaySize);
             int gridY = (int) (y / displaySize);
@@ -58,17 +70,15 @@ public class JsonMap implements GameMap {
             // Check if coordinates are within the defined grid data
             if (gridY >= 0 && gridY < tileData.length && gridX >= 0 && gridX < tileData[0].length) {
                 int tileId = tileData[gridY][gridX];
+                // For now, we'll just return GROUND or WALL based on collidableTiles.
+                // In a more advanced scenario, tileId would map to specific Tile enums.
                 if (collidableTiles.contains(tileId)) {
-                    return false;
+                    return Tile.WALL;
+                } else {
+                    return Tile.GROUND;
                 }
             }
         }
-
-        return true;
-    }
-
-    @Override
-    public float getSpeedMultiplier(float x, float y) {
-        return 1.0f;
+        return Tile.GROUND; // Default to ground if no tile data or outside bounds
     }
 }
