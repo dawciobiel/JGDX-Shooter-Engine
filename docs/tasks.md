@@ -11,7 +11,7 @@
 - [x] **Dźwięki mapy typu "ambient" dla mapy** (Jeżeli gracz wkroczy na odpowiedni rejon mapy silnik powinien w tej części mapy odtwarzać wybrany dźwięk)
 - [x] **Dźwięki gracza typu "multi kill"** (Po zabiciu kilku wrogów w krótkim czasie silnik powinien odtwarzać wybrany dźwięk. Dźwię powinien być definiowany w konfigu postaci gracza)
 - [x] **Wprowadzić obiekt, który gracz możne przesunąć na mapie** (Beczki i skrzynie z fizyką pchania i omijaniem przez AI)
-- [ ] **System Drzwi i Przełączników** (Prosta interakcja ze światem)
+- [x] **System Drzwi i Przełączników** (Interakcja ze światem, powiązane ID, otwieranie przejść dla gracza i AI)
 - [ ] **Zapisywanie Wyników** (Highscores do pliku)
 - [x] **Dodać możliwość wyświetlania kursora myszy jako celownika** (Konfigurowalna tekstura, rozmiar i kolor) 
 - [x] **Wyświetlanie nazwy jednostki na mapie** (Losowane imiona z tablicy w JSON, renderowane nad głowami)

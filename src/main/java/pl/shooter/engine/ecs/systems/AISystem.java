@@ -68,7 +68,6 @@ public class AISystem extends GameSystem {
                 if (weapon != null) {
                     float attackRange = (weapon.type == WeaponComponent.Type.KNIFE) ? weapon.range + 10f : 400f;
                     if (distanceToPlayer <= attackRange) {
-                        // Check if path to player is clear of walls
                         if (isLineOfSightClear(enemyTrans.x, enemyTrans.y, playerTrans.x, playerTrans.y)) {
                             eventBus.publish(new ShootEvent(enemy, playerTrans.x, playerTrans.y));
                             isAttacking = true;
@@ -164,8 +163,12 @@ public class AISystem extends GameSystem {
                 float tx = targetNode.x * 32 + 16;
                 float ty = targetNode.y * 32 + 16;
 
-                if (Vector2.dst(sc.transform.x, sc.transform.y, tx, ty) < 12f) {
-                    if (ai.currentPathIndex < ai.currentPath.getCount() - 1) ai.currentPathIndex++;
+                // REDUCED THRESHOLD: Must be closer to node center before switching to next node.
+                // This prevents "corner cutting" and wall bumping.
+                if (Vector2.dst(sc.transform.x, sc.transform.y, tx, ty) < 6f) {
+                    if (ai.currentPathIndex < ai.currentPath.getCount() - 1) {
+                        ai.currentPathIndex++;
+                    }
                 }
                 tempTarget.set(tx, ty);
                 usingPathNode = true;

@@ -26,7 +26,10 @@
     { "type": "crate", "x": 400, "y": 575 },
     { "type": "crate", "x": 400, "y": 595 },
     { "type": "crate", "x": 400, "y": 615 },
-    { "type": "crate", "x": 400, "y": 635 }
+    { "type": "crate", "x": 400, "y": 635 },
+
+    { "type": "switch", "x": 400, "y": 800 },
+    { "type": "door", "x": 600, "y": 800 }
 
   ]
 }

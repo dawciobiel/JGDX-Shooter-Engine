@@ -21,9 +21,9 @@
     "multiKillWindow": 3.0
   },
   "debug" : {
-    "showHitboxes" : false,
+    "showHitboxes" : true,
     "showFps" : true,
-    "showPaths" : false,
+    "showPaths" : true,
     "invinciblePlayer" : false
   },
   "controls" : {
