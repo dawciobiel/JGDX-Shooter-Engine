@@ -1,0 +1,10 @@
+{
+  "components": {
+    "Transform": {},
+    "Texture": { "texturePath": "assets/graphics/textures/environment/door.png" },
+    "Render": { "color": { "r": 1, "g": 1, "b": 1, "a": 1 }, "radius": 24, "isCircle": false },
+    "Collider": { "radius": 24 },
+    "Obstacle": {},
+    "Door": { "doorId": "main_door", "closedTexture": "assets/graphics/textures/environment/door.png", "openTexture": "assets/graphics/textures/environment/door_open.png" }
+  }
+}

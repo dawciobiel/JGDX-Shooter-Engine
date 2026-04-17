@@ -1,0 +1,8 @@
+{
+  "components": {
+    "Transform": {},
+    "Render": { "color": { "r": 1, "g": 0.5, "b": 0, "a": 1 }, "radius": 12, "isCircle": true },
+    "Collider": { "radius": 12 },
+    "Interactable": { "type": "SWITCH", "targetId": "main_door", "interactionRadius": 60 }
+  }
+}

@@ -57,6 +57,8 @@ public class EntityFactory {
         componentAliases.put("Pushable", PushableComponent.class);
         componentAliases.put("Obstacle", ObstacleComponent.class);
         componentAliases.put("Destructible", DestructibleComponent.class);
+        componentAliases.put("Interactable", InteractableComponent.class);
+        componentAliases.put("Door", DoorComponent.class);
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {
@@ -83,6 +85,12 @@ public class EntityFactory {
                         tc.x = x;
                         tc.y = y;
                     }
+                    
+                    // Preload texture if found in component
+                    if (component instanceof TextureComponent tex && assetService != null) {
+                        assetService.loadTexture(tex.assetPath);
+                    }
+
                     entityManager.addComponent(entity, component);
                 }
             }

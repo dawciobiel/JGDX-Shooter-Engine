@@ -107,15 +107,16 @@ public class PlayState extends GameState {
         aiSystem.setMap(map);
 
         engine.addSystem(new InputSystem(engine.getEntityManager(), engine.getEventBus(), renderSystem.getCamera()));
-        engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map)); 
+        engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map, engine.getEventBus())); 
         engine.addSystem(aiSystem);
         engine.addSystem(new SteeringSystem(engine.getEntityManager())); 
         engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, configService, map));
         engine.addSystem(new ProjectileSystem(engine.getEntityManager()));
         engine.addSystem(new ParticleUpdateSystem(engine.getEntityManager()));
         engine.addSystem(new PushingSystem(engine.getEntityManager(), map));
-        engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
+        engine.addSystem(new InteractionSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new MapSystem(engine.getEntityManager(), map, engine.getEventBus()));
+        engine.addSystem(new MovementSystem(engine.getEntityManager(), map));
         engine.addSystem(new TriggerSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
@@ -129,6 +130,7 @@ public class PlayState extends GameState {
         engine.addSystem(uiSystem);
 
         mapService.spawnEntities(mapConfig);
+        assetService.finishLoading();
 
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
         if (!players.isEmpty()) {
