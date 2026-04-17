@@ -7,6 +7,7 @@
     "Obstacle": {},
     "Pushable": { "mass": 3.0, "friction": 12.0, "snapToAxes": true, "playerOnly": true },
     "Health": { "hp": 100, "maxHp": 100, "isDead": false, "hasBlood": false },
+    "Destructible": {},
     "Name": { "name": "Heavy Crate" }
   }
 }

@@ -4,8 +4,10 @@
     "Velocity": { "vx": 0, "vy": 0 },
     "Render": { "color": { "r": 0.6, "g": 0.4, "b": 0.2, "a": 1 }, "radius": 12, "isCircle": true },
     "Collider": { "radius": 12 },
-    "Pushable": { "mass": 2.0, "friction": 8.0 },
-    "Health": { "maxHealth": 50, "currentHealth": 50, "isDead": false },
+    "Obstacle": {},
+    "Pushable": { "mass": 2.0, "friction": 8.0, "playerOnly": true },
+    "Health": { "hp": 50, "maxHp": 50, "isDead": false, "hasBlood": false },
+    "Destructible": {},
     "Name": { "name": "Wooden Barrel" }
   }
 }
