@@ -84,7 +84,8 @@ public class EntityManager {
      * Returns entities that possess a specific set of components.
      * Useful for Systems to filter entities they need to process.
      */
-    public List<Entity> getEntitiesWithComponents(Class<? extends Component>... componentClasses) {
+    @SafeVarargs
+    public final List<Entity> getEntitiesWithComponents(Class<? extends Component>... componentClasses) {
         List<Entity> result = new ArrayList<>();
         for (Entity entity : entities) {
             boolean matches = true;
