@@ -20,6 +20,10 @@ public class AssetService {
         this.config = config != null ? config : new GameConfig();
     }
 
+    public GameConfig getConfig() {
+        return config;
+    }
+
     public void setCurrentMapFolder(String folderPath) {
         this.currentMapFolder = folderPath;
     }
@@ -36,7 +40,8 @@ public class AssetService {
         
         // 1. STRIP EVERYTHING EXCEPT THE REAL FILENAME/SUBPATH
         String coreAssetsPrefix = config.paths.coreAssets + "/";
-        String cleanPath = originalPath.replace(coreAssetsPrefix, "").replace("assets/", "");
+        String basePrefix = config.paths.baseAssetsPrefix + "/";
+        String cleanPath = originalPath.replace(coreAssetsPrefix, "").replace(basePrefix, "");
         
         if (subfolder != null && !subfolder.isEmpty()) {
             if (cleanPath.startsWith(subfolder + "/")) {

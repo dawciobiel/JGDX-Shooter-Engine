@@ -73,9 +73,11 @@ public class GameConfig {
     }
 
     public static class PathsConfig {
+        public String baseAssetsPrefix = "assets";
         public String maps = "assets/maps";
         public String engineConfigs = "assets/configs";
         public String coreAssets = "assets/core";
+        public String sharedAssets = "assets/shared";
         public String entities = "entities";
         public String triggers = "entities/triggers";
         public String enemies = "entities/enemies";
@@ -86,5 +88,6 @@ public class GameConfig {
         public String sounds = "audio/sfx";
         public String music = "audio/music";
         public String textures = "graphics/textures";
+        public String shaders = "graphics/shaders";
     }
 }

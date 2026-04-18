@@ -115,7 +115,7 @@ public class PlayState extends GameState {
         engine.addSystem(new AmbientSoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService, assetService));
         engine.addSystem(new MultiKillSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new AnimationSystem(engine.getEntityManager()));
-        engine.addSystem(new WaveSystem(engine.getEntityManager(), entityFactory, map));
+        engine.addSystem(new WaveSystem(engine.getEntityManager(), entityFactory, map, config));
         engine.addSystem(renderSystem);
         engine.addSystem(uiSystem);
 

@@ -33,9 +33,11 @@
     "showBloodDecals": true
   },
   "paths": {
+    "baseAssetsPrefix": "assets",
     "maps": "assets/maps",
     "engineConfigs": "assets/configs",
     "coreAssets": "assets/core",
+    "sharedAssets": "assets/shared",
     "entities": "entities",
     "triggers": "entities/triggers",
     "enemies": "entities/enemies",
@@ -45,6 +47,7 @@
     "weapons": "configs/weapons",
     "sounds": "audio/sfx",
     "music": "audio/music",
-    "textures": "graphics/textures"
+    "textures": "graphics/textures",
+    "shaders": "graphics/shaders"
   }
 }

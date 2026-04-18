@@ -1,6 +1,7 @@
 package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.math.MathUtils;
+import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
@@ -20,15 +21,15 @@ import java.util.List;
 public class WaveSystem extends GameSystem {
     private final EntityFactory entityFactory;
     private final GameMap map;
-    private final float spawnInterval = 5.0f;
+    private final GameConfig config;
     private float spawnTimer = 0;
-    private final int maxEnemiesBase = 8;
     private int spawnedCount = 0;
 
-    public WaveSystem(EntityManager entityManager, EntityFactory entityFactory, GameMap map) {
+    public WaveSystem(EntityManager entityManager, EntityFactory entityFactory, GameMap map, GameConfig config) {
         super(entityManager);
         this.entityFactory = entityFactory;
         this.map = map;
+        this.config = config;
     }
 
     @Override
@@ -38,7 +39,7 @@ public class WaveSystem extends GameSystem {
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, ScoreComponent.class);
         if (players.isEmpty()) return;
         
-        ScoreComponent score = entityManager.getComponent(players.get(0), ScoreComponent.class);
+        ScoreComponent score = entityManager.getComponent(players.getFirst(), ScoreComponent.class);
 
         // Wave increase logic: Advance wave every 5 spawns
         if (spawnedCount >= 5) {
@@ -46,22 +47,24 @@ public class WaveSystem extends GameSystem {
             spawnedCount = 0;
         }
 
+        float spawnInterval = 5.0f;
         if (spawnTimer >= (spawnInterval / (1 + score.wave * 0.1f))) {
             spawnTimer = 0;
             
             int currentEnemies = entityManager.getEntitiesWithComponents(AIComponent.class).size();
+            int maxEnemiesBase = 8;
             if (currentEnemies < (maxEnemiesBase + score.wave * 2)) {
-                spawnEnemyNearPlayer(score.wave);
+                spawnEnemyNearPlayer();
                 spawnedCount++;
             }
         }
     }
 
-    private void spawnEnemyNearPlayer(int currentWave) {
+    private void spawnEnemyNearPlayer() {
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, TransformComponent.class);
         if (players.isEmpty()) return;
 
-        TransformComponent playerTrans = entityManager.getComponent(players.get(0), TransformComponent.class);
+        TransformComponent playerTrans = entityManager.getComponent(players.getFirst(), TransformComponent.class);
         
         float spawnX, spawnY;
         int attempts = 0;
@@ -74,12 +77,12 @@ public class WaveSystem extends GameSystem {
         } while (!map.isWalkable(spawnX, spawnY) && attempts < 10);
 
         if (attempts < 10) {
-            // Testing Runners and Fats: Disable normal zombie and spawn these two only
+            String enemyBase = config.paths.sharedAssets + "/" + config.paths.enemies + "/";
             String enemyJson;
             if (MathUtils.randomBoolean()) {
-                enemyJson = "assets/shared/entities/enemies/zombie_runner.json";
+                enemyJson = enemyBase + "zombie_runner.json";
             } else {
-                enemyJson = "assets/shared/entities/enemies/zombie_fat.json";
+                enemyJson = enemyBase + "zombie_fat.json";
             }
             
             entityFactory.loadFromJson(enemyJson, spawnX, spawnY);

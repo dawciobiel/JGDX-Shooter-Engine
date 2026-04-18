@@ -17,6 +17,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import pl.shooter.engine.config.ConfigService;
+import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 
@@ -26,11 +28,13 @@ import java.util.List;
 public class MenuState extends GameState {
     private final Stage stage;
     private final Skin skin;
+    private final GameConfig config;
 
     public MenuState(GameStateManager gsm) {
         super(gsm);
+        this.config = new ConfigService().getConfig();
         Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
-        this.stage = new Stage(new FitViewport(800, 600));
+        this.stage = new Stage(new FitViewport(config.graphics.width, config.graphics.height));
         this.skin = createBasicSkin();
         Gdx.input.setInputProcessor(stage);
         initUI();
@@ -113,7 +117,7 @@ public class MenuState extends GameState {
 
     private List<String> discoverMaps() {
         List<String> mapFolders = new ArrayList<>();
-        FileHandle mapsDir = Gdx.files.internal("assets/maps");
+        FileHandle mapsDir = Gdx.files.internal(config.paths.maps);
         if (mapsDir.exists() && mapsDir.isDirectory()) {
             for (FileHandle folder : mapsDir.list()) {
                 if (folder.isDirectory() && folder.child("map.json").exists()) {
@@ -122,7 +126,7 @@ public class MenuState extends GameState {
             }
         }
         if (mapFolders.isEmpty()) {
-            mapFolders.add("assets/maps/testing_room");
+            mapFolders.add(config.paths.maps + "/testing_room");
         }
         return mapFolders;
     }

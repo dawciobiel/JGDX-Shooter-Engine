@@ -14,7 +14,6 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import pl.shooter.engine.ai.pathfinding.Node;
 import pl.shooter.engine.assets.AssetService;
-import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
@@ -51,11 +50,11 @@ public class RenderSystem extends GameSystem {
     public RenderSystem(EntityManager entityManager, AssetService assetService) {
         super(entityManager);
         this.assetService = assetService;
-        this.config = new ConfigService().getConfig();
+        this.config = assetService.getConfig();
         this.shapeRenderer = new ShapeRenderer();
         this.spriteBatch = new SpriteBatch();
         this.camera = new OrthographicCamera();
-        this.viewport = new ExtendViewport(800, 600, camera);
+        this.viewport = new ExtendViewport(config.graphics.width, config.graphics.height, camera);
         this.nameFont = new BitmapFont();
         this.nameFont.getData().setScale(0.8f);
 
@@ -64,9 +63,13 @@ public class RenderSystem extends GameSystem {
     }
 
     private void initShaders() {
-        String vert = Gdx.files.internal("assets/core/graphics/shaders/lighting.vert").readString();
-        String frag = Gdx.files.internal("assets/core/graphics/shaders/lighting.frag").readString();
+        String shaderBase = config.paths.coreAssets + "/" + config.paths.shaders + "/";
+        String vert = Gdx.files.internal(shaderBase + "lighting.vert").readString();
+        String frag = Gdx.files.internal(shaderBase + "lighting.frag").readString();
         this.lightingShader = new ShaderProgram(vert, frag);
+        if (!lightingShader.isCompiled()) {
+            Gdx.app.error("RenderSystem", "Shader compilation failed: " + lightingShader.getLog());
+        }
     }
 
     public void setMap(GameMap map) { this.currentMap = map; this.cachedTiles = null; }
@@ -292,11 +295,12 @@ public class RenderSystem extends GameSystem {
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
             if (h.isDead || entityManager.hasComponent(entity, PlayerComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
-            drawHealthBar(t.x, t.y + 30, 40, h);
+            drawHealthBar(t.x, t.y + 30, h);
         }
     }
 
-    private void drawHealthBar(float x, float y, float width, HealthComponent health) {
+    private void drawHealthBar(float x, float y, HealthComponent health) {
+        float width = 40f;
         float barHeight = 4f;
         shapeRenderer.setColor(Color.RED);
         shapeRenderer.rect(x - width/2, y, width, barHeight);
@@ -307,7 +311,7 @@ public class RenderSystem extends GameSystem {
     private void updateCamera() {
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, TransformComponent.class);
         if (!players.isEmpty()) {
-            TransformComponent tc = entityManager.getComponent(players.get(0), TransformComponent.class);
+            TransformComponent tc = entityManager.getComponent(players.getFirst(), TransformComponent.class);
             camera.position.lerp(new Vector3(tc.x, tc.y, 0), 0.1f);
             camera.update();
         }
