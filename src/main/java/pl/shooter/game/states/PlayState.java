@@ -70,7 +70,11 @@ public class PlayState extends GameState {
         audioService.loadSound(assetService.resolvePath("characters/soldier/hit.wav", "audio/sfx"));
         audioService.loadSound(assetService.resolvePath("characters/soldier/death.wav", "audio/sfx"));
 
+        // Load map-specific weapon configuration
+        String mapFolder = mapPath.contains("/") ? mapPath.substring(0, mapPath.lastIndexOf('/')) : "assets/maps/default";
+        configService.loadWeaponConfigForMap(mapFolder);
         WeaponConfig weaponConfig = configService.getWeaponConfig();
+
         GameMap map = mapService.createGameMap(mapConfig);
         
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);

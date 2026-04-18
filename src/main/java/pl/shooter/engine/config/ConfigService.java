@@ -15,6 +15,7 @@ public class ConfigService {
     private static final String USER_CONFIG_PATH = "user_config.json";
     private final ObjectMapper mapper;
     private GameConfig cachedConfig;
+    private WeaponConfig cachedWeaponConfig;
 
     public ConfigService() {
         this.mapper = JsonService.getMapper(); // Use Singleton
@@ -35,16 +36,37 @@ public class ConfigService {
         return cachedConfig;
     }
 
+    /**
+     * Gets the current weapon configuration.
+     */
     public WeaponConfig getWeaponConfig() {
-        try {
-            FileHandle file = Gdx.files.internal("assets/config/weapons.json");
-            if (file.exists()) {
-                return mapper.readValue(file.read(), WeaponConfig.class);
-            }
-        } catch (Exception e) {
-            Gdx.app.error("ConfigService", "Error loading weapons.json", e);
+        if (cachedWeaponConfig == null) {
+            cachedWeaponConfig = new WeaponConfig();
         }
-        return new WeaponConfig();
+        return cachedWeaponConfig;
+    }
+
+    public void loadWeaponConfigForMap(String mapFolder) {
+        WeaponConfig fullConfig = new WeaponConfig();
+        String weaponsFolder = mapFolder + "/configs/weapons";
+        FileHandle dir = Gdx.files.internal(weaponsFolder);
+
+        if (dir.exists() && dir.isDirectory()) {
+            for (FileHandle file : dir.list(".json")) {
+                try {
+                    WeaponConfig.WeaponData data = mapper.readValue(file.read(), WeaponConfig.WeaponData.class);
+                    String weaponName = file.nameWithoutExtension().toUpperCase();
+                    fullConfig.weapons.put(weaponName, data);
+                    Gdx.app.log("ConfigService", "Loaded weapon: " + weaponName + " from " + file.path());
+                } catch (Exception e) {
+                    Gdx.app.error("ConfigService", "Error loading weapon file: " + file.name(), e);
+                }
+            }
+        } else {
+            Gdx.app.error("ConfigService", "Weapons folder NOT FOUND: " + weaponsFolder);
+        }
+        
+        this.cachedWeaponConfig = fullConfig;
     }
 
     private GameConfig loadConfig(String path) {

@@ -1,0 +1,12 @@
+{
+  "fireRate": 0.3,
+  "projectileSpeed": 350,
+  "spread": 2,
+  "range": 800,
+  "maxAmmo": 60,
+  "magazineSize": 20,
+  "reloadTime": 2.2,
+  "hasInfiniteAmmo": false,
+  "shootSound": null,
+  "projectile": { "damage": 30, "radius": 6, "color": "CYAN" }
+}

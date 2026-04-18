@@ -1,0 +1,12 @@
+{
+  "fireRate": 1.5,
+  "projectileSpeed": 1200,
+  "spread": 0.1,
+  "range": 1200,
+  "maxAmmo": 20,
+  "magazineSize": 5,
+  "reloadTime": 1.0,
+  "hasInfiniteAmmo": false,
+  "shootSound": null,
+  "projectile": { "damage": 80, "radius": 2, "color": "WHITE", "behavior": "PIERCING" }
+}

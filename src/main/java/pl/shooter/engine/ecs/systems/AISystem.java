@@ -111,6 +111,7 @@ public class AISystem extends GameSystem {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     private SteeringComponent getOrAddSteering(Entity enemy, TransformComponent t, VelocityComponent v, 
                                               List<Entity> allEnemies, float maxSpeed, boolean updateNeighbors) {
         SteeringComponent sc = entityManager.getComponent(enemy, SteeringComponent.class);
