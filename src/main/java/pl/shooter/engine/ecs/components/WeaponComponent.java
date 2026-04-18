@@ -27,8 +27,11 @@ public class WeaponComponent implements Component {
     public float spread;        
     public int projectilesPerShot = 1;
     public float range = 50f; 
-    public int damage = 10; // New field for direct damage (melee)
+    public int damage = 10;
     
+    // Audio info for the weapon
+    public String shootSound;
+
     // Ammo system
     public int currentAmmo = 0;      
     public int maxAmmo = 0;          
@@ -56,6 +59,7 @@ public class WeaponComponent implements Component {
         this.reloadTime = data.reloadTime;
         this.hasInfiniteAmmo = data.hasInfiniteAmmo;
         this.range = data.range;
+        this.shootSound = data.shootSound; // Set sound from config
         if (data.projectile != null) {
             this.damage = data.projectile.damage;
         }
@@ -74,12 +78,6 @@ public class WeaponComponent implements Component {
             wc.magazineSize = 10;
             wc.magazineAmmo = 10;
             wc.hasInfiniteAmmo = (type == Type.PISTOL || type == Type.KNIFE);
-            if (type == Type.KNIFE) {
-                wc.projectileSpeed = 0;
-                wc.fireRate = 0.3f;
-                wc.range = 40f;
-                wc.damage = 25;
-            }
         }
         return wc;
     }

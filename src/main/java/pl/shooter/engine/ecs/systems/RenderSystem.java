@@ -26,8 +26,7 @@ import pl.shooter.engine.world.JsonMap;
 import java.util.List;
 
 /**
- * Renders the game world, including entities, map, blood decals and dynamic lighting.
- * Optimized for performance and fixed color bleeding bugs.
+ * Renders the game world. Correctly resolves tileset textures from isolated map folders.
  */
 public class RenderSystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
@@ -65,15 +64,12 @@ public class RenderSystem extends GameSystem {
     }
 
     private void initShaders() {
-        String vert = Gdx.files.internal("assets/graphics/shaders/lighting.vert").readString();
-        String frag = Gdx.files.internal("assets/graphics/shaders/lighting.frag").readString();
+        String vert = Gdx.files.internal("assets/core/graphics/shaders/lighting.vert").readString();
+        String frag = Gdx.files.internal("assets/core/graphics/shaders/lighting.frag").readString();
         this.lightingShader = new ShaderProgram(vert, frag);
-        if (!lightingShader.isCompiled()) {
-            Gdx.app.error("Shader", "Compilation failed: " + lightingShader.getLog());
-        }
     }
 
-    public void setMap(GameMap map) { this.currentMap = map; }
+    public void setMap(GameMap map) { this.currentMap = map; this.cachedTiles = null; }
     public void setLightSystem(LightSystem lightSystem) { this.lightSystem = lightSystem; }
     public void setShowDebugPaths(boolean show) { this.showDebugPaths = show; }
     public void setShowDebugHitboxes(boolean show) { this.showDebugHitboxes = show; }
@@ -97,7 +93,7 @@ public class RenderSystem extends GameSystem {
             if (currentMap instanceof JsonMap jm && jm.getTilesetPath() != null) {
                 spriteBatch.setProjectionMatrix(camera.combined);
                 spriteBatch.begin();
-                spriteBatch.setColor(Color.WHITE); // RESET COLOR
+                spriteBatch.setColor(Color.WHITE);
                 renderJsonMap(jm);
                 spriteBatch.end();
             } else {
@@ -153,12 +149,16 @@ public class RenderSystem extends GameSystem {
         if (data == null) return;
         int ts = map.getTileSize();
         int ds = map.getDisplaySize();
+        
+        // RESOLVE TILESET TEXTURE
         Texture tileset = assetService.getTexture(map.getTilesetPath());
         if (tileset == null) return;
+
         if (cachedTiles == null || !map.getTilesetPath().equals(lastTilesetPath)) {
             cachedTiles = TextureRegion.split(tileset, ts, ts);
             lastTilesetPath = map.getTilesetPath();
         }
+
         float startX = camera.position.x - viewport.getWorldWidth() / 2 - ds;
         float startY = camera.position.y - viewport.getWorldHeight() / 2 - ds;
         float endX = camera.position.x + viewport.getWorldWidth() / 2 + ds;
@@ -167,6 +167,7 @@ public class RenderSystem extends GameSystem {
         int startGridY = Math.max(0, (int) (startY / ds));
         int endGridX = Math.min(data[0].length, (int) (endX / ds) + 1);
         int endGridY = Math.min(data.length, (int) (endY / ds) + 1);
+
         int colsInTileset = tileset.getWidth() / ts;
         for (int y = startGridY; y < endGridY; y++) {
             for (int x = startGridX; x < endGridX; x++) {
@@ -207,7 +208,6 @@ public class RenderSystem extends GameSystem {
             spriteBatch.setProjectionMatrix(camera.combined);
             spriteBatch.setShader(null);
             spriteBatch.begin();
-            // RESET TO CONFIG COLOR EXPLICITLY
             spriteBatch.setColor(config.ui.cursorRed, config.ui.cursorGreen, config.ui.cursorBlue, config.ui.cursorAlpha);
             float size = config.ui.cursorSize;
             spriteBatch.draw(cursorTex, mouseBuffer.x - size/2, mouseBuffer.y - size/2, size, size);
@@ -316,14 +316,10 @@ public class RenderSystem extends GameSystem {
     private void renderFinalPass() {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        
         spriteBatch.getProjectionMatrix().idt();
         spriteBatch.setShader(lightingShader);
         spriteBatch.begin();
-        
-        // CRITICAL FIX: Ensure batch color is neutral WHITE before drawing FBO
         spriteBatch.setColor(Color.WHITE);
-        
         if (lightSystem != null) {
             lightSystem.getLightMapTexture().bind(1);
             lightingShader.setUniformi("u_lightmap", 1);
@@ -331,12 +327,10 @@ public class RenderSystem extends GameSystem {
             lightingShader.setUniformf("u_ambientColor", amb.r, amb.g, amb.b, amb.a);
             Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
         }
-        
         if (sceneFbo != null) {
             Texture fboTexture = sceneFbo.getColorBufferTexture();
             spriteBatch.draw(fboTexture, -1, -1, 2, 2, 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
         }
-
         spriteBatch.end();
         spriteBatch.setShader(null);
     }

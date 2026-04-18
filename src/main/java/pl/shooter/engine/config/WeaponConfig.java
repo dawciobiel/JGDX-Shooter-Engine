@@ -18,12 +18,13 @@ public class WeaponConfig {
         public int magazineSize;
         public float reloadTime;
         public boolean hasInfiniteAmmo;
-        public float range = 50f; // Added for melee weapons
+        public float range = 50f;
+        public String shootSound; // Path to sound file for this weapon
         public ProjectileData projectile;
     }
 
     public static class ProjectileData {
-        public String color = "YELLOW"; // Stores color name for simplified JSON
+        public String color = "YELLOW";
         public float radius = 3.0f;
         public float lifetime = 1.5f;
         public int damage = 10;

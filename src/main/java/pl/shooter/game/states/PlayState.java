@@ -28,11 +28,9 @@ public class PlayState extends GameState {
     private AssetService assetService;
     private AudioService audioService;
     private final ConfigService configService;
-    private EntityFactory entityFactory;
-    private MapService mapService;
-    private boolean isGameOver = false;
     private final GameConfig config;
     private final String mapPath;
+    private boolean isGameOver = false;
 
     public PlayState(GameStateManager gsm, String mapPath) {
         super(gsm);
@@ -48,31 +46,20 @@ public class PlayState extends GameState {
         this.engine = new Engine();
         this.assetService = new AssetService();
         this.audioService = new AudioService();
-        this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService);
-        this.mapService = new MapService(engine.getEntityManager(), entityFactory, assetService);
+        EntityFactory entityFactory = new EntityFactory(engine.getEntityManager(), assetService);
+        MapService mapService = new MapService(engine.getEntityManager(), entityFactory, assetService);
         this.isGameOver = false;
 
-        init();
+        init(entityFactory, mapService);
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
-    private void init() {
+    private void init(EntityFactory entityFactory, MapService mapService) {
         MapConfig mapConfig = mapService.loadMap(mapPath);
         if (mapConfig == null) {
             Gdx.app.error("PlayState", "CRITICAL: Could not load map: " + mapPath);
             return;
         }
-
-        assetService.loadTexture("assets/graphics/textures/characters/soldier/walk.png");
-        for (int i = 0; i <= 16; i++) {
-            assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-idle_" + i + ".png");
-            assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-move_" + i + ".png");
-        }
-        for (int i = 0; i <= 8; i++) assetService.loadTexture("assets/graphics/textures/characters/zombies/skeleton/skeleton-attack_" + i + ".png");
-        
-        assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-walk.png");
-        assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-shoot.png");
-        assetService.loadTexture("assets/graphics/textures/characters/combat-robot/combat-robot-explode.png");
 
         if (config.ui.useCustomCursor && config.ui.cursorImagePath != null && !config.ui.cursorImagePath.isEmpty()) {
             assetService.loadTexture(config.ui.cursorImagePath);
@@ -80,8 +67,8 @@ public class PlayState extends GameState {
 
         assetService.finishLoading();
 
-        audioService.loadSound("assets/audio/sfx/characters/soldier/hit.wav");
-        audioService.loadSound("assets/audio/sfx/characters/soldier/death.wav");
+        audioService.loadSound(assetService.resolvePath("characters/soldier/hit.wav", "audio/sfx"));
+        audioService.loadSound(assetService.resolvePath("characters/soldier/death.wav", "audio/sfx"));
 
         WeaponConfig weaponConfig = configService.getWeaponConfig();
         GameMap map = mapService.createGameMap(mapConfig);
@@ -121,10 +108,9 @@ public class PlayState extends GameState {
         engine.addSystem(new TriggerSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
         engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
-        engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
-        engine.addSystem(new AmbientSoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
+        engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService, assetService));
+        engine.addSystem(new AmbientSoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService, assetService));
         engine.addSystem(new MultiKillSystem(engine.getEntityManager(), engine.getEventBus()));
-        engine.addSystem(new TauntSystem(engine.getEntityManager(), engine.getEventBus(), audioService));
         engine.addSystem(new AnimationSystem(engine.getEntityManager()));
         engine.addSystem(new WaveSystem(engine.getEntityManager(), entityFactory, map));
         engine.addSystem(renderSystem);
@@ -136,10 +122,11 @@ public class PlayState extends GameState {
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
         if (!players.isEmpty()) {
             Entity player = players.get(0);
-            // ENHANCED PLAYER LIGHT: Radius 400, brighter color
             engine.getEntityManager().addComponent(player, new LightComponent(400f, new Color(1, 1, 0.9f, 1f), 0.9f));
             
-            InventoryComponent inv = new InventoryComponent();
+            InventoryComponent inv = engine.getEntityManager().getComponent(player, InventoryComponent.class);
+            if (inv == null) inv = new InventoryComponent();
+            
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.KNIFE, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PISTOL, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SHOTGUN, weaponConfig));

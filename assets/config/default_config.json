@@ -12,8 +12,7 @@
   "audio": {
     "masterVolume": 1.0,
     "sfxVolume": 1.0,
-    "musicVolume": 0.5,
-    "tauntsDir": "assets/audio/sfx/characters/taunt"
+    "musicVolume": 0.5
   },
   "gameplay": {
     "showUnitNames": true,
@@ -26,7 +25,8 @@
     "invinciblePlayer": false
   },
   "controls": {
-    "prevWeaponKey": 51,
+    "moveUpKey": 51,
+    "prevWeaponKey": 45,
     "nextWeaponKey": 33
   },
   "effects": {

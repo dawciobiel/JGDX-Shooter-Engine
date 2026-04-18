@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * Periodically spawns new enemies around the player and handles waves.
- * Supports different enemy types (Zombie, Runner, Tank) based on the current wave.
+ * Supports different enemy types (Zombie, Runner) based on the current wave.
  */
 public class WaveSystem extends GameSystem {
     private final EntityFactory entityFactory;
@@ -74,12 +74,12 @@ public class WaveSystem extends GameSystem {
         } while (!map.isWalkable(spawnX, spawnY) && attempts < 10);
 
         if (attempts < 10) {
-            // Testing Runners and Tanks: Disable normal zombie and spawn these two only
+            // Testing Runners and Fats: Disable normal zombie and spawn these two only
             String enemyJson;
             if (MathUtils.randomBoolean()) {
-                enemyJson = "assets/entities/zombie_runner.json";
+                enemyJson = "assets/shared/entities/enemies/zombie_runner.json";
             } else {
-                enemyJson = "assets/entities/zombie_fat.json";
+                enemyJson = "assets/shared/entities/enemies/zombie_fat.json";
             }
             
             entityFactory.loadFromJson(enemyJson, spawnX, spawnY);

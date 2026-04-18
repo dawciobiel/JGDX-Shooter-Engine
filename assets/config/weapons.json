@@ -1,160 +1,125 @@
 {
   "weapons": {
     "KNIFE": {
-      "fireRate": 0.6,
-      "projectileSpeed": 0.0,
-      "spread": 0.0,
-      "projectilesPerShot": 1,
+      "fireRate": 0.3,
+      "projectileSpeed": 0,
+      "spread": 0,
+      "range": 45,
       "maxAmmo": 0,
       "magazineSize": 0,
-      "reloadTime": 0.0,
+      "reloadTime": 0,
       "hasInfiniteAmmo": true,
-      "range": 40.0,
-      "projectile": {
-        "color": "WHITE",
-        "radius": 0.0,
-        "lifetime": 0.0,
-        "damage": 25,
-        "behavior": "NORMAL"
-      }
+      "shootSound": "weapons/knife/knife.wav",
+      "projectile": { "damage": 25 }
     },
     "PISTOL": {
       "fireRate": 0.4,
-      "projectileSpeed": 450.0,
-      "spread": 3.0,
-      "projectilesPerShot": 1,
-      "maxAmmo": 0,
-      "magazineSize": 10,
+      "projectileSpeed": 500,
+      "spread": 2.5,
+      "range": 500,
+      "maxAmmo": 100,
+      "magazineSize": 12,
       "reloadTime": 1.2,
       "hasInfiniteAmmo": true,
-      "projectile": {
-        "color": "YELLOW",
-        "radius": 3.0,
-        "lifetime": 1.5,
-        "damage": 15,
-        "behavior": "NORMAL"
-      }
+      "shootSound": "weapons/pistol/pistol.wav",
+      "projectile": { "damage": 15, "radius": 3, "color": "YELLOW" }
     },
     "SHOTGUN": {
       "fireRate": 0.8,
-      "projectileSpeed": 400.0,
-      "spread": 15.0,
+      "projectileSpeed": 450,
+      "spread": 12,
       "projectilesPerShot": 6,
-      "maxAmmo": 40,
-      "magazineSize": 6,
-      "reloadTime": 2.5,
+      "range": 300,
+      "maxAmmo": 50,
+      "magazineSize": 8,
+      "reloadTime": 2.0,
       "hasInfiniteAmmo": false,
-      "projectile": {
-        "color": "LIGHT_GRAY",
-        "radius": 2.5,
-        "lifetime": 0.5,
-        "damage": 10,
-        "behavior": "NORMAL"
-      }
+      "shootSound": "weapons/shotgun/shotgun.wav",
+      "projectile": { "damage": 8, "radius": 2.5, "color": "GRAY" }
     },
     "MACHINE_GUN": {
       "fireRate": 0.1,
-      "projectileSpeed": 500.0,
-      "spread": 5.0,
-      "projectilesPerShot": 1,
+      "projectileSpeed": 600,
+      "spread": 5,
+      "range": 600,
       "maxAmmo": 200,
       "magazineSize": 30,
-      "reloadTime": 2.0,
+      "reloadTime": 1.8,
       "hasInfiniteAmmo": false,
-      "projectile": {
-        "color": "ORANGE",
-        "radius": 2.5,
-        "lifetime": 1.5,
-        "damage": 12,
-        "behavior": "NORMAL"
-      }
+      "shootSound": "weapons/machine_gun/cg1.wav",
+      "projectile": { "damage": 10, "radius": 2, "color": "GOLD" }
     },
     "SNIPER_RIFLE": {
       "fireRate": 1.5,
-      "projectileSpeed": 1200.0,
-      "spread": 0.0,
-      "projectilesPerShot": 1,
+      "projectileSpeed": 1200,
+      "spread": 0.1,
+      "range": 1200,
       "maxAmmo": 20,
       "magazineSize": 5,
-      "reloadTime": 3.5,
+      "reloadTime": 1.0,
       "hasInfiniteAmmo": false,
-      "projectile": {
-        "color": "WHITE",
-        "radius": 2.0,
-        "lifetime": 3.0,
-        "damage": 100,
-        "behavior": "PIERCING"
-      }
+      "shootSound": null,
+      "projectile": { "damage": 80, "radius": 2, "color": "WHITE", "behavior": "PIERCING" }
     },
     "PLASMA_GUN": {
       "fireRate": 0.3,
-      "projectileSpeed": 350.0,
-      "spread": 2.0,
-      "projectilesPerShot": 1,
+      "projectileSpeed": 350,
+      "spread": 2,
+      "range": 800,
       "maxAmmo": 60,
-      "magazineSize": 15,
-      "reloadTime": 1.8,
+      "magazineSize": 20,
+      "reloadTime": 2.2,
       "hasInfiniteAmmo": false,
-      "projectile": {
-        "color": "CYAN",
-        "radius": 6.0,
-        "lifetime": 2.0,
-        "damage": 40,
-        "behavior": "NORMAL"
-      }
+      "shootSound": null,
+      "projectile": { "damage": 30, "radius": 6, "color": "CYAN" }
     },
     "ROCKET_LAUNCHER": {
       "fireRate": 1.2,
-      "projectileSpeed": 300.0,
-      "spread": 2.0,
-      "projectilesPerShot": 1,
-      "maxAmmo": 10,
+      "projectileSpeed": 300,
+      "spread": 1,
+      "range": 1000,
+      "maxAmmo": 15,
       "magazineSize": 1,
-      "reloadTime": 3.0,
+      "reloadTime": 1.0,
       "hasInfiniteAmmo": false,
-      "projectile": {
-        "color": "RED",
-        "radius": 8.0,
-        "lifetime": 4.0,
-        "damage": 80,
-        "behavior": "EXPLOSIVE",
-        "explosionRadius": 100.0
-      }
+      "shootSound": null,
+      "projectile": { "damage": 100, "radius": 8, "color": "ORANGE", "behavior": "EXPLOSIVE", "explosionRadius": 100 }
+    },
+    "LIGHTNING_GUN": {
+      "fireRate": 0.05,
+      "projectileSpeed": 600,
+      "spread": 3,
+      "range": 400,
+      "maxAmmo": 500,
+      "magazineSize": 500,
+      "reloadTime": 1.0,
+      "hasInfiniteAmmo": true,
+      "shootSound": null,
+      "projectile": { "damage": 50, "radius": 2, "color": "BLUE" }
     },
     "RAIL_GUN": {
       "fireRate": 2.0,
-      "projectileSpeed": 2000.0,
-      "spread": 0.0,
-      "projectilesPerShot": 1,
+      "projectileSpeed": 2000,
+      "spread": 0,
+      "range": 2000,
       "maxAmmo": 10,
       "magazineSize": 1,
-      "reloadTime": 4.0,
+      "reloadTime": 1.0,
       "hasInfiniteAmmo": false,
-      "projectile": {
-        "color": "PURPLE",
-        "radius": 4.0,
-        "lifetime": 5.0,
-        "damage": 200,
-        "behavior": "PIERCING"
-      }
+      "shootSound": null,
+      "projectile": { "damage": 150, "radius": 2, "color": "VIOLET", "behavior": "PIERCING" }
     },
     "GRENADE": {
       "fireRate": 1.0,
-      "projectileSpeed": 250.0,
-      "spread": 10.0,
-      "projectilesPerShot": 1,
-      "maxAmmo": 15,
+      "projectileSpeed": 250,
+      "spread": 5,
+      "range": 400,
+      "maxAmmo": 10,
       "magazineSize": 1,
-      "reloadTime": 2.0,
+      "reloadTime": 1.0,
       "hasInfiniteAmmo": false,
-      "projectile": {
-        "color": "FOREST",
-        "radius": 5.0,
-        "lifetime": 2.5,
-        "damage": 120,
-        "behavior": "EXPLOSIVE",
-        "explosionRadius": 150.0
-      }
+      "shootSound": null,
+      "projectile": { "damage": 80, "radius": 5, "color": "GREEN", "behavior": "EXPLOSIVE", "explosionRadius": 80 }
     }
   }
 }

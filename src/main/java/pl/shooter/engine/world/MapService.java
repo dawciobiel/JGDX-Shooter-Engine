@@ -4,14 +4,16 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import pl.shooter.engine.assets.AssetService;
+import pl.shooter.engine.config.JsonService;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
-import pl.shooter.engine.ecs.components.LightComponent;
-import pl.shooter.engine.ecs.systems.LightSystem;
-import pl.shooter.engine.ecs.systems.RenderSystem;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * Responsible for loading maps from JSON and initializing the game world.
+ * Responsible for loading maps and preloading all required entity assets.
+ * Updated to use shared ObjectMapper from JsonService.
  */
 public class MapService {
     private final EntityManager entityManager;
@@ -23,25 +25,35 @@ public class MapService {
         this.entityManager = entityManager;
         this.entityFactory = entityFactory;
         this.assetService = assetService;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = JsonService.getMapper(); // Use Singleton
     }
 
     public MapConfig loadMap(String mapJsonPath) {
         try {
             FileHandle file = Gdx.files.internal(mapJsonPath);
-            if (!file.exists()) {
-                Gdx.app.error("MapService", "Map file not found: " + mapJsonPath);
-                return null;
-            }
+            if (!file.exists()) return null;
+
+            String mapFolder = file.parent().path();
+            assetService.setCurrentMapFolder(mapFolder);
+            entityFactory.setCurrentMapFolder(mapFolder);
 
             MapConfig config = objectMapper.readValue(file.read(), MapConfig.class);
             
-            // Preload textures if any
-            if (config.settings.backgroundTexture != null) {
-                assetService.loadTexture(config.settings.backgroundTexture);
+            // 1. Load map-specific textures
+            if (config.settings.backgroundTexture != null) assetService.loadTexture(config.settings.backgroundTexture);
+            if (config.tileLayer != null && config.tileLayer.tilesetPath != null) assetService.loadTexture(config.tileLayer.tilesetPath);
+            
+            // 2. Pre-scan entities to load their assets BEFORE spawning
+            Set<String> typesToLoad = new HashSet<>();
+            typesToLoad.add("player");
+            if (config.entities != null) {
+                for (MapConfig.EntityEntry entry : config.entities) {
+                    typesToLoad.add(entry.type);
+                }
             }
-            if (config.tileLayer != null && config.tileLayer.tilesetPath != null) {
-                assetService.loadTexture(config.tileLayer.tilesetPath);
+
+            for (String type : typesToLoad) {
+                entityFactory.loadEntity(type, -1000, -1000); 
             }
             
             assetService.finishLoading();
@@ -58,16 +70,13 @@ public class MapService {
     }
 
     public void spawnEntities(MapConfig config) {
-        // 1. Spawn Player
         if (config.playerSpawn != null) {
-            entityFactory.loadFromJson("assets/entities/player.json", config.playerSpawn.x, config.playerSpawn.y);
+            entityFactory.loadEntity("player", config.playerSpawn.x, config.playerSpawn.y);
         }
 
-        // 2. Spawn Static Entities
         if (config.entities != null) {
             for (MapConfig.EntityEntry entry : config.entities) {
-                String path = "assets/entities/" + entry.type + ".json";
-                entityFactory.loadFromJson(path, entry.x, entry.y);
+                entityFactory.loadEntity(entry.type, entry.x, entry.y);
             }
         }
     }

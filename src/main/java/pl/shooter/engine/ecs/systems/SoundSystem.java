@@ -3,14 +3,12 @@ package pl.shooter.engine.ecs.systems;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.math.MathUtils;
+import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
-import pl.shooter.engine.config.ConfigService;
-import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.SoundComponent;
-import pl.shooter.engine.ecs.components.WeaponComponent;
 import pl.shooter.engine.events.*;
 import pl.shooter.events.HitEvent;
 
@@ -18,25 +16,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Listens to game events and plays specific sounds for each entity,
- * supporting dedicated weapon sounds and random taunts.
+ * Listens to game events and plays specific sounds.
+ * Hardcoded to look for taunts in "characters/taunt" subfolder of current map.
  */
 public class SoundSystem extends GameSystem {
     private final AudioService audioService;
-    private final GameConfig config;
+    private final AssetService assetService;
     private final List<String> tauntFiles = new ArrayList<>();
-    private static final String DEFAULT_WEAPONS_PATH = "assets/audio/sfx/weapons/default/";
-    private static final String WEAPONS_BASE_PATH = "assets/audio/sfx/weapons/";
+    private boolean tauntsDiscovered = false;
 
-    public SoundSystem(EntityManager entityManager, EventBus eventBus, AudioService audioService) {
+    public SoundSystem(EntityManager entityManager, EventBus eventBus, AudioService audioService, AssetService assetService) {
         super(entityManager);
         this.audioService = audioService;
-        this.config = new ConfigService().getConfig();
+        this.assetService = assetService;
 
-        // Discover and preload taunt sounds
-        discoverTaunts();
-
-        // Subscribe to events
         eventBus.subscribe(BulletFiredEvent.class, this::handleBulletFired);
         eventBus.subscribe(HitEvent.class, this::handleHitSound);
         eventBus.subscribe(EmptyWeaponEvent.class, this::handleEmptyClick);
@@ -44,9 +37,20 @@ public class SoundSystem extends GameSystem {
         eventBus.subscribe(TauntEvent.class, event -> handleTaunt());
     }
 
+    @Override
+    public void update(float deltaTime) {
+        if (!tauntsDiscovered) {
+            discoverTaunts();
+            tauntsDiscovered = true;
+        }
+    }
+
     private void discoverTaunts() {
-        FileHandle dir = Gdx.files.internal(config.audio.tauntsDir);
+        String resolvedDir = assetService.resolvePath("characters/taunt", "audio/sfx");
+        FileHandle dir = Gdx.files.internal(resolvedDir);
+        
         if (dir.exists() && dir.isDirectory()) {
+            tauntFiles.clear();
             for (FileHandle file : dir.list()) {
                 if (file.extension().equalsIgnoreCase("wav") || file.extension().equalsIgnoreCase("mp3")) {
                     tauntFiles.add(file.path());
@@ -64,53 +68,37 @@ public class SoundSystem extends GameSystem {
     }
 
     private void handleBulletFired(BulletFiredEvent event) {
-        WeaponComponent weapon = entityManager.getComponent(event.shooter, WeaponComponent.class);
-        if (weapon != null) {
-            String weaponFolder = weapon.type.name().toLowerCase();
-            String preferred = WEAPONS_BASE_PATH + weaponFolder + "/" + weaponFolder + ".wav";
-            String preferredShoot = WEAPONS_BASE_PATH + weaponFolder + "/shoot.wav";
-            String fallback = DEFAULT_WEAPONS_PATH + "shoot.wav";
-            
-            audioService.playSoundWithFallback(preferred, preferredShoot, 0.4f);
-            if (!audioService.isSoundLoaded(preferred) && !audioService.isSoundLoaded(preferredShoot)) {
-                audioService.playSound(fallback, 0.4f);
+        String fallbackSound = assetService.resolvePath("weapons/default/shoot.wav", "audio/sfx");
+        if (event.soundPath != null && !event.soundPath.equals("null")) {
+            String resolved = assetService.resolvePath(event.soundPath, "audio/sfx");
+            if (Gdx.files.internal(resolved).exists()) {
+                audioService.playSound(resolved, 0.4f);
+                return;
             }
-        } else {
-            playSoundForEntity(event.shooter, SoundComponent.Action.SHOOT, 0.4f);
         }
+        audioService.playSound(fallbackSound, 0.3f);
     }
 
     private void handleHitSound(HitEvent event) {
-        playSoundForEntity(event.victim, SoundComponent.Action.HIT, 0.6f);
+        SoundComponent sc = entityManager.getComponent(event.victim, SoundComponent.class);
+        if (sc != null && sc.soundPaths.containsKey(SoundComponent.Action.HIT)) {
+            String soundName = sc.soundPaths.get(SoundComponent.Action.HIT);
+            String resolved = assetService.resolvePath(soundName, "audio/sfx");
+            audioService.playSound(resolved, 0.6f);
+        }
     }
 
     private void handleEmptyClick(EmptyWeaponEvent event) {
-        WeaponComponent weapon = entityManager.getComponent(event.entity, WeaponComponent.class);
-        if (weapon != null) {
-            String weaponFolder = weapon.type.name().toLowerCase();
-            String preferred = WEAPONS_BASE_PATH + weaponFolder + "/empty.wav";
-            String fallback = DEFAULT_WEAPONS_PATH + "empty.wav";
-            audioService.playSoundWithFallback(preferred, fallback, 0.3f);
-        } else {
-            playSoundForEntity(event.entity, SoundComponent.Action.EMPTY_CLICK, 0.3f);
-        }
+        String sound = assetService.resolvePath("weapons/default/empty.wav", "audio/sfx");
+        audioService.playSound(sound, 0.3f);
     }
 
     private void handlePickupSound(PickupEvent event) {
-        String preferred = DEFAULT_WEAPONS_PATH + "pickup.wav";
-        audioService.playSound(preferred, 0.5f);
+        String sound = assetService.resolvePath("weapons/default/pickup.wav", "audio/sfx");
+        audioService.playSound(sound, 0.5f);
     }
 
-    private void playSoundForEntity(Entity entity, SoundComponent.Action action, float volume) {
-        SoundComponent soundComp = entityManager.getComponent(entity, SoundComponent.class);
-        if (soundComp != null) {
-            String soundName = soundComp.soundPaths.get(action);
-            if (soundName != null) {
-                audioService.playSound(soundName, volume);
-            }
-        }
+    @Override public void dispose() {
+        tauntFiles.clear();
     }
-
-    @Override
-    public void update(float deltaTime) {}
 }

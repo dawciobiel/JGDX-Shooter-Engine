@@ -33,7 +33,6 @@ public class GameConfig {
         public float masterVolume = 1.0f;
         public float sfxVolume = 1.0f;
         public float musicVolume = 0.5f;
-        public String tauntsDir = "assets/audio/sfx/characters/taunt";
     }
 
     public static class DebugConfig {
@@ -64,7 +63,7 @@ public class GameConfig {
 
     public static class UIConfig {
         public boolean useCustomCursor = true;
-        public String cursorImagePath = "assets/graphics/textures/ui/Crosshairs 64/image0013.png";
+        public String cursorImagePath = "ui/crosshairs/image0013.png";
         public float cursorSize = 32f;
         public float cursorRed = 1.0f;
         public float cursorGreen = 1.0f;

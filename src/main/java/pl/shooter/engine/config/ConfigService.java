@@ -1,99 +1,90 @@
 package pl.shooter.engine.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
+import java.io.File;
 
 /**
- * Handles loading and saving of the game configuration.
- * Now safely merges user configuration with default settings.
+ * Service for loading and saving game configuration.
+ * Uses shared ObjectMapper from JsonService.
  */
 public class ConfigService {
-    private static final String DEFAULT_PATH = "assets/config/default_config.json";
-    private static final String USER_PATH = "user_config.json"; 
-    private static final String WEAPONS_PATH = "assets/config/weapons.json";
-    
+    private static final String DEFAULT_CONFIG_PATH = "assets/config/default_config.json";
+    private static final String USER_CONFIG_PATH = "user_config.json";
     private final ObjectMapper mapper;
-    private GameConfig config;
-    private WeaponConfig weaponConfig;
+    private GameConfig cachedConfig;
 
     public ConfigService() {
-        this.mapper = new ObjectMapper();
-        this.mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        load();
-        loadWeapons();
-    }
-
-    /**
-     * Loads the config by first loading defaults, then merging with user file.
-     * If user file is missing, it will be created from defaults.
-     */
-    public void load() {
-        FileHandle userFile = Gdx.files.local(USER_PATH);
-        FileHandle defaultFile = Gdx.files.internal(DEFAULT_PATH);
-
-        try {
-            // 1. Load default config
-            if (defaultFile.exists()) {
-                config = mapper.readValue(defaultFile.read(), GameConfig.class);
-            } else {
-                config = new GameConfig(); // Fallback to hardcoded defaults if default file is missing
-                Gdx.app.error("ConfigService", "Default config file missing! Using hardcoded defaults.");
-            }
-
-            // 2. Merge with user config if it exists
-            if (userFile.exists()) {
-                // Use readerForUpdating to merge existing config with user's changes
-                config = mapper.readerForUpdating(config).readValue(userFile.read());
-            } else {
-                // If user file doesn't exist, create it based on the (now merged) default config
-                save();
-            }
-        } catch (IOException e) {
-            Gdx.app.error("ConfigService", "Error loading config: " + e.getMessage());
-            // If any error during load, ensure we have a working config
-            config = new GameConfig();
-        }
-    }
-
-    private void loadWeapons() {
-        FileHandle weaponFile = Gdx.files.internal(WEAPONS_PATH);
-        try {
-            if (weaponFile.exists()) {
-                weaponConfig = mapper.readValue(weaponFile.read(), WeaponConfig.class);
-                Gdx.app.log("ConfigService", "Weapon config loaded: " + weaponConfig.weapons.size() + " types.");
-            } else {
-                weaponConfig = new WeaponConfig();
-                Gdx.app.error("ConfigService", "Weapon config file missing!");
-            }
-        } catch (IOException e) {
-            Gdx.app.error("ConfigService", "Error loading weapon config: " + e.getMessage());
-            weaponConfig = new WeaponConfig();
-        }
-    }
-
-    /**
-     * Saves the current config to the user file.
-     */
-    public void save() {
-        FileHandle userFile = Gdx.files.local(USER_PATH);
-        try {
-            String json = mapper.writeValueAsString(config);
-            userFile.writeString(json, false);
-            Gdx.app.log("ConfigService", "Config saved to: " + userFile.path());
-        } catch (IOException e) {
-            Gdx.app.error("ConfigService", "Error saving config: " + e.getMessage());
-        }
+        this.mapper = JsonService.getMapper(); // Use Singleton
     }
 
     public GameConfig getConfig() {
-        return config;
+        if (cachedConfig != null) return cachedConfig;
+
+        GameConfig config = loadConfig(DEFAULT_CONFIG_PATH);
+        if (config == null) config = new GameConfig();
+
+        GameConfig userConfig = loadConfig(USER_CONFIG_PATH);
+        if (userConfig != null) {
+            mergeConfigs(config, userConfig);
+        }
+
+        cachedConfig = config;
+        return cachedConfig;
     }
 
     public WeaponConfig getWeaponConfig() {
-        return weaponConfig;
+        try {
+            FileHandle file = Gdx.files.internal("assets/config/weapons.json");
+            if (file.exists()) {
+                return mapper.readValue(file.read(), WeaponConfig.class);
+            }
+        } catch (Exception e) {
+            Gdx.app.error("ConfigService", "Error loading weapons.json", e);
+        }
+        return new WeaponConfig();
+    }
+
+    private GameConfig loadConfig(String path) {
+        try {
+            FileHandle file = Gdx.files.internal(path);
+            if (file.exists()) {
+                return mapper.readValue(file.read(), GameConfig.class);
+            } else if (new File(path).exists()) {
+                return mapper.readValue(new File(path), GameConfig.class);
+            }
+        } catch (Exception e) {
+            Gdx.app.error("ConfigService", "Error loading config: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private void mergeConfigs(GameConfig base, GameConfig user) {
+        if (user.graphics != null) {
+            if (user.graphics.width > 0) base.graphics.width = user.graphics.width;
+            if (user.graphics.height > 0) base.graphics.height = user.graphics.height;
+            base.graphics.fullscreen = user.graphics.fullscreen;
+        }
+        if (user.debug != null) {
+            base.debug.showHitboxes = user.debug.showHitboxes;
+            base.debug.showFps = user.debug.showFps;
+            base.debug.showPaths = user.debug.showPaths;
+        }
+        if (user.ui != null) {
+            base.ui.useCustomCursor = user.ui.useCustomCursor;
+            if (user.ui.cursorImagePath != null) base.ui.cursorImagePath = user.ui.cursorImagePath;
+            base.ui.cursorSize = user.ui.cursorSize;
+            base.ui.cursorAlpha = user.ui.cursorAlpha;
+        }
+    }
+
+    public void saveUserConfig(GameConfig config) {
+        try {
+            mapper.writeValue(new File(USER_CONFIG_PATH), config);
+        } catch (Exception e) {
+            Gdx.app.error("ConfigService", "Error saving user config", e);
+        }
     }
 }

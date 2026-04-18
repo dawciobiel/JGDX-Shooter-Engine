@@ -12,13 +12,12 @@
   "audio" : {
     "masterVolume" : 1.0,
     "sfxVolume" : 1.0,
-    "musicVolume" : 0.5,
-    "tauntsDir": "assets/audio/sfx/characters/taunt"
+    "musicVolume" : 0.5
   },
   "gameplay": {
-    "showUnitNames": true,
-    "multiKillThreshold": 3,
-    "multiKillWindow": 3.0
+    "showUnitNames" : true,
+    "multiKillThreshold" : 3,
+    "multiKillWindow" : 3.0
   },
   "debug" : {
     "showHitboxes" : true,
@@ -27,6 +26,7 @@
     "invinciblePlayer" : false
   },
   "controls" : {
+    "moveUpKey": 51,
     "prevWeaponKey" : 45,
     "nextWeaponKey" : 33
   },
@@ -35,7 +35,7 @@
   },
   "ui": {
     "useCustomCursor": true,
-    "cursorImagePath": "assets/graphics/textures/ui/Crosshairs 64/image0013.png",
+    "cursorImagePath": "ui/crosshairs/image0013.png",
     "cursorSize": 64.0,
     "cursorRed": 1.0,
     "cursorGreen": 1.0,

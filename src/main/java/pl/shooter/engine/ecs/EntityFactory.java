@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import pl.shooter.engine.assets.AssetService;
+import pl.shooter.engine.config.JsonService;
 import pl.shooter.engine.ecs.components.*;
 
 import java.util.HashMap;
@@ -17,8 +18,7 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Creates entities from external JSON definitions with support for dynamic animations and sounds.
- * DEBUG VERSION: Enforces specific colors for groups to trace lighting glitches.
+ * Creates entities using shared ObjectMapper from JsonService.
  */
 public class EntityFactory {
     private final EntityManager entityManager;
@@ -26,17 +26,16 @@ public class EntityFactory {
     private final ObjectMapper objectMapper;
     private final Map<String, Class<? extends Component>> componentAliases = new HashMap<>();
     private final Random random = new Random();
-
-    public EntityFactory(EntityManager entityManager) {
-        this(entityManager, null);
-    }
+    private String currentMapFolder = null;
 
     public EntityFactory(EntityManager entityManager, AssetService assetService) {
         this.entityManager = entityManager;
         this.assetService = assetService;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = JsonService.getMapper(); // Use Singleton
         registerDefaultAliases();
     }
+
+    public void setCurrentMapFolder(String folder) { this.currentMapFolder = folder; }
 
     private void registerDefaultAliases() {
         componentAliases.put("Transform", TransformComponent.class);
@@ -60,6 +59,27 @@ public class EntityFactory {
         componentAliases.put("Destructible", DestructibleComponent.class);
         componentAliases.put("Interactable", InteractableComponent.class);
         componentAliases.put("Door", DoorComponent.class);
+        componentAliases.put("Inventory", InventoryComponent.class);
+    }
+
+    public Entity loadEntity(String type, float x, float y) {
+        String path = resolveEntityPath(type);
+        Entity entity = loadFromJson(path, x, y);
+        if (entity != null && x <= -999) {
+            entityManager.removeEntity(entity);
+        }
+        return entity;
+    }
+
+    private String resolveEntityPath(String type) {
+        if (currentMapFolder != null) {
+            String[] subfolders = {"entities/triggers/", "entities/enemies/", "entities/objects/", "entities/player/", "entities/"};
+            for (String sub : subfolders) {
+                String p = currentMapFolder + "/" + sub + type + ".json";
+                if (Gdx.files.internal(p).exists()) return p;
+            }
+        }
+        return "assets/maps/default/entities/" + type + ".json";
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {
@@ -70,52 +90,44 @@ public class EntityFactory {
             JsonNode root = objectMapper.readTree(file.read());
             Entity entity = entityManager.createEntity();
 
-            // 1. Components
             JsonNode componentsNode = root.get("components");
             if (componentsNode != null && componentsNode.isObject()) {
                 Iterator<Map.Entry<String, JsonNode>> fields = componentsNode.fields();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> entry = fields.next();
-                    String alias = entry.getKey();
-                    Class<? extends Component> clazz = componentAliases.get(alias);
+                    Class<? extends Component> clazz = componentAliases.get(entry.getKey());
                     if (clazz == null) continue;
 
                     Component component = objectMapper.treeToValue(entry.getValue(), clazz);
                     if (component instanceof TransformComponent tc) {
-                        tc.x = x;
-                        tc.y = y;
+                        tc.x = x; tc.y = y;
                     }
                     if (component instanceof TextureComponent tex && assetService != null) {
+                        tex.assetPath = assetService.resolvePath(tex.assetPath, "graphics/textures");
                         assetService.loadTexture(tex.assetPath);
                     }
                     entityManager.addComponent(entity, component);
                 }
             }
 
-            // 2. Names
-            JsonNode namesNode = root.get("names");
-            if (namesNode != null && namesNode.isArray() && namesNode.size() > 0) {
-                int index = random.nextInt(namesNode.size());
-                entityManager.addComponent(entity, new NameComponent(namesNode.get(index).asText()));
+            if (root.has("names")) {
+                JsonNode namesNode = root.get("names");
+                entityManager.addComponent(entity, new NameComponent(namesNode.get(random.nextInt(namesNode.size())).asText()));
             }
 
-            // 3. Animations
-            JsonNode animNode = root.get("animations");
-            if (animNode != null) {
-                AnimationConfig animConfig = objectMapper.treeToValue(animNode, AnimationConfig.class);
+            if (root.has("animations")) {
+                AnimationConfig animConfig = objectMapper.treeToValue(root.get("animations"), AnimationConfig.class);
                 setupAnimationsFromConfig(entity, animConfig);
             }
 
-            // 4. Sounds
-            JsonNode soundsNode = root.get("sounds");
-            if (soundsNode != null && soundsNode.isObject()) {
+            if (root.has("sounds") && assetService != null) {
                 SoundComponent soundComp = new SoundComponent();
-                Iterator<Map.Entry<String, JsonNode>> soundFields = soundsNode.fields();
+                Iterator<Map.Entry<String, JsonNode>> soundFields = root.get("sounds").fields();
                 while (soundFields.hasNext()) {
                     Map.Entry<String, JsonNode> entry = soundFields.next();
                     try {
                         SoundComponent.Action action = SoundComponent.Action.valueOf(entry.getKey());
-                        soundComp.addSound(action, entry.getValue().asText());
+                        soundComp.addSound(action, assetService.resolvePath(entry.getValue().asText(), "audio/sfx"));
                     } catch (Exception e) {}
                 }
                 entityManager.addComponent(entity, soundComp);
@@ -123,7 +135,6 @@ public class EntityFactory {
 
             return entity;
         } catch (Exception e) {
-            Gdx.app.error("EntityFactory", "Failed to load entity from " + internalPath, e);
             return null;
         }
     }
@@ -134,68 +145,18 @@ public class EntityFactory {
         for (Map.Entry<String, AnimationConfig.StateConfig> entry : config.states.entrySet()) {
             try {
                 AnimationComponent.State state = AnimationComponent.State.valueOf(entry.getKey());
-                AnimationConfig.StateConfig stateConfig = entry.getValue();
+                AnimationConfig.StateConfig sc = entry.getValue();
+                String resolvedPath = assetService.resolvePath(sc.path, "graphics/textures");
                 Animation<TextureRegion> anim;
-                if ("SHEET".equals(stateConfig.type)) {
-                    anim = createAnimationFromSheet(stateConfig.path, stateConfig.rows, stateConfig.cols, stateConfig.frameDuration);
+                if ("SHEET".equals(sc.type)) {
+                    anim = createAnimationFromSheet(resolvedPath, sc.rows, sc.cols, sc.frameDuration);
                 } else {
-                    anim = createAnimationFromFiles(stateConfig.path, stateConfig.count, stateConfig.frameDuration);
+                    anim = createAnimationFromFiles(resolvedPath, sc.count, sc.frameDuration);
                 }
                 if (anim != null) animComp.addAnimation(state, anim);
             } catch (Exception e) {}
         }
         entityManager.addComponent(entity, animComp);
-    }
-
-    public void createExplosion(float x, float y, Color color) {
-        for (int i = 0; i < 10; i++) {
-            Entity p = entityManager.createEntity();
-            entityManager.addComponent(p, new TransformComponent(x, y));
-            float vx = (random.nextFloat() - 0.5f) * 200f;
-            float vy = (random.nextFloat() - 0.5f) * 200f;
-            entityManager.addComponent(p, new VelocityComponent(vx, vy));
-            // DEBUG: Explosion color orange-ish
-            entityManager.addComponent(p, new RenderComponent(new Color(1, 0.5f, 0, 1.0f), 2f + random.nextFloat() * 4f, true));
-            entityManager.addComponent(p, new ParticleComponent(1.5f, 2.0f));
-        }
-    }
-
-    public void createShellEjection(float x, float y, float angle) {
-        Entity shell = entityManager.createEntity();
-        entityManager.addComponent(shell, new TransformComponent(x, y, angle));
-        float ejectAngle = angle - 90 + (random.nextFloat() - 0.5f) * 30f;
-        float speed = 100f + random.nextFloat() * 50f;
-        entityManager.addComponent(shell, new VelocityComponent((float)Math.cos(Math.toRadians(ejectAngle)) * speed, (float)Math.sin(Math.toRadians(ejectAngle)) * speed));
-        entityManager.addComponent(shell, new RenderComponent(Color.GOLD, 1.5f, false));
-        entityManager.addComponent(shell, new ParticleComponent(0.5f, 0.8f));
-    }
-
-    public Entity createAmmoPickup(float x, float y, int amount) {
-        Entity pickup = entityManager.createEntity();
-        entityManager.addComponent(pickup, new TransformComponent(x, y));
-        // DEBUG: BLUE for pickups
-        entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
-        entityManager.addComponent(pickup, new ColliderComponent(8f));
-        entityManager.addComponent(pickup, new AmmoPickupComponent(amount));
-        return pickup;
-    }
-
-    public Entity createHealthPickup(float x, float y, float amount) {
-        Entity pickup = entityManager.createEntity();
-        entityManager.addComponent(pickup, new TransformComponent(x, y));
-        // DEBUG: BLUE for pickups
-        entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
-        entityManager.addComponent(pickup, new ColliderComponent(8f));
-        entityManager.addComponent(pickup, new HealthPickupComponent(amount));
-        return pickup;
-    }
-
-    public Entity createTrigger(float x, float y, float radius, TriggerComponent.TriggerType type, String value) {
-        Entity trigger = entityManager.createEntity();
-        entityManager.addComponent(trigger, new TransformComponent(x, y));
-        entityManager.addComponent(trigger, new ColliderComponent(radius));
-        entityManager.addComponent(trigger, new TriggerComponent(type, value));
-        return trigger;
     }
 
     private Animation<TextureRegion> createAnimationFromSheet(String path, int rows, int cols, float frameDuration) {
@@ -220,5 +181,44 @@ public class EntityFactory {
             frames[i] = new TextureRegion(tex); foundAny = true;
         }
         return foundAny ? new Animation<>(frameDuration, frames) : null;
+    }
+
+    public void createExplosion(float x, float y, Color color) {
+        for (int i = 0; i < 10; i++) {
+            Entity p = entityManager.createEntity();
+            entityManager.addComponent(p, new TransformComponent(x, y));
+            float vx = (random.nextFloat() - 0.5f) * 200f, vy = (random.nextFloat() - 0.5f) * 200f;
+            entityManager.addComponent(p, new VelocityComponent(vx, vy));
+            entityManager.addComponent(p, new RenderComponent(new Color(1, 0.5f, 0, 1.0f), 2f + random.nextFloat() * 4f, true));
+            entityManager.addComponent(p, new ParticleComponent(1.5f, 2.0f));
+        }
+    }
+
+    public void createShellEjection(float x, float y, float angle) {
+        Entity shell = entityManager.createEntity();
+        entityManager.addComponent(shell, new TransformComponent(x, y, angle));
+        float ejectAngle = angle - 90 + (random.nextFloat() - 0.5f) * 30f;
+        float speed = 100f + random.nextFloat() * 50f;
+        entityManager.addComponent(shell, new VelocityComponent((float)Math.cos(Math.toRadians(ejectAngle)) * speed, (float)Math.sin(Math.toRadians(ejectAngle)) * speed));
+        entityManager.addComponent(shell, new RenderComponent(Color.GOLD, 1.5f, false));
+        entityManager.addComponent(shell, new ParticleComponent(0.5f, 0.8f));
+    }
+
+    public Entity createAmmoPickup(float x, float y, int amount) {
+        Entity pickup = entityManager.createEntity();
+        entityManager.addComponent(pickup, new TransformComponent(x, y));
+        entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
+        entityManager.addComponent(pickup, new ColliderComponent(8f));
+        entityManager.addComponent(pickup, new AmmoPickupComponent(amount));
+        return pickup;
+    }
+
+    public Entity createHealthPickup(float x, float y, float amount) {
+        Entity pickup = entityManager.createEntity();
+        entityManager.addComponent(pickup, new TransformComponent(x, y));
+        entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
+        entityManager.addComponent(pickup, new ColliderComponent(8f));
+        entityManager.addComponent(pickup, new HealthPickupComponent(amount));
+        return pickup;
     }
 }

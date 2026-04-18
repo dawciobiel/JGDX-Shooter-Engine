@@ -1,0 +1,7 @@
+{
+  "components": {
+    "Transform": {},
+    "Collider": { "radius": 250 },
+    "Trigger": { "type": "AMBIENT_SOUND", "value": "assets/shared/audio/ambience/mud_loop.wav" }
+  }
+}

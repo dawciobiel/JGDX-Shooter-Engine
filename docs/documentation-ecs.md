@@ -60,9 +60,9 @@ Parametry wszystkich broni są zdefiniowane w pliku `assets/config/weapons.json`
 
 ## 4. Zasoby i Dane (Data-Driven)
 - **Struktura Katalogów:**
-    - `assets/audio/sfx/`: Efekty dźwiękowe (characters, weapons, ui).
-    - `assets/graphics/textures/`: Tekstury postaci, broni, UI.
-    - `assets/graphics/shaders/`: Pliki `.vert` i `.frag`.
+    - `assets/shared/audio/sfx/`: Efekty dźwiękowe (characters, weapons, ui).
+    - `assets/shared/graphics/textures/`: Tekstury postaci, broni, UI.
+    - `assets/shared/graphics/shaders/`: Pliki `.vert` i `.frag`.
 - **Encje:** Definiowane w `assets/entities/`.
 - **Bronie:** Definiowane w `assets/config/weapons.json`.
 - **Konfiguracja Silnika:** `assets/config/default_config.json` oraz `user_config.json`.

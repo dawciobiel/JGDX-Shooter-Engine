@@ -19,20 +19,12 @@ import pl.shooter.events.HitEvent;
 
 import java.util.List;
 
-/**
- * Handles combat logic, including weapon types, firing patterns, ammo consumption, and reloading.
- * Now supports melee attacks for weapons like KNIFE and respects map obstacles.
- */
 public class CombatSystem extends GameSystem {
     private final EventBus eventBus;
     private final EntityFactory entityFactory;
     private final ConfigService configService;
     private final GameMap map;
     private float totalTime = 0;
-
-    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory, GameMap map) {
-        this(entityManager, eventBus, entityFactory, new ConfigService(), map);
-    }
 
     public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory, ConfigService configService, GameMap map) {
         super(entityManager);
@@ -46,16 +38,12 @@ public class CombatSystem extends GameSystem {
     @Override
     public void update(float deltaTime) {
         totalTime += deltaTime;
-
-        // Process reloading for all weapons in all inventories
         for (Entity entity : entityManager.getEntitiesWithComponents(InventoryComponent.class)) {
             InventoryComponent inv = entityManager.getComponent(entity, InventoryComponent.class);
             for (WeaponComponent weapon : inv.weapons) {
                 if (weapon.isReloading) {
                     weapon.reloadTimer += deltaTime;
-                    if (weapon.reloadTimer >= weapon.reloadTime) {
-                        finishReload(weapon);
-                    }
+                    if (weapon.reloadTimer >= weapon.reloadTime) finishReload(weapon);
                 } else if (weapon.magazineSize > 0 && weapon.magazineAmmo <= 0 && (weapon.currentAmmo > 0 || weapon.hasInfiniteAmmo)) {
                     startReload(weapon);
                 }
@@ -68,13 +56,9 @@ public class CombatSystem extends GameSystem {
         WeaponComponent weapon = entityManager.getComponent(shooter, WeaponComponent.class);
         TransformComponent shooterTransform = entityManager.getComponent(shooter, TransformComponent.class);
 
-        if (weapon == null || shooterTransform == null) return;
-
-        if (weapon.isReloading) return;
-
+        if (weapon == null || shooterTransform == null || weapon.isReloading) return;
         if (totalTime - weapon.lastShotTime < weapon.fireRate) return;
 
-        // Melee check
         if (weapon.type == WeaponComponent.Type.KNIFE) {
             handleMeleeAttack(shooter, shooterTransform, weapon, event.targetX, event.targetY);
             weapon.lastShotTime = totalTime;
@@ -92,14 +76,12 @@ public class CombatSystem extends GameSystem {
         }
 
         weapon.lastShotTime = totalTime;
-        if (weapon.magazineSize > 0) {
-            weapon.magazineAmmo--;
-        }
+        if (weapon.magazineSize > 0) weapon.magazineAmmo--;
 
-        eventBus.publish(new BulletFiredEvent(shooter));
+        // PUBLISH EVENT WITH WEAPON SOUND
+        eventBus.publish(new BulletFiredEvent(shooter, weapon.shootSound));
 
         float baseAngle = MathUtils.atan2(event.targetY - shooterTransform.y, event.targetX - shooterTransform.x) * MathUtils.radiansToDegrees;
-
         if (entityFactory != null && isBallistic(weapon.type)) {
             entityFactory.createShellEjection(shooterTransform.x, shooterTransform.y, baseAngle);
         }
@@ -112,58 +94,40 @@ public class CombatSystem extends GameSystem {
 
         for (int i = 0; i < weapon.projectilesPerShot; i++) {
             float finalAngle = baseAngle;
-            if (weapon.spread > 0) {
-                finalAngle += MathUtils.random(-weapon.spread, weapon.spread);
-            }
+            if (weapon.spread > 0) finalAngle += MathUtils.random(-weapon.spread, weapon.spread);
             spawnProjectile(shooterTransform.x, shooterTransform.y, finalAngle, weapon, shooter.getId(), projData);
         }
     }
 
     private void handleMeleeAttack(Entity shooter, TransformComponent t, WeaponComponent weapon, float targetX, float targetY) {
-        eventBus.publish(new BulletFiredEvent(shooter)); 
+        eventBus.publish(new BulletFiredEvent(shooter, weapon.shootSound)); 
 
         float angle = MathUtils.atan2(targetY - t.y, targetX - t.x) * MathUtils.radiansToDegrees;
-        float cos = MathUtils.cosDeg(angle);
-        float sin = MathUtils.sinDeg(angle);
+        float cos = MathUtils.cosDeg(angle), sin = MathUtils.sinDeg(angle);
         
         List<Entity> targets = entityManager.getEntitiesWithComponents(TransformComponent.class, HealthComponent.class, ColliderComponent.class);
         for (Entity victim : targets) {
             if (victim.getId() == shooter.getId()) continue;
-            
             TransformComponent vt = entityManager.getComponent(victim, TransformComponent.class);
             ColliderComponent vc = entityManager.getComponent(victim, ColliderComponent.class);
-            
-            float dx = vt.x - t.x;
-            float dy = vt.y - t.y;
+            float dx = vt.x - t.x, dy = vt.y - t.y;
             float dist = (float) Math.sqrt(dx*dx + dy*dy);
             
             if (dist <= weapon.range + vc.radius) {
-                // 1. Line of sight check (Simple Raycast)
-                if (!isLineOfSightClear(t.x, t.y, vt.x, vt.y)) {
-                    continue; // Something blocks the attack
-                }
-
-                // 2. Direction check
+                if (!isLineOfSightClear(t.x, t.y, vt.x, vt.y)) continue;
                 float dot = (dx/dist) * cos + (dy/dist) * sin;
-                if (dot > 0.7f) { 
-                    eventBus.publish(new HitEvent(victim, shooter.getId(), weapon.damage)); 
-                }
+                if (dot > 0.7f) eventBus.publish(new HitEvent(victim, shooter.getId(), weapon.damage)); 
             }
         }
     }
 
     private boolean isLineOfSightClear(float x1, float y1, float x2, float y2) {
         if (map == null) return true;
-        
         float dist = Vector2.dst(x1, y1, x2, y2);
-        int steps = (int) (dist / 8); // Check every 8 units
-        float dx = (x2 - x1) / steps;
-        float dy = (y2 - y1) / steps;
-        
+        int steps = (int) (dist / 8); 
+        float dx = (x2 - x1) / steps, dy = (y2 - y1) / steps;
         for (int i = 1; i < steps; i++) {
-            if (!map.isWalkable(x1 + dx * i, y1 + dy * i)) {
-                return false; // Obstacle found
-            }
+            if (!map.isWalkable(x1 + dx * i, y1 + dy * i)) return false;
         }
         return true;
     }
@@ -176,20 +140,16 @@ public class CombatSystem extends GameSystem {
     private void spawnProjectile(float x, float y, float angle, WeaponComponent weapon, int ownerId, WeaponConfig.ProjectileData config) {
         Entity projectile = entityManager.createEntity();
         entityManager.addComponent(projectile, new TransformComponent(x, y, angle));
-        
-        float vx = MathUtils.cosDeg(angle) * weapon.projectileSpeed;
-        float vy = MathUtils.sinDeg(angle) * weapon.projectileSpeed;
-        entityManager.addComponent(projectile, new VelocityComponent(vx, vy));
+        entityManager.addComponent(projectile, new VelocityComponent(MathUtils.cosDeg(angle) * weapon.projectileSpeed, MathUtils.sinDeg(angle) * weapon.projectileSpeed));
         
         Color color = Color.YELLOW;
-        float radius = 3f;
-        float lifetime = 1.5f;
+        float radius = 3f, lifetime = 1.5f;
         int damage = 10;
         ProjectileComponent.Behavior behavior = ProjectileComponent.Behavior.NORMAL;
         float explosionRadius = 0f;
 
         if (config != null) {
-            color = parseColor(config.color);
+            try { color = Color.valueOf(config.color); } catch (Exception e) {}
             radius = config.radius;
             lifetime = config.lifetime;
             damage = config.damage;
@@ -200,14 +160,6 @@ public class CombatSystem extends GameSystem {
         entityManager.addComponent(projectile, new RenderComponent(color, radius, true));
         entityManager.addComponent(projectile, new ProjectileComponent(lifetime, ownerId, damage, behavior, explosionRadius));
         entityManager.addComponent(projectile, new ColliderComponent(radius));
-    }
-
-    private Color parseColor(String colorName) {
-        try {
-            return Color.valueOf(colorName);
-        } catch (Exception e) {
-            return Color.YELLOW;
-        }
     }
 
     private void startReload(WeaponComponent weapon) {

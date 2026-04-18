@@ -41,7 +41,6 @@ public class InputSystem extends GameSystem {
 
     @Override
     public void update(float deltaTime) {
-        // Requirement: Player must have Transform and Velocity for basic movement
         List<Entity> players = entityManager.getEntitiesWithComponents(
                 PlayerComponent.class,
                 TransformComponent.class,
@@ -63,12 +62,11 @@ public class InputSystem extends GameSystem {
             InventoryComponent inv = entityManager.getComponent(player, InventoryComponent.class);
 
             // 1. Movement
-            float vx = 0;
-            float vy = 0;
+            float vx = 0, vy = 0;
             if (Gdx.input.isKeyPressed(config.controls.moveUpKey)) vy += pc.speed;
-            if (Gdx.input.isKeyPressed(config.controls.moveDownKey)) vy -= pc.speed;
-            if (Gdx.input.isKeyPressed(config.controls.moveLeftKey)) vx -= pc.speed;
-            if (Gdx.input.isKeyPressed(config.controls.moveRightKey)) vx += pc.speed;
+            if (Gdx.input.isKeyPressed(Input.Keys.S)) vy -= pc.speed; // Default S
+            if (Gdx.input.isKeyPressed(Input.Keys.A)) vx -= pc.speed; // Default A
+            if (Gdx.input.isKeyPressed(Input.Keys.D)) vx += pc.speed; // Default D
             
             vc.vx = vx;
             vc.vy = vy;
@@ -76,12 +74,12 @@ public class InputSystem extends GameSystem {
             // 2. Aiming
             tc.rotation = MathUtils.atan2(worldMouseY - tc.y, worldMouseX - tc.x) * MathUtils.radiansToDegrees;
 
-            // 3. Shooting
+            // 3. Shooting (LMB)
             if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
                 eventBus.publish(new ShootEvent(player, worldMouseX, worldMouseY));
             }
 
-            // 4. Inventory (Optional)
+            // 4. Inventory Selection
             if (inv != null) {
                 handleWeaponSelection(inv, player);
             }
@@ -89,6 +87,7 @@ public class InputSystem extends GameSystem {
     }
 
     private void handleWeaponSelection(InventoryComponent inv, Entity player) {
+        // Direct number selection
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) inv.currentWeaponIndex = 0;
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2) && inv.weapons.size() > 1) inv.currentWeaponIndex = 1;
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3) && inv.weapons.size() > 2) inv.currentWeaponIndex = 2;
@@ -98,7 +97,9 @@ public class InputSystem extends GameSystem {
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_7) && inv.weapons.size() > 6) inv.currentWeaponIndex = 6;
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_8) && inv.weapons.size() > 7) inv.currentWeaponIndex = 7;
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_9) && inv.weapons.size() > 8) inv.currentWeaponIndex = 8;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_0) && inv.weapons.size() > 9) inv.currentWeaponIndex = 9;
 
+        // Cycle selection
         if (Gdx.input.isKeyJustPressed(config.controls.prevWeaponKey)) inv.previousWeapon();
         if (Gdx.input.isKeyJustPressed(config.controls.nextWeaponKey)) inv.nextWeapon();
         

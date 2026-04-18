@@ -14,4 +14,20 @@
 - [x] **Wybór mapy przed rozpoczęciem rozgrywki** (Menu wyboru poziomu)
 
 ## Etap 9: Szlify i Rozwój (ZAKOŃCZONE)
+- [x] **Nowa wroga jednostka** (Combat Robot)
+- [x] **Dźwięki mapy typu "ambient"**
+- [x] **Dźwięki gracza typu "multi kill"**
+- [x] **Wprowadzić obiekt, który gracz możne przesunąć na mapie**
+- [x] **System Drzwi i Przełączników**
+- [x] **System Dialogów / Komunikatów**
+- [x] **Kursor myszy jako celownik**
+- [x] **Wyświetlanie nazwy jednostki na mapie**
+- [x] **Refaktoryzacja struktury assets**
+- [x] **System Fallback dla zasobów**
+- [x] **Broń Melee: Nóż (Knife)**
+- [x] **System Ciał i Krwi (Corpse System)**
+- [x] **Rozbudowany System Broni**
+- [x] **Różne typy przeciwników**
+
+## Etap 8: Rozgrywka i Detale (ZAKOŃCZONE)
 ... (reszta bez zmian)

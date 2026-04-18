@@ -1,0 +1,13 @@
+{
+  "components": {
+    "Transform": {},
+    "Velocity": { "vx": 0, "vy": 0 },
+    "Render": { "color": { "r": 0.5, "g": 0.3, "b": 0.1, "a": 1 }, "radius": 16, "isCircle": false },
+    "Collider": { "radius": 16 },
+    "Obstacle": {},
+    "Pushable": { "mass": 3.0, "friction": 12.0, "snapToAxes": true, "playerOnly": true },
+    "Health": { "hp": 100, "maxHp": 100, "isDead": false, "hasBlood": false },
+    "Destructible": {},
+    "Name": { "name": "Heavy Crate" }
+  }
+}

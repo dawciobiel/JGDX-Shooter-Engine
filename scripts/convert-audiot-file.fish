@@ -1,4 +1,7 @@
-#!/usr/bin/env fish
+TODO:
+do poprawy są ścieżki assets/...
+
+# !/usr/bin/env fish
 
 # -----------------------------------------------------------------------------
 # Project: JGDX-Shooter-Engine
@@ -28,7 +31,7 @@ set script_dir (dirname (realpath (status filename)))
 set project_root (realpath "$script_dir/..")
 
 # Target directory
-set target_dir "$project_root/assets/audio/sfx/characters/taunt"
+set target_dir "$project_root/assets/shared/audio/sfx/characters/taunt"
 
 # Validate target directory
 if not test -d "$target_dir"

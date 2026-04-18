@@ -23,5 +23,12 @@ Thumbs.db
 # logs
 *.log
 
+# backups
+assets-backup/
+
 # Keep Gradle wrapper JAR
 !gradle/wrapper/gradle-wrapper.jar
+
+# tmp files, notes
+docs/bugs/enemies-jako-circle-a-nie-box.md
+docs/bugs/pomieszalem-w-konfigach-i-java_files.md
