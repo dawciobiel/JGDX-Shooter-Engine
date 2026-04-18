@@ -1,69 +1,79 @@
 # Dokumentacja Techniczna: Silnik Shooter (Architektura & API)
 
-Ten dokument stanowi kompendium wiedzy o architekturze silnika, skierowane do programistów open-source rozwijających projekt.
+Ten dokument stanowi kompendium wiedzy o architekturze silnika, skierowane do programistów rozwijających projekt.
 
 ## 1. Architektura Core
-Silnik opiera się na trzech filarach: **ECS (Entity Component System)**, **EventBus** oraz **Centralnym Orkiestratorze**.
+Silnik opiera się na trzech filarach: **ECS (Entity Component System)**, **EventBus** oraz **Warstwie Usług (Services)**.
 
 ### Engine (`pl.shooter.engine.Engine`)
 Główna klasa zarządzająca cyklem życia gry.
 - `update(float deltaTime)`: Wywołuje wszystkie systemy w zdefiniowanej kolejności.
-- `getEntityManager()`: Dostęp do bazy danych encji.
-- `getEventBus()`: Dostęp do systemu zdarzeń.
+- `dispose()`: Gwarantuje poprawne zwolnienie zasobów wszystkich systemów (np. zatrzymanie audio).
+- `getEntityManager()`: Zarządzanie bazą danych encji.
+- `getEventBus()`: Centralny system zdarzeń.
 
 ## 2. System ECS
 
-### Encje i Komponenty
-- **Entity**: Tylko unikalne ID.
-- **Component**: Klasy POJO przechowujące czyste dane.
-    - `TransformComponent`: Pozycja (x, y) i rotacja.
-    - `VelocityComponent`: Prędkość wektorowa.
-    - `HealthComponent`: Statystyki żywotności.
-    - `RenderComponent`: Dane o wyglądzie (kolor, rozmiar).
-    - `TextureComponent`: Ścieżka do grafiki PNG.
-    - `AIComponent`: Definicja zachowania bota z parametrami taktycznymi.
-    - `WeaponComponent`: Parametry ataku, typy broni, system amunicji oraz **zasięg walki wręcz (`range`)**.
-    - `ProjectileComponent`: Cykl życia pocisku, obrażenia i specjalne zachowania (Explosive/Piercing).
-    - `ParticleComponent`: Efekty wizualne (zanikanie).
-    - `ScoreComponent`: Wynik punktowy gracza.
-    - `SteeringComponent`: Integracja z `gdx-ai`.
-    - `DestructibleComponent`: Obiekt możliwy do zniszczenia (skrzynie, krzaki).
-    - `ObstacleComponent`: Encja blokująca ruch i ścieżki AI.
-    - `AmmoPickupComponent` / `HealthPickupComponent`: Przedmioty do podniesienia.
+### Komponenty (`pl.shooter.engine.ecs.components`)
+Klasy POJO przechowujące czyste dane:
+- `TransformComponent`: Pozycja (x, y) i rotacja.
+- `VelocityComponent`: Prędkość wektorowa.
+- `HealthComponent`: Statystyki żywotności, system zwłok i kolor krwi.
+- `RenderComponent`: Dane o wyglądzie prymitywnym (kolor, rozmiar, alpha).
+- `TextureComponent`: Ścieżka do grafiki PNG (rozwiązywana przez AssetService).
+- `AnimationComponent`: Zarządzanie klatkami animacji (Sheet/Files).
+- `AIComponent`: Maszyna stanów bota i parametry taktyczne.
+- `WeaponComponent`: Parametry ataku, typy broni, system amunicji i dźwięki.
+- `ProjectileComponent`: Cykl życia pocisku i specjalne zachowania (Explosive/Piercing).
+- `SoundComponent`: Mapowanie akcji (HIT, DIE, SHOOT) na pliki audio.
+- `TriggerComponent`: Definiowanie stref akcji z parametrami `isLooping` i `volume`.
+- `ColliderComponent`: Fizyczny promień kolizji.
+- `NameComponent`: Nazwa wyświetlana nad jednostką.
+- `InventoryComponent`: Zarządzanie posiadanym uzbrojeniem.
 
 ### Systemy (`pl.shooter.engine.ecs.systems`)
-Kolejność wywołań w pętli gry:
-1. `InputSystem`: Sterowanie graczem i celowanie.
-2. `PathfindingSystem`: Dynamiczne wyznaczanie ścieżek A*.
-3. `AISystem`: Decyzje przeciwników.
-4. `SteeringSystem`: Kinematyczny ruch na podstawie decyzji AI.
-5. **`CombatSystem`**: Zarządzanie bronią palną i **walką wręcz (Melee)**. Obsługuje przeładowanie i wczytywanie parametrów z `weapons.json`.
-6. `ProjectileSystem`: Czas życia pocisków.
-7. `ParticleUpdateSystem`: Animacja cząsteczek.
-8. `MovementSystem`: Fizyka ruchu z logiką kolizji z mapą.
-9. `MapSystem`: Granice mapy.
-10. `CollisionSystem`: Wykrywanie trafień, kolizji obszarowych (wybuchy) oraz podnoszenia przedmiotów (pickups).
-11. `DamageSystem`: HP, efekty krwi, scoring i logika Friendly Fire.
-12. `RenderSystem`: Rysowanie świata z korektą orientacji grafik i cieniowaniem (FBO) przy użyciu shaderów.
-13. **`UISystem`**: HUD (Paski zdrowia, punkty, wave, **ikony broni**).
+Kolejność wywołań w pętli gry (kluczowa dla spójności):
+1. `InputSystem`: Sterowanie graczem.
+2. `PathfindingSystem`: Wyznaczanie ścieżek A*.
+3. `AISystem`: Decyzje botów.
+4. `SteeringSystem`: Płynny ruch AI.
+5. `CombatSystem`: Logika strzału i przeładowania (korzysta z `WeaponConfig`).
+6. `ProjectileSystem`: Fizyka pocisków.
+7. `ParticleUpdateSystem`: Efekty wizualne.
+8. `PushingSystem`: Fizyka przesuwania obiektów.
+9. `InteractionSystem`: Obsługa interakcji gracza z obiektami.
+10. `MapSystem`: Granice mapy.
+11. `MovementSystem`: Integracja prędkości z pozycją i kolizjami z mapą.
+12. `TriggerSystem`: Wykrywanie wejścia/wyjścia ze stref akcji.
+13. `CollisionSystem`: Wykrywanie trafień i podnoszenia przedmiotów.
+14. `DamageSystem`: HP, efekty krwi i logika śmierci (`DeathEvent`).
+15. `SoundSystem`: Odtwarzanie efektów SFX na podstawie zdarzeń.
+16. `AmbientSoundSystem`: Zarządzanie muzyką i pętlami tła.
+17. `WaveSystem`: Dynamiczne fale przeciwników.
+18. `RenderSystem`: Renderowanie świata (Scene -> Lights -> Mix).
+19. `UISystem`: HUD i menu.
 
-## 3. Zaawansowane Funkcje
+## 3. Usługi (Services)
 
-### System Broni i Melee
-Parametry wszystkich broni są zdefiniowane w pliku `assets/config/weapons.json`.
-- **System Fallback:** Silnik automatycznie szuka dźwięków i ikon w dedykowanych folderach broni. Jeśli ich nie znajdzie, używa zasobów z folderu `assets/audio/sfx/weapons/default/`.
-- **Walka Wręcz (Melee):** Bronie typu `KNIFE` nie generują pocisków. `CombatSystem` sprawdza obecność wrogów w zasięgu `range` i w kącie ~90 stopni przed atakującym.
+- **ConfigService**: Zarządza ładowaniem `engine_config.json` oraz lokalnych konfiguracji broni per mapa.
+- **AssetService**: Inteligentny resolver ścieżek (Map-First) z asynchronicznym ładowaniem.
+- **AudioService**: Zarządza dźwiękami i muzyką. Posiada unikalny ID instancji dla bezpiecznego czyszczenia zasobów.
+- **JsonService**: Udostępnia globalny singleton `ObjectMapper` (Jackson) dla wydajnej serializacji.
+- **MapService**: Orkiestrator wczytywania map i pre-loadingu zasobów encji.
 
-### System Ładowania Zasobów (Asset Pipeline)
-- **AudioService:** Zarządza dźwiękami z mechanizmem fallback.
-- **AssetService:** Wykorzystuje `AssetManager` do asynchronicznego ładowania tekstur.
+## 4. System Zdarzeń (Event Bus)
 
-## 4. Zasoby i Dane (Data-Driven)
-- **Struktura Katalogów:**
-    - `assets/shared/audio/sfx/`: Efekty dźwiękowe (characters, weapons, ui).
-    - `assets/shared/graphics/textures/`: Tekstury postaci, broni, UI.
-    - `assets/shared/graphics/shaders/`: Pliki `.vert` i `.frag`.
-- **Encje:** Definiowane w `assets/entities/`.
-- **Bronie:** Definiowane w `assets/config/weapons.json`.
-- **Konfiguracja Silnika:** `assets/config/default_config.json` oraz `user_config.json`.
-- **Aliasy Komponentów:** `Transform`, `Render`, `Health`, `AI`, `Weapon`, `Velocity`, `Collider`, `Score`, `AmmoPickup`, `HealthPickup`.
+Systemy komunikują się za pomocą zdarzeń implementujących interfejs `Event`:
+- `ShootEvent`, `HitEvent`, `DeathEvent`, `TriggerEvent`, `PickupEvent`, `BulletFiredEvent`, `EmptyWeaponEvent`, `TerrainChangeEvent`, `ScoreEvent`.
+
+## 5. Dane i Konfiguracja (Data-Driven)
+
+### Struktura Zasobów:
+- `assets/core/`: Zasoby krytyczne (shadery, bazowe tekstury).
+- `assets/shared/`: Encje i zasoby używane na wielu mapach.
+- `assets/maps/[name]/`: Odizolowane zasoby specyficzne dla poziomu.
+- `assets/configs/engine_config.json`: Centralne ustawienia silnika i ścieżek.
+
+### Aliasy Komponentów w JSON:
+Silnik używa uproszczonych nazw w plikach encji:
+`Transform`, `Velocity`, `Render`, `Health`, `AI`, `Weapon`, `Player`, `Texture`, `Score`, `Particle`, `Projectile`, `Collider`, `AmmoPickup`, `HealthPickup`, `Name`, `Trigger`, `Pushable`, `Door`, `Inventory`.

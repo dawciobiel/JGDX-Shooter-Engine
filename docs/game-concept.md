@@ -1,46 +1,29 @@
-# Game Concept – 2D / pseudo-3D shooter
+# Game Concept – Shooter Engine (Top-Down twin-stick)
 
 ## 1. Założenia ogólne
-Gra typu shooter, w której gracz porusza się po mapie i walczy z przeciwnikami.
+Szybka gra akcji typu Top-Down Shooter, skupiająca się na dynamicznej walce, przetrwaniu kolejnych fal przeciwników i eksploracji mrocznych poziomów. Silnik został zaprojektowany z myślą o modowalności i łatwym tworzeniu map przez JSON.
 
 ## 2. Świat gry (Mapa)
-- Mapa może być:
-    - statyczna (zamknięta przestrzeń)
-    - generowana dynamicznie
-- Mapa zawiera obiekty:
-    - gracz
-    - przeciwnicy
-    - obiekty neutralne
+- **Struktura**: Poziomy budowane z kafelków (Tile-based) z dynamicznym oświetleniem 2D.
+- **Interakcja**: Przesuwalne obiekty (beczki, skrzynie), niszczalne elementy otoczenia, interaktywne drzwi i przyciski.
+- **Strefy**: Mapy zawierają triggery aktywujące dźwięki, muzykę lub komunikaty fabularne.
 
 ## 3. Encje (Entity)
-Każda encja posiada parametry:
-- zdrowie
-- pancerz
-- prędkość ruchu
-- inne statystyki
-
-Typy encji:
-- Gracz
-- Przeciwnik
-- Obiekt neutralny
+- **Gracz**: Rozbudowany ekwipunek, wiele rodzajów broni, system zbierania amunicji i apteczek.
+- **Przeciwnicy**: Zaawansowane AI wykorzystujące Pathfinding A*, Steering Behaviors oraz system fal (Waves).
+- **Efekty**: System cząsteczek (iskry, łuski), system krwi (trwałe plamy na podłożu) oraz dynamiczne cienie.
 
 ## 4. System walki
 
-### Broń
-Każda broń posiada:
-- prędkość strzału
-- czas przeładowania
-- zasięg
-- pojemność magazynka
+### Arsenał
+- **Bronie palne**: Od pistoletów po Rail-guny i wyrzutnie rakiet, każda z unikalnymi parametrami (spread, projectiles per shot, fire rate).
+- **Walka wręcz**: Możliwość atakowania nożem (system kolizji stożkowej).
+- **System Magazynków**: Realistyczne przeładowanie i ograniczona amunicja (z wyjątkami dla broni podstawowych).
 
 ### Pociski
-- są niezależnymi encjami
-- posiadają:
-    - obrażenia
-    - prędkość
-- znikają po czasie lub kolizji
+- Niezależne encje z własną fizyką i zachowaniem (np. pociski wybuchowe, przenikające).
 
-## 5. Sterowanie
-- ruch: klawiatura
-- celowanie: mysz
-- celownik porusza się niezależnie od postaci
+## 5. Sterowanie i Atmosfera
+- **Ruch**: Klawisze WSAD.
+- **Celowanie**: Mysz (niezależny kursor celownika).
+- **Klimat**: Dynamiczna muzyka zmieniająca się w zależności od strefy mapy, bogate efekty dźwiękowe otoczenia.
