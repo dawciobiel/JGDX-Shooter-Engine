@@ -9,11 +9,11 @@
   },
   "playerSpawn": { "x": 512, "y": 512 },
   "entities": [
-    { "type": "trigger_water", "x": 256, "y": 768 },
-    { "type": "trigger_mud", "x": 768, "y": 768 },
-    { "type": "trigger_metal", "x": 256, "y": 256 },
-    { "type": "trigger_fire", "x": 768, "y": 256 },
-    { "type": "trigger_music_change", "x": 512, "y": 512 },
+    { "type": "on_enter_sound_water", "x": 256, "y": 768 },
+    { "type": "on_enter_sound_mud", "x": 768, "y": 768 },
+    { "type": "on_enter_sound_metal", "x": 256, "y": 256 },
+    { "type": "on_enter_sound_fire", "x": 768, "y": 256 },
+    { "type": "on_enter_music_change", "x": 512, "y": 512 },
 
     { "type": "barrel", "x": 600, "y": 500 },
     { "type": "barrel", "x": 600, "y": 530 },
@@ -31,9 +31,9 @@
     { "type": "switch", "x": 400, "y": 800 },
     { "type": "door", "x": 600, "y": 800 },
 
-    { "type": "trigger_msg_water", "x": 256, "y": 768 },
-    { "type": "trigger_msg_mud", "x": 768, "y": 768 },
-    { "type": "trigger_msg_metal", "x": 256, "y": 256 },
-    { "type": "trigger_msg_fire", "x": 768, "y": 256 }
+    { "type": "on_enter_msg_water", "x": 256, "y": 768 },
+    { "type": "on_enter_msg_mud", "x": 768, "y": 768 },
+    { "type": "on_enter_msg_metal", "x": 256, "y": 256 },
+    { "type": "on_enter_msg_fire", "x": 768, "y": 256 }
   ]
 }

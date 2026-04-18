@@ -8,6 +8,10 @@
 - [ ] **Dostrajanie fizyki i kolizji** (Przyjrzeć się kolizjom wrogów z obiektami przesuwalnymi jak beczki/skrzynie pod kątem stabilności)
 - [ ] **Profiler Wydajności** (Analiza czasu trwania update() poszczególnych systemów)
 - [ ] **Usprawnienie ładowania zasobów** (Splash Screen i pasek postępu)
+- [ ] **Relokacja `weapons.json`** (Przeniesienie pliku z `assets/config/` do folderów poszczególnych map - patrz `ConfigService:40,45`)
+- [ ] **Konfiguracja ścieżek w kodzie** (Usunięcie zahardkodowanych ścieżek z plików Java i przeniesienie ich do centralnej konfiguracji silnika)
+- [x] **Konwencja nazewnicza triggerów** (Usunięcie przedrostka `trigger_` i nadanie sensownych nazw plikom w `assets/maps/*/entities/triggers/`)
+- [ ] **Aktualizacja dokumentacji `docs/`** (Odświeżenie struktury katalogów `assets/` oraz opisanie nowych mechanik silnika)
 
 ## Etap 10: Architektura map i jednostek na mapie (ZAKOŃCZONE)
 - [x] **Architektura aktywowania jednostek na mapie** (Przeniesiono spawnowanie do JSON mapy przez `MapService`)
