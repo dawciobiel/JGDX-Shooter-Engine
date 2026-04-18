@@ -1,7 +1,7 @@
 {
   "components": {
     "Transform": {},
-    "Collider": { "radius": 250 },
+    "Collider": { "radius": 100 },
     "Trigger": { "type": "AMBIENT_SOUND", "value": "audio/ambience/metal_loop.wav" }
   }
 }

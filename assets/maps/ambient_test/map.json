@@ -2,38 +2,38 @@
   "id": "ambient_test",
   "name": "Ambient Sound Test Map",
   "settings": {
-    "width": 1024,
-    "height": 1024,
+    "width": 512,
+    "height": 512,
     "ambientColor": { "r": 0.4, "g": 0.4, "b": 0.4, "a": 0.3 },
     "musicTrack": "audio/music/fato_shadow_-_domination.mp3"
   },
-  "playerSpawn": { "x": 512, "y": 512 },
+  "playerSpawn": { "x": 256, "y": 256 },
   "entities": [
-    { "type": "on_enter_sound_water", "x": 256, "y": 768 },
-    { "type": "on_enter_sound_mud", "x": 768, "y": 768 },
-    { "type": "on_enter_sound_metal", "x": 256, "y": 256 },
-    { "type": "on_enter_sound_fire", "x": 768, "y": 256 },
-    { "type": "on_enter_music_change", "x": 512, "y": 512 },
+    { "type": "on_enter_sound_water", "x": 128, "y": 384 },
+    { "type": "on_enter_sound_mud", "x": 384, "y": 384 },
+    { "type": "on_enter_sound_metal", "x": 128, "y": 128 },
+    { "type": "on_enter_sound_fire", "x": 384, "y": 128 },
+    { "type": "on_enter_music_change", "x": 256, "y": 256 },
 
-    { "type": "barrel", "x": 600, "y": 500 },
-    { "type": "barrel", "x": 600, "y": 530 },
-    { "type": "barrel", "x": 600, "y": 560 },
-    { "type": "barrel", "x": 600, "y": 590 },
+    { "type": "barrel", "x": 300, "y": 250 },
+    { "type": "barrel", "x": 300, "y": 265 },
+    { "type": "barrel", "x": 300, "y": 280 },
+    { "type": "barrel", "x": 300, "y": 295 },
 
-    { "type": "crate", "x": 400, "y": 500 },
-    { "type": "crate", "x": 400, "y": 525 },
-    { "type": "crate", "x": 400, "y": 550 },
-    { "type": "crate", "x": 400, "y": 575 },
-    { "type": "crate", "x": 400, "y": 595 },
-    { "type": "crate", "x": 400, "y": 615 },
-    { "type": "crate", "x": 400, "y": 635 },
+    { "type": "crate", "x": 200, "y": 250 },
+    { "type": "crate", "x": 200, "y": 262 },
+    { "type": "crate", "x": 200, "y": 275 },
+    { "type": "crate", "x": 200, "y": 287 },
+    { "type": "crate", "x": 200, "y": 297 },
+    { "type": "crate", "x": 200, "y": 307 },
+    { "type": "crate", "x": 200, "y": 317 },
 
-    { "type": "switch", "x": 400, "y": 800 },
-    { "type": "door", "x": 600, "y": 800 },
+    { "type": "switch", "x": 200, "y": 400 },
+    { "type": "door", "x": 300, "y": 400 },
 
-    { "type": "on_enter_msg_water", "x": 256, "y": 768 },
-    { "type": "on_enter_msg_mud", "x": 768, "y": 768 },
-    { "type": "on_enter_msg_metal", "x": 256, "y": 256 },
-    { "type": "on_enter_msg_fire", "x": 768, "y": 256 }
+    { "type": "on_enter_msg_water", "x": 128, "y": 384 },
+    { "type": "on_enter_msg_mud", "x": 384, "y": 384 },
+    { "type": "on_enter_msg_metal", "x": 128, "y": 128 },
+    { "type": "on_enter_msg_fire", "x": 384, "y": 128 }
   ]
 }
