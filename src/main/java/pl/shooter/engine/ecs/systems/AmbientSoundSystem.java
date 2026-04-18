@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Manages background ambiance based on terrain and trigger zones.
- * Updated to use resolved paths.
+ * Updated to use resolved paths and handle cleanup.
  */
 public class AmbientSoundSystem extends GameSystem {
     private final AudioService audioService;
@@ -35,7 +35,7 @@ public class AmbientSoundSystem extends GameSystem {
 
     private void handleTerrainChange(TerrainChangeEvent event) {
         stopAmbiance(getAmbianceForTile(event.oldTile));
-        startAmbiance(getAmbianceForTile(event.newTile), 0.5f);
+        startAmbiance(getAmbianceForTile(event.newTile), 0.5f, true);
     }
 
     private void handleTrigger(TriggerEvent event) {
@@ -43,14 +43,24 @@ public class AmbientSoundSystem extends GameSystem {
         switch (event.type) {
             case AMBIENT_SOUND:
                 if (event.state == TriggerEvent.State.ENTER) {
-                    startAmbiance(event.value, 0.7f);
+                    startAmbiance(event.value, event.volume, event.isLooping);
                 } else {
                     stopAmbiance(event.value);
                 }
                 break;
+            case STOP_AMBIENT:
+                if (event.state == TriggerEvent.State.ENTER) {
+                    stopAllAmbiance();
+                }
+                break;
             case MUSIC_CHANGE:
                 if (event.state == TriggerEvent.State.ENTER) {
-                    playMusic(event.value);
+                    playMusic(event.value, event.volume, event.isLooping);
+                }
+                break;
+            case STOP_MUSIC:
+                if (event.state == TriggerEvent.State.ENTER) {
+                    stopMusic();
                 }
                 break;
             case TRAP:
@@ -72,13 +82,21 @@ public class AmbientSoundSystem extends GameSystem {
         };
     }
 
-    private void startAmbiance(String path, float volume) {
+    private void startAmbiance(String path, float volume, boolean loop) {
         if (path == null) return;
         String resolved = assetService.resolvePath(path, "audio/ambience");
         if (activeLoops.containsKey(resolved)) return;
 
-        long id = audioService.playLoop(resolved, volume);
-        if (id != -1) activeLoops.put(resolved, id);
+        long id;
+        if (loop) {
+            id = audioService.playLoop(resolved, volume);
+        } else {
+            id = audioService.playSound(resolved, volume);
+        }
+        
+        if (id != -1 && loop) {
+            activeLoops.put(resolved, id);
+        }
     }
 
     private void stopAmbiance(String path) {
@@ -88,17 +106,41 @@ public class AmbientSoundSystem extends GameSystem {
         if (id != null) audioService.stopInstance(resolved, id);
     }
 
-    private void playMusic(String path) {
+    private void stopAllAmbiance() {
+        for (String path : activeLoops.keySet()) {
+            audioService.stopAllInstances(path);
+        }
+        activeLoops.clear();
+    }
+
+    private void playMusic(String path, float volume, boolean loop) {
         if (path == null) return;
         String resolved = assetService.resolvePath(path, "audio/music");
         if (resolved.equals(currentMusicPath)) return;
         
-        if (currentMusicPath != null && currentMusicId != -1) {
-            audioService.stopInstance(currentMusicPath, currentMusicId);
-        }
+        stopMusic();
 
         currentMusicPath = resolved;
-        currentMusicId = audioService.playLoop(resolved, 0.6f);
+        if (loop) {
+            currentMusicId = audioService.playLoop(resolved, volume);
+        } else {
+            currentMusicId = audioService.playSound(resolved, volume);
+        }
+    }
+
+    private void stopMusic() {
+        if (currentMusicPath != null) {
+            audioService.stopAllInstances(currentMusicPath);
+            currentMusicPath = null;
+            currentMusicId = -1;
+        }
+    }
+
+    @Override
+    public void dispose() {
+        Gdx.app.log("AmbientSoundSystem", "Disposing AmbientSoundSystem, stopping " + activeLoops.size() + " loops");
+        stopAllAmbiance();
+        stopMusic();
     }
 
     @Override public void update(float deltaTime) {}

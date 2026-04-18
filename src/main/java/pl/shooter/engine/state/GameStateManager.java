@@ -23,8 +23,20 @@ public class GameStateManager {
         }
     }
 
+    /**
+     * Replaces the top state with a new one.
+     */
     public void setState(GameState state) {
-        if (!states.isEmpty()) {
+        pop();
+        push(state);
+    }
+
+    /**
+     * Clears the entire stack and sets the new state as the only one.
+     * Essential for returning to main menu or starting a fresh game.
+     */
+    public void setAbsoluteState(GameState state) {
+        while (!states.isEmpty()) {
             states.pop().dispose();
         }
         push(state);

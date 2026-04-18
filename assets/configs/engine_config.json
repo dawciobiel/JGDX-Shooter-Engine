@@ -48,6 +48,7 @@
     "sounds": "audio/sfx",
     "music": "audio/music",
     "textures": "graphics/textures",
-    "shaders": "graphics/shaders"
+    "shaders": "graphics/shaders",
+    "mapFileName": "map.json"
   }
 }

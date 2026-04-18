@@ -33,6 +33,7 @@ public class PlayState extends GameState {
 
     public PlayState(GameStateManager gsm, String mapPath) {
         super(gsm);
+        Gdx.app.log("PlayState", "Constructor called for: " + mapPath);
         this.mapPath = mapPath;
         this.configService = new ConfigService();
         this.config = configService.getConfig();
@@ -40,7 +41,11 @@ public class PlayState extends GameState {
     }
 
     private void resetState() {
-        if (engine != null) dispose();
+        Gdx.app.log("PlayState", "Resetting state for map: " + mapPath);
+        if (engine != null || audioService != null) {
+            Gdx.app.log("PlayState", "Cleaning up previous resources in resetState()");
+            dispose();
+        }
 
         this.engine = new Engine();
         this.assetService = new AssetService(config);
@@ -187,10 +192,21 @@ public class PlayState extends GameState {
 
     @Override public void render() {}
     @Override public void resize(int width, int height) { if (engine != null) engine.resize(width, height); }
+    
     @Override public void dispose() {
-        if (engine != null) engine.dispose();
-        if (assetService != null) assetService.dispose();
-        if (audioService != null) audioService.dispose();
+        Gdx.app.log("PlayState", "Disposing PlayState for map: " + mapPath);
+        if (engine != null) {
+            engine.dispose();
+            engine = null;
+        }
+        if (assetService != null) {
+            assetService.dispose();
+            assetService = null;
+        }
+        if (audioService != null) {
+            audioService.dispose();
+            audioService = null;
+        }
 
         if (config != null && config.ui.useCustomCursor) {
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);

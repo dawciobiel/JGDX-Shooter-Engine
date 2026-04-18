@@ -13,6 +13,9 @@ import java.util.List;
  * It manages the lifecycle of systems, the entity manager, and the event bus.
  */
 public class Engine {
+    /** Global default for map files if not specified in config */
+    public static final String DEFAULT_MAP_FILE_NAME = "map.json";
+
     private final EntityManager entityManager;
     private final EventBus eventBus;
     private final List<GameSystem> systems;

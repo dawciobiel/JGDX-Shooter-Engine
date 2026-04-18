@@ -53,13 +53,39 @@ public class TriggerSystem extends GameSystem {
                         eventBus.publish(new MessageEvent(trigger.value, 3.0f));
                     }
                     
-                    eventBus.publish(new TriggerEvent(player, triggerEntity, TriggerEvent.State.ENTER, trigger));
+                    eventBus.publish(new TriggerEvent(
+                        player, 
+                        mapType(trigger.type), 
+                        trigger.value, 
+                        TriggerEvent.State.ENTER,
+                        trigger.isLooping,
+                        trigger.volume
+                    ));
                 } else if (!isInside && trigger.isPlayerInside) {
                     trigger.isPlayerInside = false;
-                    eventBus.publish(new TriggerEvent(player, triggerEntity, TriggerEvent.State.EXIT, trigger));
+                    eventBus.publish(new TriggerEvent(
+                        player, 
+                        mapType(trigger.type), 
+                        trigger.value, 
+                        TriggerEvent.State.EXIT,
+                        trigger.isLooping,
+                        trigger.volume
+                    ));
                 }
             }
         }
+    }
+
+    private TriggerEvent.Type mapType(TriggerComponent.TriggerType type) {
+        return switch (type) {
+            case AMBIENT_SOUND -> TriggerEvent.Type.AMBIENT_SOUND;
+            case STOP_AMBIENT -> TriggerEvent.Type.STOP_AMBIENT;
+            case MUSIC_CHANGE -> TriggerEvent.Type.MUSIC_CHANGE;
+            case STOP_MUSIC -> TriggerEvent.Type.STOP_MUSIC;
+            case TRAP -> TriggerEvent.Type.TRAP;
+            case MESSAGE -> TriggerEvent.Type.MESSAGE;
+            case ZONE_ENTER -> TriggerEvent.Type.TELEPORT;
+        };
     }
 
     private boolean checkCollision(TransformComponent t1, ColliderComponent c1, TransformComponent t2, ColliderComponent c2) {

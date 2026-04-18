@@ -7,6 +7,7 @@ import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
+import pl.shooter.engine.events.DeathEvent;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ScoreEvent;
 import pl.shooter.events.HitEvent;
@@ -97,6 +98,8 @@ public class DamageSystem extends GameSystem {
             return;
         }
 
+        eventBus.publish(new DeathEvent(victim));
+
         if (entityManager.hasComponent(victim, PlayerComponent.class)) {
             factory.createExplosion(x, y, Color.RED);
             health.isDead = true; // Mark player dead, but don't remove yet for death screen/fade
@@ -104,7 +107,7 @@ public class DamageSystem extends GameSystem {
             if (killedByPlayer) {
                 List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, ScoreComponent.class);
                 if (!players.isEmpty()) {
-                    ScoreComponent score = entityManager.getComponent(players.get(0), ScoreComponent.class);
+                    ScoreComponent score = entityManager.getComponent(players.getFirst(), ScoreComponent.class);
                     score.score += 100;
                     score.kills += 1;
                 }

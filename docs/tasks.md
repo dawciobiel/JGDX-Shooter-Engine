@@ -11,7 +11,7 @@
 - [x] **Relokacja `weapons.json`** (Przeniesienie pliku z `assets/config/` do folderów poszczególnych map oraz atomizacja konfiguracji broni)
 - [x] **Konfiguracja ścieżek w kodzie** (Usunięcie zahardkodowanych ścieżek z plików Java i przeniesienie ich do centralnej konfiguracji silnika)
 - [x] **Konwencja nazewnicza triggerów** (Usunięcie przedrostka `trigger_` i nadanie sensownych nazw plikom w `assets/maps/*/entities/triggers/`)
-- [ ] **Zatrzymywanie dźwięków po mapie** (Zatrzymanie odtwarzanych dźwięków/ambientów przy zakończeniu rozgrywki na mapie lub zmianie poziomu)
+- [x] **Zatrzymywanie dźwięków po mapie** (Zatrzymanie odtwarzanych dźwięków/ambientów przy zakończeniu rozgrywki na mapie lub zmianie poziomu)
 - [ ] **Aktualizacja dokumentacji `docs/`** (Odświeżenie struktury katalogów `assets/` oraz opisanie nowych mechanik silnika)
 
 ## Etap 10: Architektura map i jednostek na mapie (ZAKOŃCZONE)

@@ -89,5 +89,6 @@ public class GameConfig {
         public String music = "audio/music";
         public String textures = "graphics/textures";
         public String shaders = "graphics/shaders";
+        public String mapFileName = "map.json";
     }
 }

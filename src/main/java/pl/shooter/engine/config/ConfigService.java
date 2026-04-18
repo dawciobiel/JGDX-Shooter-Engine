@@ -57,7 +57,7 @@ public class ConfigService {
                     WeaponConfig.WeaponData data = mapper.readValue(file.read(), WeaponConfig.WeaponData.class);
                     String weaponName = file.nameWithoutExtension().toUpperCase();
                     fullConfig.weapons.put(weaponName, data);
-                    Gdx.app.log("ConfigService", "Loaded weapon: " + weaponName + " from " + file.path());
+                    // Silenced logging as requested
                 } catch (Exception e) {
                     Gdx.app.error("ConfigService", "Error loading weapon file: " + file.name(), e);
                 }

@@ -32,7 +32,7 @@ public class PauseState extends GameState {
         // Ensure system cursor is visible in pause menu
         Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
 
-        this.stage = new Stage(new FitViewport(800, 600));
+        this.stage = new Stage(new FitViewport(config.graphics.width, config.graphics.height));
         this.skin = createBasicSkin();
         Gdx.input.setInputProcessor(stage);
         initUI();
@@ -90,7 +90,8 @@ public class PauseState extends GameState {
         menuButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                gsm.setState(new MenuState(gsm));
+                // Clear entire stack (PauseState + PlayState)
+                gsm.setAbsoluteState(new MenuState(gsm));
             }
         });
         table.add(menuButton).width(200).height(50);

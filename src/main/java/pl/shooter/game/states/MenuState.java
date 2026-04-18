@@ -95,7 +95,9 @@ public class MenuState extends GameState {
             mapBtn.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    gsm.setState(new PlayState(gsm, mapPath + "/map.json"));
+                    // CRITICAL FIX: Clear entire stack to ensure ALL previous states are disposed.
+                    // This prevents ghost audio and race conditions in libGDX.
+                    gsm.setAbsoluteState(new PlayState(gsm, mapPath + "/" + config.paths.mapFileName));
                 }
             });
             mapTable.add(mapBtn).width(300).height(40).padBottom(5).row();
@@ -120,7 +122,7 @@ public class MenuState extends GameState {
         FileHandle mapsDir = Gdx.files.internal(config.paths.maps);
         if (mapsDir.exists() && mapsDir.isDirectory()) {
             for (FileHandle folder : mapsDir.list()) {
-                if (folder.isDirectory() && folder.child("map.json").exists()) {
+                if (folder.isDirectory() && folder.child(config.paths.mapFileName).exists()) {
                     mapFolders.add(folder.path());
                 }
             }

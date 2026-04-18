@@ -8,7 +8,9 @@ import pl.shooter.engine.ecs.Component;
 public class TriggerComponent implements Component {
     public enum TriggerType {
         AMBIENT_SOUND,
+        STOP_AMBIENT,
         MUSIC_CHANGE,
+        STOP_MUSIC,
         TRAP,
         MESSAGE,
         ZONE_ENTER
@@ -19,6 +21,10 @@ public class TriggerComponent implements Component {
     public boolean oneShot = false;
     public boolean activated = false;
     public boolean isPlayerInside = false;
+    
+    // Optional parameters for sound triggers
+    public boolean isLooping = true;
+    public float volume = 0.7f;
 
     // Default constructor for JSON deserialization
     public TriggerComponent() {}

@@ -32,6 +32,7 @@ public class SoundSystem extends GameSystem {
 
         eventBus.subscribe(BulletFiredEvent.class, this::handleBulletFired);
         eventBus.subscribe(HitEvent.class, this::handleHitSound);
+        eventBus.subscribe(DeathEvent.class, this::handleDeathSound);
         eventBus.subscribe(EmptyWeaponEvent.class, this::handleEmptyClick);
         eventBus.subscribe(PickupEvent.class, this::handlePickupSound);
         eventBus.subscribe(TauntEvent.class, event -> handleTaunt());
@@ -85,6 +86,15 @@ public class SoundSystem extends GameSystem {
             String soundName = sc.soundPaths.get(SoundComponent.Action.HIT);
             String resolved = assetService.resolvePath(soundName, "audio/sfx");
             audioService.playSound(resolved, 0.6f);
+        }
+    }
+
+    private void handleDeathSound(DeathEvent event) {
+        SoundComponent sc = entityManager.getComponent(event.victim, SoundComponent.class);
+        if (sc != null && sc.soundPaths.containsKey(SoundComponent.Action.DIE)) {
+            String soundName = sc.soundPaths.get(SoundComponent.Action.DIE);
+            String resolved = assetService.resolvePath(soundName, "audio/sfx");
+            audioService.playSound(resolved, 0.8f);
         }
     }
 
