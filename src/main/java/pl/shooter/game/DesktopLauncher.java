@@ -35,7 +35,7 @@ public class DesktopLauncher {
         
         try {
             // 1. Load defaults from file if it exists
-            File defaultFile = new File("assets/configs/default_config.json");
+            File defaultFile = new File("assets/configs/engine_config.json");
             if (defaultFile.exists()) {
                 config = mapper.readerForUpdating(config).readValue(defaultFile);
             }
