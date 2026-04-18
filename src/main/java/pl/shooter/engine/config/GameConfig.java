@@ -17,6 +17,7 @@ public class GameConfig {
     public EffectsConfig effects = new EffectsConfig();
     public GameplayConfig gameplay = new GameplayConfig();
     public UIConfig ui = new UIConfig();
+    public PathsConfig paths = new PathsConfig();
 
     public static class GraphicsConfig {
         public int width = 800;
@@ -69,5 +70,21 @@ public class GameConfig {
         public float cursorGreen = 1.0f;
         public float cursorBlue = 1.0f;
         public float cursorAlpha = 1.0f;
+    }
+
+    public static class PathsConfig {
+        public String maps = "assets/maps";
+        public String engineConfigs = "assets/configs";
+        public String coreAssets = "assets/core";
+        public String entities = "entities";
+        public String triggers = "entities/triggers";
+        public String enemies = "entities/enemies";
+        public String objects = "entities/objects";
+        public String player = "entities/player";
+        public String mapConfigs = "configs";
+        public String weapons = "configs/weapons";
+        public String sounds = "audio/sfx";
+        public String music = "audio/music";
+        public String textures = "graphics/textures";
     }
 }

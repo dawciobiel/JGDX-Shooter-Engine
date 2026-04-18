@@ -12,7 +12,6 @@ import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.config.WeaponConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
-import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.ecs.systems.*;
 import pl.shooter.engine.state.GameState;
@@ -44,9 +43,9 @@ public class PlayState extends GameState {
         if (engine != null) dispose();
 
         this.engine = new Engine();
-        this.assetService = new AssetService();
+        this.assetService = new AssetService(config);
         this.audioService = new AudioService();
-        EntityFactory entityFactory = new EntityFactory(engine.getEntityManager(), assetService);
+        EntityFactory entityFactory = new EntityFactory(engine.getEntityManager(), assetService, config);
         MapService mapService = new MapService(engine.getEntityManager(), entityFactory, assetService);
         this.isGameOver = false;
 
@@ -67,11 +66,11 @@ public class PlayState extends GameState {
 
         assetService.finishLoading();
 
-        audioService.loadSound(assetService.resolvePath("characters/soldier/hit.wav", "audio/sfx"));
-        audioService.loadSound(assetService.resolvePath("characters/soldier/death.wav", "audio/sfx"));
+        audioService.loadSound(assetService.resolvePath("characters/soldier/hit.wav", config.paths.sounds));
+        audioService.loadSound(assetService.resolvePath("characters/soldier/death.wav", config.paths.sounds));
 
         // Load map-specific weapon configuration
-        String mapFolder = mapPath.contains("/") ? mapPath.substring(0, mapPath.lastIndexOf('/')) : "assets/maps/default";
+        String mapFolder = mapPath.contains("/") ? mapPath.substring(0, mapPath.lastIndexOf('/')) : config.paths.maps + "/default";
         configService.loadWeaponConfigForMap(mapFolder);
         WeaponConfig weaponConfig = configService.getWeaponConfig();
 
@@ -125,7 +124,7 @@ public class PlayState extends GameState {
 
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
         if (!players.isEmpty()) {
-            Entity player = players.get(0);
+            Entity player = players.getFirst();
             engine.getEntityManager().addComponent(player, new LightComponent(400f, new Color(1, 1, 0.9f, 1f), 0.9f));
             
             InventoryComponent inv = engine.getEntityManager().getComponent(player, InventoryComponent.class);
@@ -180,7 +179,7 @@ public class PlayState extends GameState {
             return;
         }
         
-        HealthComponent health = engine.getEntityManager().getComponent(players.get(0), HealthComponent.class);
+        HealthComponent health = engine.getEntityManager().getComponent(players.getFirst(), HealthComponent.class);
         if (health != null && health.isDead) {
             isGameOver = true;
         }

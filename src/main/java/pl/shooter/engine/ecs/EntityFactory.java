@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import pl.shooter.engine.assets.AssetService;
+import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.config.JsonService;
 import pl.shooter.engine.ecs.components.*;
 
@@ -19,18 +20,21 @@ import java.util.Random;
 
 /**
  * Creates entities using shared ObjectMapper from JsonService.
+ * Uses GameConfig for path resolution.
  */
 public class EntityFactory {
     private final EntityManager entityManager;
     private final AssetService assetService;
+    private final GameConfig config;
     private final ObjectMapper objectMapper;
     private final Map<String, Class<? extends Component>> componentAliases = new HashMap<>();
     private final Random random = new Random();
     private String currentMapFolder = null;
 
-    public EntityFactory(EntityManager entityManager, AssetService assetService) {
+    public EntityFactory(EntityManager entityManager, AssetService assetService, GameConfig config) {
         this.entityManager = entityManager;
         this.assetService = assetService;
+        this.config = config != null ? config : new GameConfig();
         this.objectMapper = JsonService.getMapper(); // Use Singleton
         registerDefaultAliases();
     }
@@ -73,13 +77,19 @@ public class EntityFactory {
 
     private String resolveEntityPath(String type) {
         if (currentMapFolder != null) {
-            String[] subfolders = {"entities/triggers/", "entities/enemies/", "entities/objects/", "entities/player/", "entities/"};
+            String[] subfolders = {
+                config.paths.triggers + "/", 
+                config.paths.enemies + "/", 
+                config.paths.objects + "/", 
+                config.paths.player + "/", 
+                config.paths.entities + "/"
+            };
             for (String sub : subfolders) {
                 String p = currentMapFolder + "/" + sub + type + ".json";
                 if (Gdx.files.internal(p).exists()) return p;
             }
         }
-        return "assets/maps/default/entities/" + type + ".json";
+        return config.paths.maps + "/default/" + config.paths.entities + "/" + type + ".json";
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {
@@ -103,7 +113,7 @@ public class EntityFactory {
                         tc.x = x; tc.y = y;
                     }
                     if (component instanceof TextureComponent tex && assetService != null) {
-                        tex.assetPath = assetService.resolvePath(tex.assetPath, "graphics/textures");
+                        tex.assetPath = assetService.resolvePath(tex.assetPath, config.paths.textures);
                         assetService.loadTexture(tex.assetPath);
                     }
                     entityManager.addComponent(entity, component);
@@ -127,14 +137,17 @@ public class EntityFactory {
                     Map.Entry<String, JsonNode> entry = soundFields.next();
                     try {
                         SoundComponent.Action action = SoundComponent.Action.valueOf(entry.getKey());
-                        soundComp.addSound(action, assetService.resolvePath(entry.getValue().asText(), "audio/sfx"));
-                    } catch (Exception e) {}
+                        soundComp.addSound(action, assetService.resolvePath(entry.getValue().asText(), config.paths.sounds));
+                    } catch (Exception e) {
+                        Gdx.app.error("EntityFactory", "Error parsing sound action: " + entry.getKey());
+                    }
                 }
                 entityManager.addComponent(entity, soundComp);
             }
 
             return entity;
         } catch (Exception e) {
+            Gdx.app.error("EntityFactory", "Failed to load entity from JSON: " + internalPath, e);
             return null;
         }
     }
@@ -146,7 +159,7 @@ public class EntityFactory {
             try {
                 AnimationComponent.State state = AnimationComponent.State.valueOf(entry.getKey());
                 AnimationConfig.StateConfig sc = entry.getValue();
-                String resolvedPath = assetService.resolvePath(sc.path, "graphics/textures");
+                String resolvedPath = assetService.resolvePath(sc.path, this.config.paths.textures);
                 Animation<TextureRegion> anim;
                 if ("SHEET".equals(sc.type)) {
                     anim = createAnimationFromSheet(resolvedPath, sc.rows, sc.cols, sc.frameDuration);
@@ -154,7 +167,9 @@ public class EntityFactory {
                     anim = createAnimationFromFiles(resolvedPath, sc.count, sc.frameDuration);
                 }
                 if (anim != null) animComp.addAnimation(state, anim);
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                Gdx.app.error("EntityFactory", "Error setting up animation: " + entry.getKey());
+            }
         }
         entityManager.addComponent(entity, animComp);
     }
@@ -189,7 +204,7 @@ public class EntityFactory {
             entityManager.addComponent(p, new TransformComponent(x, y));
             float vx = (random.nextFloat() - 0.5f) * 200f, vy = (random.nextFloat() - 0.5f) * 200f;
             entityManager.addComponent(p, new VelocityComponent(vx, vy));
-            entityManager.addComponent(p, new RenderComponent(new Color(1, 0.5f, 0, 1.0f), 2f + random.nextFloat() * 4f, true));
+            entityManager.addComponent(p, new RenderComponent(color != null ? color : new Color(1, 0.5f, 0, 1.0f), 2f + random.nextFloat() * 4f, true));
             entityManager.addComponent(p, new ParticleComponent(1.5f, 2.0f));
         }
     }
@@ -204,21 +219,19 @@ public class EntityFactory {
         entityManager.addComponent(shell, new ParticleComponent(0.5f, 0.8f));
     }
 
-    public Entity createAmmoPickup(float x, float y, int amount) {
+    public void createAmmoPickup(float x, float y, int amount) {
         Entity pickup = entityManager.createEntity();
         entityManager.addComponent(pickup, new TransformComponent(x, y));
         entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
         entityManager.addComponent(pickup, new ColliderComponent(8f));
         entityManager.addComponent(pickup, new AmmoPickupComponent(amount));
-        return pickup;
     }
 
-    public Entity createHealthPickup(float x, float y, float amount) {
+    public void createHealthPickup(float x, float y, float amount) {
         Entity pickup = entityManager.createEntity();
         entityManager.addComponent(pickup, new TransformComponent(x, y));
         entityManager.addComponent(pickup, new RenderComponent(Color.BLUE, 8f, true));
         entityManager.addComponent(pickup, new ColliderComponent(8f));
         entityManager.addComponent(pickup, new HealthPickupComponent(amount));
-        return pickup;
     }
 }

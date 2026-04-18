@@ -3,17 +3,21 @@ package pl.shooter.engine.assets;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.Texture;
+import pl.shooter.engine.config.GameConfig;
 
 /**
  * Strict Asset Resolver. 
  * Normalizes all paths by stripping legacy prefixes and prioritizing local map data.
+ * Uses GameConfig for path resolution.
  */
 public class AssetService {
     private final AssetManager manager;
+    private final GameConfig config;
     private String currentMapFolder = null;
 
-    public AssetService() {
+    public AssetService(GameConfig config) {
         this.manager = new AssetManager();
+        this.config = config != null ? config : new GameConfig();
     }
 
     public void setCurrentMapFolder(String folderPath) {
@@ -21,7 +25,7 @@ public class AssetService {
     }
 
     public void loadTexture(String path) {
-        String resolvedPath = resolvePath(path, "graphics/textures");
+        String resolvedPath = resolvePath(path, config.paths.textures);
         if (resolvedPath != null && !manager.isLoaded(resolvedPath)) {
             manager.load(resolvedPath, Texture.class);
         }
@@ -31,8 +35,9 @@ public class AssetService {
         if (originalPath == null || originalPath.isEmpty()) return null;
         
         // 1. STRIP EVERYTHING EXCEPT THE REAL FILENAME/SUBPATH
-        // Remove "assets/shared/", "assets/", and the subfolder if it's already there
-        String cleanPath = originalPath.replace("assets/core/", "").replace("assets/", "");
+        String coreAssetsPrefix = config.paths.coreAssets + "/";
+        String cleanPath = originalPath.replace(coreAssetsPrefix, "").replace("assets/", "");
+        
         if (subfolder != null && !subfolder.isEmpty()) {
             if (cleanPath.startsWith(subfolder + "/")) {
                 cleanPath = cleanPath.substring(subfolder.length() + 1);
@@ -41,7 +46,8 @@ public class AssetService {
 
         // 2. TRY MAP FOLDER (Priority)
         if (currentMapFolder != null) {
-            String mapPath = currentMapFolder + "/" + (subfolder.isEmpty() ? "" : subfolder + "/") + cleanPath;
+            String subPath = (subfolder == null || subfolder.isEmpty()) ? "" : subfolder + "/";
+            String mapPath = currentMapFolder + "/" + subPath + cleanPath;
             if (exists(mapPath)) return mapPath;
             
             String mapDirect = currentMapFolder + "/" + cleanPath;
@@ -49,10 +55,11 @@ public class AssetService {
         }
 
         // 3. TRY CORE FOLDER
-        String corePath = "assets/core/" + (subfolder.isEmpty() ? "" : subfolder + "/") + cleanPath;
+        String subPath = (subfolder == null || subfolder.isEmpty()) ? "" : subfolder + "/";
+        String corePath = config.paths.coreAssets + "/" + subPath + cleanPath;
         if (exists(corePath)) return corePath;
         
-        String coreDirect = "assets/core/" + cleanPath;
+        String coreDirect = config.paths.coreAssets + "/" + cleanPath;
         if (exists(coreDirect)) return coreDirect;
 
         // 4. ABSOLUTE FALLBACK
@@ -77,7 +84,7 @@ public class AssetService {
     public Texture getTexture(String path) {
         if (path == null) return null;
         if (manager.isLoaded(path)) return manager.get(path, Texture.class);
-        String resolved = resolvePath(path, "graphics/textures");
+        String resolved = resolvePath(path, config.paths.textures);
         if (manager.isLoaded(resolved)) return manager.get(resolved, Texture.class);
         return null;
     }

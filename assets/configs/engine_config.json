@@ -31,5 +31,20 @@
   },
   "effects": {
     "showBloodDecals": true
+  },
+  "paths": {
+    "maps": "assets/maps",
+    "engineConfigs": "assets/configs",
+    "coreAssets": "assets/core",
+    "entities": "entities",
+    "triggers": "entities/triggers",
+    "enemies": "entities/enemies",
+    "objects": "entities/objects",
+    "player": "entities/player",
+    "mapConfigs": "configs",
+    "weapons": "configs/weapons",
+    "sounds": "audio/sfx",
+    "music": "audio/music",
+    "textures": "graphics/textures"
   }
 }
