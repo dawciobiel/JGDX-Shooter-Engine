@@ -1,21 +1,26 @@
 {
   "type": "Zombie",
-  "names": ["Szwendacz", "Gryzoń"],
+  "names": ["Szwendacz", "Truposz"],
   "components": {
     "Transform": { "x": 0, "y": 0 },
     "Render": { "color": { "r": 0.7, "g": 1, "b": 0.7, "a": 1 }, "radius": 24 },
-    "Health": { "hp": 100, "maxHp": 100, "hasBlood": true },
+    "Health": { "hp": 100, "maxHp": 100, "hasBlood": true, "corpseDuration": 5.0 },
     "Collider": { "radius": 20 },
-    "AI": { "behavior": "CHASE", "speed": 75.0 },
+    "AI": { "behavior": "CHASE", "detectRange": 1200, "speed": 75.0 },
     "Velocity": { "vx": 0, "vy": 0 },
     "Weapon": { "type": "KNIFE", "fireRate": 1.0, "hasInfiniteAmmo": true }
   },
   "animations": {
     "width": 64.0, "height": 64.0,
     "states": {
-      "IDLE": { "type": "FILES", "path": "zombies/skeleton/skeleton-idle_", "count": 16, "frameDuration": 0.1 },
-      "WALK": { "type": "FILES", "path": "zombies/skeleton/skeleton-move_", "count": 16, "frameDuration": 0.1 },
-      "SHOOT": { "type": "FILES", "path": "zombies/skeleton/skeleton-attack_", "count": 8, "frameDuration": 0.15 }
+      "IDLE": { "type": "FILES", "path": "characters/zombies/skeleton/skeleton-idle_", "count": 16, "frameDuration": 0.1 },
+      "WALK": { "type": "FILES", "path": "characters/zombies/skeleton/skeleton-move_", "count": 16, "frameDuration": 0.1 },
+      "SHOOT": { "type": "FILES", "path": "characters/zombies/skeleton/skeleton-attack_", "count": 8, "frameDuration": 0.15 }
     }
+  },
+  "sounds": {
+    "SHOOT": "characters/zombies/skeleton/zombie_attack.wav",
+    "HIT": "characters/zombies/skeleton/zombie_hit.wav",
+    "DIE": "characters/zombies/skeleton/death.wav"
   }
 }

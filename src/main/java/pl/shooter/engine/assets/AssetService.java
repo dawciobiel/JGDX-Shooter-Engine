@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 
 /**
  * Strict Asset Resolver. 
- * Optimized to handle both short and absolute paths without corruption.
+ * Normalizes all paths by stripping legacy prefixes and prioritizing local map data.
  */
 public class AssetService {
     private final AssetManager manager;
@@ -21,7 +21,6 @@ public class AssetService {
     }
 
     public void loadTexture(String path) {
-        if (path == null) return;
         String resolvedPath = resolvePath(path, "graphics/textures");
         if (resolvedPath != null && !manager.isLoaded(resolvedPath)) {
             manager.load(resolvedPath, Texture.class);
@@ -31,29 +30,33 @@ public class AssetService {
     public String resolvePath(String originalPath, String subfolder) {
         if (originalPath == null || originalPath.isEmpty()) return null;
         
-        // 1. If it's already a full valid path that EXISTS, return it immediately
-        if (originalPath.startsWith("assets/") && Gdx.files.internal(originalPath).exists()) {
-            return originalPath;
+        // 1. STRIP EVERYTHING EXCEPT THE REAL FILENAME/SUBPATH
+        // Remove "assets/shared/", "assets/", and the subfolder if it's already there
+        String cleanPath = originalPath.replace("assets/core/", "").replace("assets/", "");
+        if (subfolder != null && !subfolder.isEmpty()) {
+            if (cleanPath.startsWith(subfolder + "/")) {
+                cleanPath = cleanPath.substring(subfolder.length() + 1);
+            }
         }
 
-        // 2. Cleanup: remove legacy/redundant prefixes for search
-        String cleanPath = originalPath.replace("assets/shared/", "").replace("assets/", "");
-
-        // 3. Try LOCAL MAP FOLDER (Priority)
+        // 2. TRY MAP FOLDER (Priority)
         if (currentMapFolder != null) {
-            String mapPath = currentMapFolder + "/" + subfolder + "/" + cleanPath;
+            String mapPath = currentMapFolder + "/" + (subfolder.isEmpty() ? "" : subfolder + "/") + cleanPath;
             if (exists(mapPath)) return mapPath;
             
             String mapDirect = currentMapFolder + "/" + cleanPath;
             if (exists(mapDirect)) return mapDirect;
         }
 
-        // 4. Try CORE FOLDER (Fallback)
-        String corePath = "assets/core/" + subfolder + "/" + cleanPath;
+        // 3. TRY CORE FOLDER
+        String corePath = "assets/core/" + (subfolder.isEmpty() ? "" : subfolder + "/") + cleanPath;
         if (exists(corePath)) return corePath;
         
         String coreDirect = "assets/core/" + cleanPath;
         if (exists(coreDirect)) return coreDirect;
+
+        // 4. ABSOLUTE FALLBACK
+        if (Gdx.files.internal(originalPath).exists()) return originalPath;
 
         return originalPath;
     }
@@ -67,24 +70,15 @@ public class AssetService {
         try {
             manager.finishLoading();
         } catch (Exception e) {
-            Gdx.app.error("AssetService", "Loading failed: " + e.getMessage());
+            Gdx.app.error("ResourceManager", "Loading failed: " + e.getMessage());
         }
     }
 
     public Texture getTexture(String path) {
         if (path == null) return null;
-        
-        // Try direct first (in case it's already a full resolved path)
         if (manager.isLoaded(path)) return manager.get(path, Texture.class);
-        
-        // Try resolving
         String resolved = resolvePath(path, "graphics/textures");
-        if (resolved != null && manager.isLoaded(resolved)) {
-            return manager.get(resolved, Texture.class);
-        }
-        
-        // If not loaded yet, queue it for next time
-        loadTexture(path);
+        if (manager.isLoaded(resolved)) return manager.get(resolved, Texture.class);
         return null;
     }
 

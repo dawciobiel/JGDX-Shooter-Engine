@@ -13,9 +13,9 @@
   "animations": {
     "width": 64.0, "height": 64.0,
     "states": {
-      "IDLE": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-walk.png", "rows": 1, "cols": 1, "frameDuration": 0.1 },
-      "WALK": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-walk.png", "rows": 1, "cols": 1, "frameDuration": 0.1 },
-      "SHOOT": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-shoot.png", "rows": 1, "cols": 1, "frameDuration": 0.1 }
+      "IDLE": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-walk.png", "rows": 1, "cols": 12, "frameDuration": 0.1 },
+      "WALK": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-walk.png", "rows": 1, "cols": 12, "frameDuration": 0.1 },
+      "SHOOT": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-shoot.png", "rows": 1, "cols": 8, "frameDuration": 0.1 }
     }
   }
 }

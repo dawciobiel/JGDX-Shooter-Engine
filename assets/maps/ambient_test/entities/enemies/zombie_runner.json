@@ -1,11 +1,12 @@
 {
   "type": "ZombieRunner",
+  "names": ["Szybki Lopez", "Xenomorph"],
   "components": {
     "Transform": { "x": 0, "y": 0 },
-    "Render": { "color": { "r": 1, "g": 0.5, "b": 0, "a": 1 }, "radius": 16 },
+    "Render": { "color": { "r": 1, "g": 0.6, "b": 0.2, "a": 1 }, "radius": 16 },
     "Health": { "hp": 30, "maxHp": 30 },
     "Collider": { "radius": 10 },
-    "AI": { "behavior": "CHASE", "speed": 100.0 },
+    "AI": { "behavior": "CHASE", "detectRange": 1500, "speed": 100.0 },
     "Velocity": { "vx": 0, "vy": 0 },
     "Weapon": { "type": "KNIFE", "fireRate": 0.8, "hasInfiniteAmmo": true }
   },
@@ -15,5 +16,10 @@
       "IDLE": { "type": "FILES", "path": "zombies/skeleton/skeleton-idle_", "count": 16, "frameDuration": 0.03 },
       "WALK": { "type": "FILES", "path": "zombies/skeleton/skeleton-move_", "count": 16, "frameDuration": 0.03 }
     }
+  },
+  "sounds": {
+    "SHOOT": "zombies/skeleton/zombie_attack.wav",
+    "HIT": "zombies/skeleton/zombie_hit.wav",
+    "DIE": "zombies/skeleton/death.wav"
   }
 }

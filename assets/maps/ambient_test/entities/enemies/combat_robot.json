@@ -1,10 +1,10 @@
 {
   "type": "CombatRobot",
-  "names": ["Unit-01", "Steel-Guard", "Mech-A"],
+  "names": ["Unit-01", "Mech-A"],
   "components": {
     "Transform": { "x": 0, "y": 0 },
     "Render": { "color": { "r": 0.8, "g": 0.8, "b": 1, "a": 1 }, "radius": 24, "isCircle": false },
-    "Health": { "hp": 300, "maxHp": 300, "hasBlood": false, "corpseDuration": 10.0 },
+    "Health": { "hp": 300, "maxHp": 300, "hasBlood": false },
     "Collider": { "radius": 18 },
     "AI": { "behavior": "CHASE", "detectRange": 1500, "speed": 60.0 },
     "Velocity": { "vx": 0, "vy": 0 },
@@ -13,9 +13,9 @@
   "animations": {
     "width": 64.0, "height": 64.0,
     "states": {
-      "IDLE": { "type": "SHEET", "path": "combat_robot/combat-robot-walk.png", "rows": 1, "cols": 1, "frameDuration": 0.1 },
-      "WALK": { "type": "SHEET", "path": "combat_robot/combat-robot-walk.png", "rows": 1, "cols": 1, "frameDuration": 0.1 },
-      "SHOOT": { "type": "SHEET", "path": "combat_robot/combat-robot-shoot.png", "rows": 1, "cols": 1, "frameDuration": 0.1 }
+      "IDLE": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-walk.png", "rows": 1, "cols": 12, "frameDuration": 0.1 },
+      "WALK": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-walk.png", "rows": 1, "cols": 12, "frameDuration": 0.1 },
+      "SHOOT": { "type": "SHEET", "path": "characters/combat_robot/combat-robot-shoot.png", "rows": 1, "cols": 8, "frameDuration": 0.1 }
     }
   }
 }

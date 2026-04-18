@@ -9,7 +9,7 @@ import pl.shooter.engine.world.GameMap;
 import java.util.List;
 
 /**
- * Handles physical interaction (pushing) between entities.
+ * Handles physical interaction (pushing) between all active units and pushable objects.
  */
 public class PushingSystem extends GameSystem {
     private final GameMap map;
@@ -24,20 +24,24 @@ public class PushingSystem extends GameSystem {
         List<Entity> pushables = entityManager.getEntitiesWithComponents(
                 PushableComponent.class, TransformComponent.class, ColliderComponent.class, VelocityComponent.class);
         
-        List<Entity> players = entityManager.getEntitiesWithComponents(
-                PlayerComponent.class, TransformComponent.class, ColliderComponent.class);
+        // All units that can move (Player + Enemies)
+        List<Entity> pushers = entityManager.getEntitiesWithComponents(
+                TransformComponent.class, VelocityComponent.class, ColliderComponent.class);
 
-        if (pushables.isEmpty() || players.isEmpty()) return;
+        if (pushables.isEmpty() || pushers.isEmpty()) return;
 
-        for (Entity player : players) {
-            TransformComponent pt = entityManager.getComponent(player, TransformComponent.class);
-            ColliderComponent pc = entityManager.getComponent(player, ColliderComponent.class);
+        for (Entity pusher : pushers) {
+            TransformComponent pt = entityManager.getComponent(pusher, TransformComponent.class);
+            ColliderComponent pc = entityManager.getComponent(pusher, ColliderComponent.class);
+            VelocityComponent pv = entityManager.getComponent(pusher, VelocityComponent.class);
 
             for (Entity pushable : pushables) {
+                if (pusher.getId() == pushable.getId()) continue;
+
                 PushableComponent pComp = entityManager.getComponent(pushable, PushableComponent.class);
                 
-                // Only player can push if playerOnly is true
-                if (pComp.playerOnly && !entityManager.hasComponent(player, PlayerComponent.class)) continue;
+                // Restriction check
+                if (pComp.playerOnly && !entityManager.hasComponent(pusher, PlayerComponent.class)) continue;
 
                 TransformComponent tt = entityManager.getComponent(pushable, TransformComponent.class);
                 ColliderComponent tc = entityManager.getComponent(pushable, ColliderComponent.class);
@@ -45,41 +49,39 @@ public class PushingSystem extends GameSystem {
 
                 float dx = tt.x - pt.x;
                 float dy = tt.y - pt.y;
-                float distance = (float) Math.sqrt(dx * dx + dy * dy);
-                float minDistance = pc.radius + tc.radius;
+                float minDist = pc.radius + tc.radius;
+                float distSq = dx * dx + dy * dy;
 
-                if (distance < minDistance) {
-                    if (distance < 0.1f) {
-                        dx = 0.1f;
-                        distance = 0.1f;
-                    }
+                if (distSq < minDist * minDist) {
+                    float distance = (float) Math.sqrt(distSq);
+                    if (distance < 0.1f) { dx = 0.1f; distance = 0.1f; }
 
                     float nx = dx / distance;
                     float ny = dy / distance;
 
-                    // SNAP TO AXES logic for crates
+                    // SNAP TO AXES (logic for crates)
                     if (pComp.snapToAxes) {
-                        if (Math.abs(nx) > Math.abs(ny)) {
-                            ny = 0;
-                            nx = Math.signum(nx);
-                        } else {
-                            nx = 0;
-                            ny = Math.signum(ny);
-                        }
+                        if (Math.abs(nx) > Math.abs(ny)) { ny = 0; nx = Math.signum(nx); }
+                        else { nx = 0; ny = Math.signum(ny); }
                     }
 
-                    float pushForce = (350f / pComp.mass);
+                    // Push force depends on mass and pusher velocity/strength
+                    float pusherSpeed = (float) Math.sqrt(pv.vx * pv.vx + pv.vy * pv.vy);
+                    float baseForce = (pusherSpeed > 10) ? 350f : 150f;
+                    float pushForce = baseForce / pComp.mass;
+                    
                     tv.vx = nx * pushForce;
                     tv.vy = ny * pushForce;
                     
-                    float overlap = minDistance - distance;
+                    // Separation (prevent overlap)
+                    float overlap = minDist - distance;
                     tt.x += nx * overlap;
                     tt.y += ny * overlap;
                 }
             }
         }
 
-        // Apply friction
+        // Apply friction to all pushable objects
         for (Entity pushable : pushables) {
             VelocityComponent tv = entityManager.getComponent(pushable, VelocityComponent.class);
             PushableComponent pComp = entityManager.getComponent(pushable, PushableComponent.class);
@@ -90,8 +92,8 @@ public class PushingSystem extends GameSystem {
             tv.vx *= frictionFactor;
             tv.vy *= frictionFactor;
 
-            if (Math.abs(tv.vx) < 5f) tv.vx = 0;
-            if (Math.abs(tv.vy) < 5f) tv.vy = 0;
+            if (Math.abs(tv.vx) < 2f) tv.vx = 0;
+            if (Math.abs(tv.vy) < 2f) tv.vy = 0;
         }
     }
 }
