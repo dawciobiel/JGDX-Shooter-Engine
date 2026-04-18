@@ -11,7 +11,7 @@ import java.io.File;
  * Uses shared ObjectMapper from JsonService.
  */
 public class ConfigService {
-    private static final String DEFAULT_CONFIG_PATH = "assets/config/default_config.json";
+    private static final String DEFAULT_CONFIG_PATH = "assets/configs/default_config.json";
     private static final String USER_CONFIG_PATH = "user_config.json";
     private final ObjectMapper mapper;
     private GameConfig cachedConfig;
