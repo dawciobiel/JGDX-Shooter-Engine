@@ -2,6 +2,7 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
+import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
@@ -20,11 +21,13 @@ import java.util.List;
 public class DamageSystem extends GameSystem {
     private final EntityFactory factory;
     private final EventBus eventBus;
+    private final GameConfig config;
 
-    public DamageSystem(EntityManager entityManager, EventBus eventBus, EntityFactory factory) {
+    public DamageSystem(EntityManager entityManager, EventBus eventBus, EntityFactory factory, GameConfig config) {
         super(entityManager);
         this.eventBus = eventBus;
         this.factory = factory;
+        this.config = config;
         eventBus.subscribe(HitEvent.class, this::handleHit);
     }
 
@@ -48,12 +51,16 @@ public class DamageSystem extends GameSystem {
         HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
         
         // Don't hit things that are already dead
-        if (health != null && health.isDead) return;
+        if (health == null || health.isDead) return;
+
+        boolean isVictimPlayer = entityManager.hasComponent(victim, PlayerComponent.class);
+        
+        // DEBUG: Invincibility
+        if (isVictimPlayer && config.debug.invinciblePlayer) return;
 
         int attackerId = event.attackerId;
         int damage = event.damage;
 
-        boolean isVictimPlayer = entityManager.hasComponent(victim, PlayerComponent.class);
         boolean isVictimDestructible = entityManager.hasComponent(victim, DestructibleComponent.class);
         
         Entity attacker = entityManager.getEntityById(attackerId);
@@ -71,7 +78,7 @@ public class DamageSystem extends GameSystem {
 
         TransformComponent trans = entityManager.getComponent(victim, TransformComponent.class);
 
-        if (health != null && trans != null) {
+        if (trans != null) {
             health.hp -= damage;
             
             // Effects of hit

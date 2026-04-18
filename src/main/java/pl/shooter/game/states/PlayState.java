@@ -97,7 +97,7 @@ public class PlayState extends GameState {
 
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
         uiSystem.setShowFps(config.debug.showFps);
-        uiSystem.init(engine.getEventBus());
+        uiSystem.init(engine);
 
         AISystem aiSystem = new AISystem(engine.getEntityManager(), engine.getEventBus());
         aiSystem.setMap(map);
@@ -106,7 +106,7 @@ public class PlayState extends GameState {
         engine.addSystem(new PathfindingSystem(engine.getEntityManager(), map, engine.getEventBus())); 
         engine.addSystem(aiSystem);
         engine.addSystem(new SteeringSystem(engine.getEntityManager())); 
-        engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, configService, map));
+        engine.addSystem(new CombatSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, configService, map, config));
         engine.addSystem(new ProjectileSystem(engine.getEntityManager()));
         engine.addSystem(new ParticleUpdateSystem(engine.getEntityManager()));
         engine.addSystem(new PushingSystem(engine.getEntityManager(), map));
@@ -115,7 +115,7 @@ public class PlayState extends GameState {
         engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new TriggerSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
-        engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
+        engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, config));
         engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService, assetService));
         engine.addSystem(new AmbientSoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService, assetService));
         engine.addSystem(new MultiKillSystem(engine.getEntityManager(), engine.getEventBus()));

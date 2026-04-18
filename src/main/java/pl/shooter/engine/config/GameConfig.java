@@ -40,7 +40,9 @@ public class GameConfig {
         public boolean showHitboxes = false;
         public boolean showFps = true;
         public boolean showPaths = false;
+        public boolean showProfiler = false;
         public boolean invinciblePlayer = false;
+        public boolean infiniteAmmo = false;
     }
 
     public static class InputConfig {
@@ -60,6 +62,7 @@ public class GameConfig {
         public boolean showUnitNames = true;
         public int multiKillThreshold = 3;
         public float multiKillWindow = 3.0f;
+        public int maxGlobalEntities = 100;
     }
 
     public static class UIConfig {
@@ -77,7 +80,6 @@ public class GameConfig {
         public String maps = "assets/maps";
         public String engineConfigs = "assets/configs";
         public String coreAssets = "assets/core";
-        public String sharedAssets = "assets/shared";
         public String entities = "entities";
         public String triggers = "entities/triggers";
         public String enemies = "entities/enemies";

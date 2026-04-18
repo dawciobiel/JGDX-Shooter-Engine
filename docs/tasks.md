@@ -6,7 +6,7 @@
 - [x] **Izolacja zasobów Map (Asset Isolation)** (Każda mapa jest niezależnym kontenerem zasobów)
 - [ ] **Zarządzanie pamięcią** (Analiza wycieków, optymalizacja SpriteBatch i ShapeRenderer)
 - [ ] **Dostrajanie fizyki i kolizji** (Przyjrzeć się kolizjom wrogów z obiektami przesuwalnymi jak beczki/skrzynie pod kątem stabilności)
-- [ ] **Profiler Wydajności** (Analiza czasu trwania update() poszczególnych systemów)
+- [x] **Profiler Wydajności** (Analiza czasu trwania update() poszczególnych systemów)
 - [ ] **Usprawnienie ładowania zasobów** (Splash Screen i pasek postępu)
 - [x] **Relokacja `weapons.json`** (Przeniesienie pliku z `assets/config/` do folderów poszczególnych map oraz atomizacja konfiguracji broni)
 - [x] **Konfiguracja ścieżek w kodzie** (Usunięcie zahardkodowanych ścieżek z plików Java i przeniesienie ich do centralnej konfiguracji silnika)

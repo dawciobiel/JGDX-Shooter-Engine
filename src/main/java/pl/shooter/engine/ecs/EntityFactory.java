@@ -68,6 +68,10 @@ public class EntityFactory {
 
     public Entity loadEntity(String type, float x, float y) {
         String path = resolveEntityPath(type);
+        if (path == null) {
+            Gdx.app.error("EntityFactory", "COULD NOT RESOLVE ENTITY PATH for: " + type);
+            return null;
+        }
         Entity entity = loadFromJson(path, x, y);
         if (entity != null && x <= -999) {
             entityManager.removeEntity(entity);
@@ -76,20 +80,33 @@ public class EntityFactory {
     }
 
     private String resolveEntityPath(String type) {
+        String[] possibleSubfolders = {
+            config.paths.enemies + "/",
+            config.paths.triggers + "/",
+            config.paths.objects + "/",
+            config.paths.player + "/",
+            config.paths.entities + "/"
+        };
+
+        // 1. TRY CORE ASSETS FIRST (As requested)
+        for (String sub : possibleSubfolders) {
+            String p = config.paths.coreAssets + "/" + sub + type + ".json";
+            if (Gdx.files.internal(p).exists()) return p;
+        }
+
+        // 2. TRY MAP FOLDER
         if (currentMapFolder != null) {
-            String[] subfolders = {
-                config.paths.triggers + "/", 
-                config.paths.enemies + "/", 
-                config.paths.objects + "/", 
-                config.paths.player + "/", 
-                config.paths.entities + "/"
-            };
-            for (String sub : subfolders) {
+            for (String sub : possibleSubfolders) {
                 String p = currentMapFolder + "/" + sub + type + ".json";
                 if (Gdx.files.internal(p).exists()) return p;
             }
         }
-        return config.paths.maps + "/default/" + config.paths.entities + "/" + type + ".json";
+
+        // 3. ABSOLUTE FALLBACK
+        String fallback = config.paths.maps + "/default/" + config.paths.entities + "/" + type + ".json";
+        if (Gdx.files.internal(fallback).exists()) return fallback;
+
+        return null;
     }
 
     public Entity loadFromJson(String internalPath, float x, float y) {

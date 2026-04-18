@@ -16,7 +16,6 @@ import java.util.List;
 
 /**
  * Periodically spawns new enemies around the player and handles waves.
- * Supports different enemy types (Zombie, Runner) based on the current wave.
  */
 public class WaveSystem extends GameSystem {
     private final EntityFactory entityFactory;
@@ -41,7 +40,7 @@ public class WaveSystem extends GameSystem {
         
         ScoreComponent score = entityManager.getComponent(players.getFirst(), ScoreComponent.class);
 
-        // Wave increase logic: Advance wave every 5 spawns
+        // Advance wave every 5 spawns
         if (spawnedCount >= 5) {
             score.wave++;
             spawnedCount = 0;
@@ -52,8 +51,13 @@ public class WaveSystem extends GameSystem {
             spawnTimer = 0;
             
             int currentEnemies = entityManager.getEntitiesWithComponents(AIComponent.class).size();
+            
+            // Hard limit from config and scaling wave limit
             int maxEnemiesBase = 8;
-            if (currentEnemies < (maxEnemiesBase + score.wave * 2)) {
+            int waveLimit = maxEnemiesBase + score.wave * 2;
+            int globalLimit = config.gameplay.maxGlobalEntities;
+
+            if (currentEnemies < Math.min(waveLimit, globalLimit)) {
                 spawnEnemyNearPlayer();
                 spawnedCount++;
             }
@@ -74,18 +78,11 @@ public class WaveSystem extends GameSystem {
             spawnX = playerTrans.x + MathUtils.cosDeg(angle) * distance;
             spawnY = playerTrans.y + MathUtils.sinDeg(angle) * distance;
             attempts++;
-        } while (!map.isWalkable(spawnX, spawnY) && attempts < 10);
+        } while (!map.isWalkable(spawnX, spawnY) && attempts < 20);
 
-        if (attempts < 10) {
-            String enemyBase = config.paths.sharedAssets + "/" + config.paths.enemies + "/";
-            String enemyJson;
-            if (MathUtils.randomBoolean()) {
-                enemyJson = enemyBase + "zombie_runner.json";
-            } else {
-                enemyJson = enemyBase + "zombie_fat.json";
-            }
-            
-            entityFactory.loadFromJson(enemyJson, spawnX, spawnY);
+        if (attempts < 20) {
+            String enemyType = MathUtils.randomBoolean() ? "zombie_runner" : "zombie_fat";
+            entityFactory.loadEntity(enemyType, spawnX, spawnY);
         }
     }
 }

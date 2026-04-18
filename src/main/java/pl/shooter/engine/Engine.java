@@ -6,7 +6,9 @@ import pl.shooter.engine.events.EventBus;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The main orchestrator of the game engine.
@@ -19,6 +21,9 @@ public class Engine {
     private final EntityManager entityManager;
     private final EventBus eventBus;
     private final List<GameSystem> systems;
+    
+    // Performance profiling
+    private final Map<String, Long> systemExecutionTimes = new LinkedHashMap<>();
 
     public Engine() {
         this.entityManager = new EntityManager();
@@ -32,6 +37,7 @@ public class Engine {
      */
     public void addSystem(GameSystem system) {
         systems.add(system);
+        systemExecutionTimes.put(system.getClass().getSimpleName(), 0L);
     }
 
     /**
@@ -40,8 +46,20 @@ public class Engine {
      */
     public void update(float deltaTime) {
         for (GameSystem system : systems) {
+            long startTime = System.nanoTime();
             system.update(deltaTime);
+            long endTime = System.nanoTime();
+            
+            systemExecutionTimes.put(system.getClass().getSimpleName(), endTime - startTime);
         }
+    }
+
+    /**
+     * Returns performance data for all systems.
+     * Key: System Name, Value: Last execution time in nanoseconds.
+     */
+    public Map<String, Long> getPerformanceData() {
+        return Collections.unmodifiableMap(systemExecutionTimes);
     }
 
     /**

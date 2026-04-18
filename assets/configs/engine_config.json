@@ -17,12 +17,16 @@
   "gameplay": {
     "showUnitNames": true,
     "multiKillThreshold": 3,
-    "multiKillWindow": 3.0
+    "multiKillWindow": 3.0,
+    "maxGlobalEntities": 100
   },
   "debug": {
     "showHitboxes": false,
     "showFps": true,
-    "invinciblePlayer": false
+    "showPaths": false,
+    "showProfiler": false,
+    "invinciblePlayer": false,
+    "infiniteAmmo": false
   },
   "controls": {
     "moveUpKey": 51,
@@ -37,7 +41,6 @@
     "maps": "assets/maps",
     "engineConfigs": "assets/configs",
     "coreAssets": "assets/core",
-    "sharedAssets": "assets/shared",
     "entities": "entities",
     "triggers": "entities/triggers",
     "enemies": "entities/enemies",

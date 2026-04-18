@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import pl.shooter.engine.config.ConfigService;
+import pl.shooter.engine.config.GameConfig;
 import pl.shooter.engine.config.WeaponConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
@@ -24,14 +25,16 @@ public class CombatSystem extends GameSystem {
     private final EntityFactory entityFactory;
     private final ConfigService configService;
     private final GameMap map;
+    private final GameConfig config;
     private float totalTime = 0;
 
-    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory, ConfigService configService, GameMap map) {
+    public CombatSystem(EntityManager entityManager, EventBus eventBus, EntityFactory entityFactory, ConfigService configService, GameMap map, GameConfig config) {
         super(entityManager);
         this.eventBus = eventBus;
         this.entityFactory = entityFactory;
         this.configService = configService;
         this.map = map;
+        this.config = config;
         eventBus.subscribe(ShootEvent.class, this::handleShoot);
     }
 
@@ -76,7 +79,11 @@ public class CombatSystem extends GameSystem {
         }
 
         weapon.lastShotTime = totalTime;
-        if (weapon.magazineSize > 0) weapon.magazineAmmo--;
+        
+        // DEBUG: Infinite Ammo
+        if (weapon.magazineSize > 0 && !config.debug.infiniteAmmo) {
+            weapon.magazineAmmo--;
+        }
 
         // PUBLISH EVENT WITH WEAPON SOUND
         eventBus.publish(new BulletFiredEvent(shooter, weapon.shootSound));
