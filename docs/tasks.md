@@ -5,7 +5,7 @@
 - [ ] **Bossowie** (Nowe komponenty AI, paski zdrowia bossów, unikalne wzorce ataków)
 - [ ] **System Dialogowy i Fabularny** (Interakcje z NPC, wyświetlanie tekstu, wybory gracza)
 - [ ] **Uzupełnienie brakujących zasobów (Asset Completion)** (Ikony, avatary, tekstury, dźwięki i konfiguracje dla wszystkich typów broni)
-- [ ] **Centralna konfiguracja sterowania (Input Mapping)** (Stworzenie ustandaryzowanego pliku konfiguracyjnego dla klawiatury, myszy i GamePada)
+- [x] **Centralna konfiguracja sterowania (Input Mapping)** (Stworzenie ustandaryzowanego pliku konfiguracyjnego dla klawiatury, myszy i GamePada z obsługą wielu klawiszy na akcję)
 - [ ] **Wsparcie dla kontrolerów i Keymappingu** (Implementacja obsługi gamepadów oraz UI do zmiany klawiszy)
 
 ## Etap 11: Optymalizacja i Stabilizacja (W TRAKCIE)
