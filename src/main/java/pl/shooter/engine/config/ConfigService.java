@@ -8,26 +8,27 @@ import java.io.File;
 
 /**
  * Service for loading and saving game configuration.
- * Uses shared ObjectMapper from JsonService.
+ * Handles Engine, Input, and Weapon configurations.
  */
 public class ConfigService {
     private static final String DEFAULT_CONFIG_PATH = "assets/configs/engine_config.json";
     private static final String USER_CONFIG_PATH = "user_config.json";
     private final ObjectMapper mapper;
     private GameConfig cachedConfig;
+    private InputConfig cachedInputConfig;
     private WeaponConfig cachedWeaponConfig;
 
     public ConfigService() {
-        this.mapper = JsonService.getMapper(); // Use Singleton
+        this.mapper = JsonService.getMapper();
     }
 
     public GameConfig getConfig() {
         if (cachedConfig != null) return cachedConfig;
 
-        GameConfig config = loadConfig(DEFAULT_CONFIG_PATH);
+        GameConfig config = loadConfig(DEFAULT_CONFIG_PATH, GameConfig.class);
         if (config == null) config = new GameConfig();
 
-        GameConfig userConfig = loadConfig(USER_CONFIG_PATH);
+        GameConfig userConfig = loadConfig(USER_CONFIG_PATH, GameConfig.class);
         if (userConfig != null) {
             mergeConfigs(config, userConfig);
         }
@@ -36,9 +37,19 @@ public class ConfigService {
         return cachedConfig;
     }
 
-    /**
-     * Gets the current weapon configuration.
-     */
+    public InputConfig getInputConfig() {
+        if (cachedInputConfig != null) return cachedInputConfig;
+
+        String path = getConfig().paths.inputConfigPath;
+        InputConfig config = loadConfig(path, InputConfig.class);
+        if (config == null) {
+            config = new InputConfig();
+        }
+        
+        cachedInputConfig = config;
+        return cachedInputConfig;
+    }
+
     public WeaponConfig getWeaponConfig() {
         if (cachedWeaponConfig == null) {
             cachedWeaponConfig = new WeaponConfig();
@@ -57,7 +68,6 @@ public class ConfigService {
                     WeaponConfig.WeaponData data = mapper.readValue(file.read(), WeaponConfig.WeaponData.class);
                     String weaponName = file.nameWithoutExtension().toUpperCase();
                     fullConfig.weapons.put(weaponName, data);
-                    // Silenced logging as requested
                 } catch (Exception e) {
                     Gdx.app.error("ConfigService", "Error loading weapon file: " + file.name(), e);
                 }
@@ -69,16 +79,16 @@ public class ConfigService {
         this.cachedWeaponConfig = fullConfig;
     }
 
-    private GameConfig loadConfig(String path) {
+    private <T> T loadConfig(String path, Class<T> clazz) {
         try {
             FileHandle file = Gdx.files.internal(path);
             if (file.exists()) {
-                return mapper.readValue(file.read(), GameConfig.class);
+                return mapper.readValue(file.read(), clazz);
             } else if (new File(path).exists()) {
-                return mapper.readValue(new File(path), GameConfig.class);
+                return mapper.readValue(new File(path), clazz);
             }
         } catch (Exception e) {
-            Gdx.app.error("ConfigService", "Error loading config: " + e.getMessage());
+            Gdx.app.error("ConfigService", "Error loading config " + path + ": " + e.getMessage());
         }
         return null;
     }

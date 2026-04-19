@@ -32,8 +32,9 @@ public class InputSystem extends GameSystem {
         super(entityManager);
         this.eventBus = eventBus;
         this.camera = camera;
-        GameConfig config = new ConfigService().getConfig();
-        this.inputMapper = new InputMapper(config);
+        ConfigService configService = new ConfigService();
+        GameConfig config = configService.getConfig();
+        this.inputMapper = new InputMapper(configService.getInputConfig());
         
         if (config.ui.useCustomCursor) {
             Gdx.input.setCursorCatched(false);

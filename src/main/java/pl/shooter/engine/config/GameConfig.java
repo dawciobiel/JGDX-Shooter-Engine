@@ -1,10 +1,10 @@
 package pl.shooter.engine.config;
 
-import com.badlogic.gdx.Input;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Main configuration object for the game.
+ * InputConfig is now loaded separately.
  */
 @SuppressWarnings("unused")
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -13,7 +13,6 @@ public class GameConfig {
     public GraphicsConfig graphics = new GraphicsConfig();
     public AudioConfig audio = new AudioConfig();
     public DebugConfig debug = new DebugConfig();
-    public InputConfig controls = new InputConfig();
     public EffectsConfig effects = new EffectsConfig();
     public GameplayConfig gameplay = new GameplayConfig();
     public UIConfig ui = new UIConfig();
@@ -43,17 +42,6 @@ public class GameConfig {
         public boolean showProfiler = false;
         public boolean invinciblePlayer = false;
         public boolean infiniteAmmo = false;
-    }
-
-    public static class InputConfig {
-        public int moveUpKey = Input.Keys.W;
-        public int moveDownKey = Input.Keys.S;
-        public int moveLeftKey = Input.Keys.A;
-        public int moveRightKey = Input.Keys.D;
-        public int prevWeaponKey = Input.Keys.Q;
-        public int nextWeaponKey = Input.Keys.E;
-        public int reloadKey = Input.Keys.R;
-        public int interactKey = Input.Keys.F;
     }
 
     public static class EffectsConfig {
@@ -94,5 +82,6 @@ public class GameConfig {
         public String textures = "graphics/textures";
         public String shaders = "graphics/shaders";
         public String mapFileName = "map.json";
+        public String inputConfigPath = "assets/configs/input_config.json";
     }
 }

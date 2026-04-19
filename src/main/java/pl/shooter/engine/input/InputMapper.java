@@ -1,22 +1,23 @@
 package pl.shooter.engine.input;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.InputConfig;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Maps physical input (Keyboard, Mouse, GamePad) to abstract GameActions.
- * Handles different input methods (Pressed vs JustPressed).
+ * Maps physical input to abstract GameActions.
+ * Supports multiple bindings per action.
  */
 public class InputMapper {
-    private final GameConfig config;
-    private final Map<GameAction, Integer> keyMap = new HashMap<>();
-    private final Map<GameAction, Integer> mouseButtonMap = new HashMap<>();
+    private final InputConfig config;
+    private final Map<GameAction, List<Integer>> keyMap = new HashMap<>();
+    private final Map<GameAction, List<Integer>> mouseButtonMap = new HashMap<>();
 
-    public InputMapper(GameConfig config) {
+    public InputMapper(InputConfig config) {
         this.config = config;
         updateFromConfig();
     }
@@ -25,52 +26,69 @@ public class InputMapper {
         keyMap.clear();
         mouseButtonMap.clear();
         
-        GameConfig.InputConfig c = config.controls;
-        keyMap.put(GameAction.MOVE_UP, c.moveUpKey);
-        keyMap.put(GameAction.MOVE_DOWN, c.moveDownKey);
-        keyMap.put(GameAction.MOVE_LEFT, c.moveLeftKey);
-        keyMap.put(GameAction.MOVE_RIGHT, c.moveRightKey);
+        bindKeys(GameAction.MOVE_UP, config.moveUpKeys);
+        bindKeys(GameAction.MOVE_DOWN, config.moveDownKeys);
+        bindKeys(GameAction.MOVE_LEFT, config.moveLeftKeys);
+        bindKeys(GameAction.MOVE_RIGHT, config.moveRightKeys);
         
-        keyMap.put(GameAction.WEAPON_PREV, c.prevWeaponKey);
-        keyMap.put(GameAction.WEAPON_NEXT, c.nextWeaponKey);
+        bindKeys(GameAction.WEAPON_PREV, config.prevWeaponKeys);
+        bindKeys(GameAction.WEAPON_NEXT, config.nextWeaponKeys);
         
-        keyMap.put(GameAction.RELOAD, Input.Keys.R);
-        keyMap.put(GameAction.INTERACT, Input.Keys.F);
-        keyMap.put(GameAction.PAUSE, Input.Keys.ESCAPE);
-        keyMap.put(GameAction.RESTART, Input.Keys.SPACE); // Space also restarts
+        bindKeys(GameAction.RELOAD, config.reloadKeys);
+        bindKeys(GameAction.INTERACT, config.interactKeys);
+        bindKeys(GameAction.PAUSE, config.pauseKeys);
+        bindKeys(GameAction.RESTART, config.restartKeys);
         
-        // Default number keys for weapons
-        keyMap.put(GameAction.WEAPON_1, Input.Keys.NUM_1);
-        keyMap.put(GameAction.WEAPON_2, Input.Keys.NUM_2);
-        keyMap.put(GameAction.WEAPON_3, Input.Keys.NUM_3);
-        keyMap.put(GameAction.WEAPON_4, Input.Keys.NUM_4);
-        keyMap.put(GameAction.WEAPON_5, Input.Keys.NUM_5);
-        keyMap.put(GameAction.WEAPON_6, Input.Keys.NUM_6);
-        keyMap.put(GameAction.WEAPON_7, Input.Keys.NUM_7);
-        keyMap.put(GameAction.WEAPON_8, Input.Keys.NUM_8);
-        keyMap.put(GameAction.WEAPON_9, Input.Keys.NUM_9);
-        keyMap.put(GameAction.WEAPON_0, Input.Keys.NUM_0);
+        bindKeys(GameAction.WEAPON_1, config.weapon1Keys);
+        bindKeys(GameAction.WEAPON_2, config.weapon2Keys);
+        bindKeys(GameAction.WEAPON_3, config.weapon3Keys);
+        bindKeys(GameAction.WEAPON_4, config.weapon4Keys);
+        bindKeys(GameAction.WEAPON_5, config.weapon5Keys);
+        bindKeys(GameAction.WEAPON_6, config.weapon6Keys);
+        bindKeys(GameAction.WEAPON_7, config.weapon7Keys);
+        bindKeys(GameAction.WEAPON_8, config.weapon8Keys);
+        bindKeys(GameAction.WEAPON_9, config.weapon9Keys);
+        bindKeys(GameAction.WEAPON_0, config.weapon0Keys);
         
-        // Mouse actions
-        mouseButtonMap.put(GameAction.SHOOT, Input.Buttons.LEFT);
+        bindButtons(GameAction.SHOOT, config.shootButtons);
+    }
+
+    private void bindKeys(GameAction action, int[] keys) {
+        if (keys == null) return;
+        keyMap.computeIfAbsent(action, k -> new ArrayList<>()).clear();
+        for (int key : keys) keyMap.get(action).add(key);
+    }
+
+    private void bindButtons(GameAction action, int[] buttons) {
+        if (buttons == null) return;
+        mouseButtonMap.computeIfAbsent(action, k -> new ArrayList<>()).clear();
+        for (int button : buttons) mouseButtonMap.get(action).add(button);
     }
 
     public boolean isPressed(GameAction action) {
         if (keyMap.containsKey(action)) {
-            if (Gdx.input.isKeyPressed(keyMap.get(action))) return true;
+            for (int key : keyMap.get(action)) {
+                if (Gdx.input.isKeyPressed(key)) return true;
+            }
         }
         if (mouseButtonMap.containsKey(action)) {
-            return Gdx.input.isButtonPressed(mouseButtonMap.get(action));
+            for (int button : mouseButtonMap.get(action)) {
+                if (Gdx.input.isButtonPressed(button)) return true;
+            }
         }
         return false;
     }
 
     public boolean isJustPressed(GameAction action) {
         if (keyMap.containsKey(action)) {
-            if (Gdx.input.isKeyJustPressed(keyMap.get(action))) return true;
+            for (int key : keyMap.get(action)) {
+                if (Gdx.input.isKeyJustPressed(key)) return true;
+            }
         }
         if (mouseButtonMap.containsKey(action)) {
-            return Gdx.input.isButtonJustPressed(mouseButtonMap.get(action));
+            for (int button : mouseButtonMap.get(action)) {
+                if (Gdx.input.isButtonJustPressed(button)) return true;
+            }
         }
         return false;
     }

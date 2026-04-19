@@ -63,7 +63,7 @@ public class PlayState extends GameState {
         this.mapService = mapService;
         this.config = configService.getConfig();
         this.mapConfig = mapConfig;
-        this.inputMapper = new InputMapper(config);
+        this.inputMapper = new InputMapper(configService.getInputConfig());
 
         // Initialize shared resources
         this.spriteBatch = new SpriteBatch();
