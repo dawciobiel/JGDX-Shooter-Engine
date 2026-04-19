@@ -1,7 +1,6 @@
 package pl.shooter.game.states;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -18,6 +17,8 @@ import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.ecs.systems.*;
+import pl.shooter.engine.input.GameAction;
+import pl.shooter.engine.input.InputMapper;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 import pl.shooter.engine.world.GameMap;
@@ -40,6 +41,7 @@ public class PlayState extends GameState {
     private final GameConfig config;
     private final String mapPath;
     private final MapConfig mapConfig;
+    private final InputMapper inputMapper;
     
     // Shared Rendering Resources
     private final SpriteBatch spriteBatch;
@@ -48,10 +50,6 @@ public class PlayState extends GameState {
     
     private boolean isGameOver = false;
 
-    /**
-     * Constructor for PlayState. 
-     * All services and configurations should be pre-loaded by LoadingState.
-     */
     public PlayState(GameStateManager gsm, String mapPath, Engine engine, AssetService assetService, 
                      AudioService audioService, ConfigService configService, EntityFactory entityFactory,
                      MapService mapService, MapConfig mapConfig) {
@@ -65,6 +63,7 @@ public class PlayState extends GameState {
         this.mapService = mapService;
         this.config = configService.getConfig();
         this.mapConfig = mapConfig;
+        this.inputMapper = new InputMapper(config);
 
         // Initialize shared resources
         this.spriteBatch = new SpriteBatch();
@@ -164,14 +163,14 @@ public class PlayState extends GameState {
 
     @Override
     public void update(float deltaTime) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) && !isGameOver) {
+        if (inputMapper.isJustPressed(GameAction.PAUSE) && !isGameOver) {
             gsm.push(new PauseState(gsm));
             return;
         }
 
         if (isGameOver) {
             updateGameOverSystems(deltaTime);
-            if (Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            if (inputMapper.isJustPressed(GameAction.RESTART)) {
                 gsm.setAbsoluteState(new LoadingState(gsm, mapPath));
             }
             return;
@@ -193,7 +192,6 @@ public class PlayState extends GameState {
     }
 
     @Override public void render() {
-        // PlayState doesn't need to clear screen, RenderSystem handles it
     }
 
     @Override 
@@ -209,7 +207,6 @@ public class PlayState extends GameState {
         if (assetService != null) assetService.dispose();
         if (audioService != null) audioService.dispose();
         
-        // Dispose shared resources here
         if (spriteBatch != null) spriteBatch.dispose();
         if (shapeRenderer != null) shapeRenderer.dispose();
 

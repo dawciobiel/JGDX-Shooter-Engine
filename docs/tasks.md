@@ -1,5 +1,13 @@
 # Lista zadań — Silnik Gry Shooter (Architektura ECS)
 
+## Etap 12: Mechaniki Zaawansowane i Content (PLANOWANE)
+- [ ] **System zapisu i odczytu stanu gry (Save/Load)** (Uniwersalna architektura serializacji stanu świata i gracza)
+- [ ] **Bossowie** (Nowe komponenty AI, paski zdrowia bossów, unikalne wzorce ataków)
+- [ ] **System Dialogowy i Fabularny** (Interakcje z NPC, wyświetlanie tekstu, wybory gracza)
+- [ ] **Uzupełnienie brakujących zasobów (Asset Completion)** (Ikony, avatary, tekstury, dźwięki i konfiguracje dla wszystkich typów broni)
+- [ ] **Centralna konfiguracja sterowania (Input Mapping)** (Stworzenie ustandaryzowanego pliku konfiguracyjnego dla klawiatury, myszy i GamePada)
+- [ ] **Wsparcie dla kontrolerów i Keymappingu** (Implementacja obsługi gamepadów oraz UI do zmiany klawiszy)
+
 ## Etap 11: Optymalizacja i Stabilizacja (W TRAKCIE)
 - [x] **Refaktoryzacja kodu (Clean Code)** (Optymalizacja systemów Movement, UI, AI oraz fabryki encji)
 - [x] **Ujednolicenie JSON/Serialization** (Zastąpienie wielokrotnych instancji `ObjectMapper` jednym współdzielonym singletonem)

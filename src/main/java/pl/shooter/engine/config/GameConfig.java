@@ -52,6 +52,8 @@ public class GameConfig {
         public int moveRightKey = Input.Keys.D;
         public int prevWeaponKey = Input.Keys.Q;
         public int nextWeaponKey = Input.Keys.E;
+        public int reloadKey = Input.Keys.R;
+        public int interactKey = Input.Keys.F;
     }
 
     public static class EffectsConfig {
