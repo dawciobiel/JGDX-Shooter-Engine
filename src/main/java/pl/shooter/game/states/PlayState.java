@@ -4,11 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import pl.shooter.engine.Engine;
@@ -29,70 +24,49 @@ import pl.shooter.engine.world.MapService;
 
 import java.util.List;
 
+/**
+ * Main gameplay state. 
+ * Receives pre-initialized services from LoadingState.
+ */
 public class PlayState extends GameState {
-    private Engine engine;
-    private AssetService assetService;
-    private AudioService audioService;
-    private ConfigService configService;
-    private GameConfig config;
+    private final Engine engine;
+    private final AssetService assetService;
+    private final AudioService audioService;
+    private final ConfigService configService;
+    private final EntityFactory entityFactory;
+    private final MapService mapService;
+    private final GameConfig config;
     private final String mapPath;
+    private final MapConfig mapConfig;
     
-    // Loading logic
-    private boolean isLoading = true;
-    private boolean loadStarted = false;
-    private float loadProgress = 0;
-    private final SpriteBatch uiBatch;
-    private final ShapeRenderer shapeRenderer;
-    private final BitmapFont font;
     private final Viewport uiViewport;
-    private final GlyphLayout layout = new GlyphLayout();
-    private float minLoadTimer = 0;
-    private static final float MIN_LOAD_TIME = 1.0f;
-
     private boolean isGameOver = false;
-    private MapConfig mapConfig;
-    private MapService mapService;
-    private EntityFactory entityFactory;
 
-    public PlayState(GameStateManager gsm, String mapPath) {
+    /**
+     * Constructor for PlayState. 
+     * All services and configurations should be pre-loaded by LoadingState.
+     */
+    public PlayState(GameStateManager gsm, String mapPath, Engine engine, AssetService assetService, 
+                     AudioService audioService, ConfigService configService, EntityFactory entityFactory,
+                     MapService mapService, MapConfig mapConfig) {
         super(gsm);
         this.mapPath = mapPath;
-        // Construct basic UI objects immediately for loading screen
-        this.uiBatch = new SpriteBatch();
-        this.shapeRenderer = new ShapeRenderer();
-        this.font = new BitmapFont();
-        this.font.getData().setScale(1.2f);
-        this.uiViewport = new FitViewport(800, 600); // Temporary fallback until config loads
-    }
-
-    private void startLoading() {
-        this.configService = new ConfigService();
+        this.engine = engine;
+        this.assetService = assetService;
+        this.audioService = audioService;
+        this.configService = configService;
+        this.entityFactory = entityFactory;
+        this.mapService = mapService;
         this.config = configService.getConfig();
-        
-        // Re-resize viewport with real config resolution
-        this.uiViewport.setWorldSize(config.graphics.width, config.graphics.height);
-        this.uiViewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        this.mapConfig = mapConfig;
 
-        this.engine = new Engine();
-        this.assetService = new AssetService(config);
-        this.audioService = new AudioService();
-        this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService, config);
-        this.mapService = new MapService(entityFactory, assetService);
+        this.uiViewport = new FitViewport(config.graphics.width, config.graphics.height);
         
-        // Queue map assets
-        this.mapConfig = mapService.loadMap(mapPath);
-        
-        if (config.ui.useCustomCursor && config.ui.cursorImagePath != null) {
-            assetService.loadTexture(config.ui.cursorImagePath);
-        }
-        
-        audioService.loadSound(assetService.resolvePath("characters/soldier/hit.wav", config.paths.sounds));
-        audioService.loadSound(assetService.resolvePath("characters/soldier/death.wav", config.paths.sounds));
-        
-        loadStarted = true;
+        initializeSystems();
+        Gdx.app.log("PlayState", "Gameplay started for map: " + mapPath);
     }
 
-    private void finishInitialization() {
+    private void initializeSystems() {
         if (mapConfig == null) return;
 
         String mapFolder = mapPath.contains("/") ? mapPath.substring(0, mapPath.lastIndexOf('/')) : config.paths.maps + "/default";
@@ -140,6 +114,13 @@ public class PlayState extends GameState {
 
         mapService.spawnEntities(mapConfig);
         
+        setupPlayer(weaponConfig);
+        
+        // Final check: if no player was spawned, something went wrong with the map or entity loading
+        checkGameOver();
+    }
+
+    private void setupPlayer(WeaponConfig weaponConfig) {
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
         if (!players.isEmpty()) {
             Entity player = players.getFirst();
@@ -160,9 +141,6 @@ public class PlayState extends GameState {
             engine.getEntityManager().addComponent(player, inv);
             engine.getEntityManager().addComponent(player, inv.getActiveWeapon());
         }
-        
-        isLoading = false;
-        Gdx.app.log("PlayState", "Loading finished for: " + mapPath);
     }
 
     private void checkGameOver() {
@@ -177,24 +155,6 @@ public class PlayState extends GameState {
 
     @Override
     public void update(float deltaTime) {
-        if (!loadStarted) {
-            startLoading();
-            return;
-        }
-
-        if (isLoading) {
-            minLoadTimer += deltaTime;
-            boolean assetsLoaded = assetService.update();
-            float assetProgress = assetService.getProgress();
-            float timerProgress = Math.min(1.0f, minLoadTimer / MIN_LOAD_TIME);
-            loadProgress = Math.min(assetProgress, timerProgress);
-
-            if (assetsLoaded && minLoadTimer >= MIN_LOAD_TIME) {
-                finishInitialization();
-            }
-            return;
-        }
-
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) && !isGameOver) {
             gsm.push(new PauseState(gsm));
             return;
@@ -203,7 +163,7 @@ public class PlayState extends GameState {
         if (isGameOver) {
             updateGameOverSystems(deltaTime);
             if (Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-                gsm.setAbsoluteState(new PlayState(gsm, mapPath));
+                gsm.setAbsoluteState(new LoadingState(gsm, mapPath));
             }
             return;
         }
@@ -225,55 +185,21 @@ public class PlayState extends GameState {
 
     @Override
     public void render() {
-        if (isLoading) {
-            renderLoadingScreen();
-        }
+        // PlayState doesn't need to clear screen, RenderSystem handles it
     }
 
-    private void renderLoadingScreen() {
-        ScreenUtils.clear(0, 0, 0, 1);
-        uiViewport.apply();
-
-        float barWidth = uiViewport.getWorldWidth() * 0.6f;
-        float barHeight = 20;
-        float x = (uiViewport.getWorldWidth() - barWidth) / 2;
-        float y = uiViewport.getWorldHeight() / 3;
-
-        shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.DARK_GRAY);
-        shapeRenderer.rect(x - 2, y - 2, barWidth + 4, barHeight + 4);
-        shapeRenderer.setColor(Color.GOLD);
-        shapeRenderer.rect(x, y, barWidth * loadProgress, barHeight);
-        shapeRenderer.end();
-
-        uiBatch.setProjectionMatrix(uiViewport.getCamera().combined);
-        uiBatch.begin();
-        font.setColor(Color.WHITE);
-        String msg = "PREPARING BATTLEFIELD...";
-        layout.setText(font, msg);
-        font.draw(uiBatch, msg, (uiViewport.getWorldWidth() - layout.width) / 2, y + 60);
-        
-        font.getData().setScale(0.8f);
-        String percent = (int)(loadProgress * 100) + "%";
-        font.draw(uiBatch, percent, x + barWidth - 40, y - 10);
-        font.getData().setScale(1.2f);
-        uiBatch.end();
-    }
-
-    @Override public void resize(int width, int height) {
+    @Override 
+    public void resize(int width, int height) {
         if (uiViewport != null) uiViewport.update(width, height, true);
         if (engine != null) engine.resize(width, height);
     }
     
-    @Override public void dispose() {
+    @Override 
+    public void dispose() {
         Gdx.app.log("PlayState", "Disposing PlayState for map: " + mapPath);
         if (engine != null) engine.dispose();
         if (assetService != null) assetService.dispose();
         if (audioService != null) audioService.dispose();
-        if (uiBatch != null) uiBatch.dispose();
-        if (shapeRenderer != null) shapeRenderer.dispose();
-        if (font != null) font.dispose();
 
         if (config != null && config.ui.useCustomCursor) {
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);

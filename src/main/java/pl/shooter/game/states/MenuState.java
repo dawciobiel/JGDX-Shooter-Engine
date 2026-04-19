@@ -95,9 +95,9 @@ public class MenuState extends GameState {
             mapBtn.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    // Directly switch to PlayState, it handles its own loading screen
                     String fullMapPath = mapPath + "/" + config.paths.mapFileName;
-                    gsm.setAbsoluteState(new PlayState(gsm, fullMapPath));
+                    // Changed: Go to LoadingState instead of PlayState directly
+                    gsm.setAbsoluteState(new LoadingState(gsm, fullMapPath));
                 }
             });
             mapTable.add(mapBtn).width(300).height(40).padBottom(5).row();

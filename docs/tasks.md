@@ -7,7 +7,7 @@
 - [ ] **Zarządzanie pamięcią** (Analiza wycieków, optymalizacja SpriteBatch i ShapeRenderer)
 - [ ] **Dostrajanie fizyki i kolizji** (Przyjrzeć się kolizjom wrogów z obiektami przesuwalnymi jak beczki/skrzynie pod kątem stabilności)
 - [x] **Profiler Wydajności** (Analiza czasu trwania update() poszczególnych systemów)
-- [ ] **Usprawnienie ładowania zasobów** (Splash Screen i pasek postępu)
+- [x] **Usprawnienie ładowania zasobów** (Dedykowany LoadingState, profesjonalny pasek postępu z Scene2D i splash screen)
 - [x] **Relokacja `weapons.json`** (Przeniesienie pliku z `assets/config/` do folderów poszczególnych map oraz atomizacja konfiguracji broni)
 - [x] **Konfiguracja ścieżek w kodzie** (Usunięcie zahardkodowanych ścieżek z plików Java i przeniesienie ich do centralnej konfiguracji silnika)
 - [x] **Konwencja nazewnicza triggerów** (Usunięcie przedrostka `trigger_` i nadanie sensownych nazw plikom w `assets/maps/*/entities/triggers/`)
