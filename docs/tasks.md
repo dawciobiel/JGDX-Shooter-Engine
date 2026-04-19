@@ -4,7 +4,7 @@
 - [x] **Refaktoryzacja kodu (Clean Code)** (Optymalizacja systemów Movement, UI, AI oraz fabryki encji)
 - [x] **Ujednolicenie JSON/Serialization** (Zastąpienie wielokrotnych instancji `ObjectMapper` jednym współdzielonym singletonem)
 - [x] **Izolacja zasobów Map (Asset Isolation)** (Każda mapa jest niezależnym kontenerem zasobów)
-- [ ] **Zarządzanie pamięcią** (Analiza wycieków, optymalizacja SpriteBatch i ShapeRenderer)
+- [x] **Zarządzanie pamięcią** (Centralizacja i współdzielenie SpriteBatch oraz ShapeRenderer w systemach ECS)
 - [ ] **Dostrajanie fizyki i kolizji** (Przyjrzeć się kolizjom wrogów z obiektami przesuwalnymi jak beczki/skrzynie pod kątem stabilności)
 - [x] **Profiler Wydajności** (Analiza czasu trwania update() poszczególnych systemów)
 - [x] **Usprawnienie ładowania zasobów** (Dedykowany LoadingState, profesjonalny pasek postępu z Scene2D i splash screen)

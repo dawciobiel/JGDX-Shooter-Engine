@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import pl.shooter.engine.Engine;
@@ -24,6 +25,7 @@ import java.util.Map;
 
 /**
  * Handles the On-Screen Display (HUD) and Profiler.
+ * Optimized to use shared SpriteBatch and ShapeRenderer.
  */
 public class UISystem extends GameSystem {
     private final SpriteBatch batch;
@@ -44,10 +46,10 @@ public class UISystem extends GameSystem {
 
     private static final String DEFAULT_ICON = "weapons/default/icon.png";
 
-    public UISystem(EntityManager entityManager, AssetService assetService) {
+    public UISystem(EntityManager entityManager, AssetService assetService, SpriteBatch batch, ShapeRenderer shapeRenderer) {
         super(entityManager);
-        this.batch = new SpriteBatch();
-        this.shapeRenderer = new ShapeRenderer();
+        this.batch = batch;
+        this.shapeRenderer = shapeRenderer;
         this.font = new BitmapFont();
         this.font.getData().setScale(1.1f);
         this.assetService = assetService;
@@ -95,7 +97,7 @@ public class UISystem extends GameSystem {
         // BACKGROUNDS
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        renderHUDBackgrounds(health, weapon);
+        renderHUDBackgrounds(health);
         if (config.debug.showProfiler) renderProfilerBackground();
         shapeRenderer.end();
 
@@ -110,7 +112,7 @@ public class UISystem extends GameSystem {
         batch.end();
     }
 
-    private void renderHUDBackgrounds(HealthComponent health, WeaponComponent weapon) {
+    private void renderHUDBackgrounds(HealthComponent health) {
         float hx = 20, hy = viewport.getWorldHeight() - 40, hw = 200, hh = 20;
         shapeRenderer.setColor(Color.BLACK);
         shapeRenderer.rect(hx - 2, hy - 2, hw + 4, hh + 4);
@@ -118,7 +120,7 @@ public class UISystem extends GameSystem {
         shapeRenderer.rect(hx, hy, hw, hh);
 
         if (health != null) {
-            float healthPercent = Math.max(0, Math.min(1, health.hp / health.maxHp));
+            float healthPercent = MathUtils.clamp(health.hp / health.maxHp, 0, 1);
             shapeRenderer.setColor(healthPercent < 0.3f ? Color.RED : (healthPercent < 0.6f ? Color.YELLOW : Color.GREEN));
             shapeRenderer.rect(hx, hy, hw * healthPercent, hh);
         }
@@ -227,8 +229,6 @@ public class UISystem extends GameSystem {
 
     @Override public void resize(int width, int height) { viewport.update(width, height, true); }
     @Override public void dispose() {
-        batch.dispose();
-        shapeRenderer.dispose();
         font.dispose();
     }
 }

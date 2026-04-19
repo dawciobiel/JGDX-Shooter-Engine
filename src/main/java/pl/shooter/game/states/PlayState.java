@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import pl.shooter.engine.Engine;
@@ -26,7 +28,7 @@ import java.util.List;
 
 /**
  * Main gameplay state. 
- * Receives pre-initialized services from LoadingState.
+ * Manages shared rendering resources and receives pre-initialized services.
  */
 public class PlayState extends GameState {
     private final Engine engine;
@@ -39,7 +41,11 @@ public class PlayState extends GameState {
     private final String mapPath;
     private final MapConfig mapConfig;
     
+    // Shared Rendering Resources
+    private final SpriteBatch spriteBatch;
+    private final ShapeRenderer shapeRenderer;
     private final Viewport uiViewport;
+    
     private boolean isGameOver = false;
 
     /**
@@ -60,6 +66,9 @@ public class PlayState extends GameState {
         this.config = configService.getConfig();
         this.mapConfig = mapConfig;
 
+        // Initialize shared resources
+        this.spriteBatch = new SpriteBatch();
+        this.shapeRenderer = new ShapeRenderer();
         this.uiViewport = new FitViewport(config.graphics.width, config.graphics.height);
         
         initializeSystems();
@@ -74,16 +83,18 @@ public class PlayState extends GameState {
         WeaponConfig weaponConfig = configService.getWeaponConfig();
 
         GameMap map = mapService.createGameMap(mapConfig);
-        RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
+        
+        // Pass shared SpriteBatch and ShapeRenderer to systems
+        RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService, spriteBatch, shapeRenderer);
         renderSystem.setMap(map);
         renderSystem.setShowDebugPaths(config.debug.showPaths);
         renderSystem.setShowDebugHitboxes(config.debug.showHitboxes);
 
-        LightSystem lightSystem = new LightSystem(engine.getEntityManager());
+        LightSystem lightSystem = new LightSystem(engine.getEntityManager(), spriteBatch);
         lightSystem.setAmbientColor(mapConfig.settings.ambientColor.r, mapConfig.settings.ambientColor.g, mapConfig.settings.ambientColor.b, mapConfig.settings.ambientColor.a);
         renderSystem.setLightSystem(lightSystem);
 
-        UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
+        UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService, spriteBatch, shapeRenderer);
         uiSystem.setShowFps(config.debug.showFps);
         uiSystem.init(engine);
 
@@ -115,8 +126,6 @@ public class PlayState extends GameState {
         mapService.spawnEntities(mapConfig);
         
         setupPlayer(weaponConfig);
-        
-        // Final check: if no player was spawned, something went wrong with the map or entity loading
         checkGameOver();
     }
 
@@ -183,8 +192,7 @@ public class PlayState extends GameState {
         if (ui != null) ui.update(deltaTime);
     }
 
-    @Override
-    public void render() {
+    @Override public void render() {
         // PlayState doesn't need to clear screen, RenderSystem handles it
     }
 
@@ -196,10 +204,14 @@ public class PlayState extends GameState {
     
     @Override 
     public void dispose() {
-        Gdx.app.log("PlayState", "Disposing PlayState for map: " + mapPath);
+        Gdx.app.log("PlayState", "Disposing PlayState and shared resources");
         if (engine != null) engine.dispose();
         if (assetService != null) assetService.dispose();
         if (audioService != null) audioService.dispose();
+        
+        // Dispose shared resources here
+        if (spriteBatch != null) spriteBatch.dispose();
+        if (shapeRenderer != null) shapeRenderer.dispose();
 
         if (config != null && config.ui.useCustomCursor) {
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);

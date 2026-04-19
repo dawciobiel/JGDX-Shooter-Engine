@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
@@ -15,7 +16,7 @@ import java.util.List;
 
 /**
  * Manages the dynamic lighting pass by rendering radial lights into a FrameBuffer.
- * Optimized and hardened against color reference corruption.
+ * Uses a shared SpriteBatch for better performance.
  */
 public class LightSystem extends GameSystem {
     private FrameBuffer lightMap;
@@ -24,14 +25,15 @@ public class LightSystem extends GameSystem {
     private final Color ambientColor = new Color(0.1f, 0.1f, 0.2f, 0.5f);
     private final Matrix4 projectionMatrix = new Matrix4();
 
-    public LightSystem(EntityManager entityManager) {
+    public LightSystem(EntityManager entityManager, SpriteBatch batch) {
         super(entityManager);
-        this.batch = new SpriteBatch();
-        this.lightTexture = createRadialGradient(128);
+        this.batch = batch;
+        this.lightTexture = createRadialGradient();
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
-    private Texture createRadialGradient(int size) {
+    private Texture createRadialGradient() {
+        int size = 128;
         Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
         float centerX = size / 2f, centerY = size / 2f, maxDist = size / 2f;
         for (int y = 0; y < size; y++) {
@@ -56,6 +58,7 @@ public class LightSystem extends GameSystem {
         lightMap.begin();
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        
         batch.setProjectionMatrix(projectionMatrix);
         batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
         batch.begin();
@@ -67,16 +70,17 @@ public class LightSystem extends GameSystem {
             batch.draw(lightTexture, t.x - lc.radius, t.y - lc.radius, d, d);
         }
         batch.end();
+        
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         lightMap.end();
     }
 
     public void setAmbientColor(float r, float g, float b, float a) {
-        // Clamp values to valid range 0-1 to prevent shader glitches
         this.ambientColor.set(
-            Math.max(0, Math.min(1, r)),
-            Math.max(0, Math.min(1, g)),
-            Math.max(0, Math.min(1, b)),
-            Math.max(0, Math.min(1, a))
+            MathUtils.clamp(r, 0, 1),
+            MathUtils.clamp(g, 0, 1),
+            MathUtils.clamp(b, 0, 1),
+            MathUtils.clamp(a, 0, 1)
         );
     }
 
@@ -93,7 +97,6 @@ public class LightSystem extends GameSystem {
     @Override
     public void dispose() {
         if (lightMap != null) lightMap.dispose();
-        batch.dispose();
         lightTexture.dispose();
     }
 }

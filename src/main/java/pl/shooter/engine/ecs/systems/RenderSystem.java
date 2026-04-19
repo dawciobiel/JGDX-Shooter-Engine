@@ -25,7 +25,8 @@ import pl.shooter.engine.world.JsonMap;
 import java.util.List;
 
 /**
- * Renders the game world. Correctly resolves tileset textures from isolated map folders.
+ * Renders the game world. 
+ * Optimized to use shared SpriteBatch and ShapeRenderer.
  */
 public class RenderSystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
@@ -47,12 +48,12 @@ public class RenderSystem extends GameSystem {
     private TextureRegion[][] cachedTiles;
     private String lastTilesetPath;
 
-    public RenderSystem(EntityManager entityManager, AssetService assetService) {
+    public RenderSystem(EntityManager entityManager, AssetService assetService, SpriteBatch batch, ShapeRenderer shapeRenderer) {
         super(entityManager);
         this.assetService = assetService;
         this.config = assetService.getConfig();
-        this.shapeRenderer = new ShapeRenderer();
-        this.spriteBatch = new SpriteBatch();
+        this.spriteBatch = batch;
+        this.shapeRenderer = shapeRenderer;
         this.camera = new OrthographicCamera();
         this.viewport = new ExtendViewport(config.graphics.width, config.graphics.height, camera);
         this.nameFont = new BitmapFont();
@@ -153,7 +154,6 @@ public class RenderSystem extends GameSystem {
         int ts = map.getTileSize();
         int ds = map.getDisplaySize();
         
-        // RESOLVE TILESET TEXTURE
         Texture tileset = assetService.getTexture(map.getTilesetPath());
         if (tileset == null) return;
 
@@ -380,8 +380,7 @@ public class RenderSystem extends GameSystem {
 
     @Override
     public void dispose() {
-        shapeRenderer.dispose();
-        spriteBatch.dispose();
+        // shapeRenderer and spriteBatch are shared, do NOT dispose them here
         if (lightingShader != null) lightingShader.dispose();
         if (sceneFbo != null) sceneFbo.dispose();
         if (nameFont != null) nameFont.dispose();
