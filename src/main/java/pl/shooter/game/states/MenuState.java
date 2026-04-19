@@ -64,7 +64,7 @@ public class MenuState extends GameState {
         labelStyle.fontColor = Color.YELLOW;
         newSkin.add("default", labelStyle);
 
-        // ScrollPane Style (Missing this caused the crash)
+        // ScrollPane Style
         ScrollPane.ScrollPaneStyle scrollStyle = new ScrollPane.ScrollPaneStyle();
         scrollStyle.background = newSkin.newDrawable("white", new Color(0.1f, 0.1f, 0.1f, 0.5f));
         newSkin.add("default", scrollStyle);
@@ -95,9 +95,9 @@ public class MenuState extends GameState {
             mapBtn.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    // CRITICAL FIX: Clear entire stack to ensure ALL previous states are disposed.
-                    // This prevents ghost audio and race conditions in libGDX.
-                    gsm.setAbsoluteState(new PlayState(gsm, mapPath + "/" + config.paths.mapFileName));
+                    // Directly switch to PlayState, it handles its own loading screen
+                    String fullMapPath = mapPath + "/" + config.paths.mapFileName;
+                    gsm.setAbsoluteState(new PlayState(gsm, fullMapPath));
                 }
             });
             mapTable.add(mapBtn).width(300).height(40).padBottom(5).row();

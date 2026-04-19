@@ -1,5 +1,6 @@
 package pl.shooter.engine.state;
 
+import com.badlogic.gdx.Gdx;
 import java.util.Stack;
 
 /**
@@ -13,8 +14,13 @@ public class GameStateManager {
         this.states = new Stack<>();
     }
 
+    /**
+     * Pushes a new state and ensures it is resized to current window dimensions.
+     */
     public void push(GameState state) {
         states.push(state);
+        // CRITICAL: Ensure the new state knows about the current screen size immediately
+        state.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     public void pop() {

@@ -4,6 +4,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
@@ -26,73 +33,80 @@ public class PlayState extends GameState {
     private Engine engine;
     private AssetService assetService;
     private AudioService audioService;
-    private final ConfigService configService;
-    private final GameConfig config;
+    private ConfigService configService;
+    private GameConfig config;
     private final String mapPath;
+    
+    // Loading logic
+    private boolean isLoading = true;
+    private boolean loadStarted = false;
+    private float loadProgress = 0;
+    private final SpriteBatch uiBatch;
+    private final ShapeRenderer shapeRenderer;
+    private final BitmapFont font;
+    private final Viewport uiViewport;
+    private final GlyphLayout layout = new GlyphLayout();
+    private float minLoadTimer = 0;
+    private static final float MIN_LOAD_TIME = 1.0f;
+
     private boolean isGameOver = false;
+    private MapConfig mapConfig;
+    private MapService mapService;
+    private EntityFactory entityFactory;
 
     public PlayState(GameStateManager gsm, String mapPath) {
         super(gsm);
-        Gdx.app.log("PlayState", "Constructor called for: " + mapPath);
         this.mapPath = mapPath;
-        this.configService = new ConfigService();
-        this.config = configService.getConfig();
-        resetState();
+        // Construct basic UI objects immediately for loading screen
+        this.uiBatch = new SpriteBatch();
+        this.shapeRenderer = new ShapeRenderer();
+        this.font = new BitmapFont();
+        this.font.getData().setScale(1.2f);
+        this.uiViewport = new FitViewport(800, 600); // Temporary fallback until config loads
     }
 
-    private void resetState() {
-        Gdx.app.log("PlayState", "Resetting state for map: " + mapPath);
-        if (engine != null || audioService != null) {
-            Gdx.app.log("PlayState", "Cleaning up previous resources in resetState()");
-            dispose();
-        }
+    private void startLoading() {
+        this.configService = new ConfigService();
+        this.config = configService.getConfig();
+        
+        // Re-resize viewport with real config resolution
+        this.uiViewport.setWorldSize(config.graphics.width, config.graphics.height);
+        this.uiViewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
 
         this.engine = new Engine();
         this.assetService = new AssetService(config);
         this.audioService = new AudioService();
-        EntityFactory entityFactory = new EntityFactory(engine.getEntityManager(), assetService, config);
-        MapService mapService = new MapService(engine.getEntityManager(), entityFactory, assetService);
-        this.isGameOver = false;
-
-        init(entityFactory, mapService);
-        resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-    }
-
-    private void init(EntityFactory entityFactory, MapService mapService) {
-        MapConfig mapConfig = mapService.loadMap(mapPath);
-        if (mapConfig == null) {
-            Gdx.app.error("PlayState", "CRITICAL: Could not load map: " + mapPath);
-            return;
-        }
-
-        if (config.ui.useCustomCursor && config.ui.cursorImagePath != null && !config.ui.cursorImagePath.isEmpty()) {
+        this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService, config);
+        this.mapService = new MapService(entityFactory, assetService);
+        
+        // Queue map assets
+        this.mapConfig = mapService.loadMap(mapPath);
+        
+        if (config.ui.useCustomCursor && config.ui.cursorImagePath != null) {
             assetService.loadTexture(config.ui.cursorImagePath);
         }
-
-        assetService.finishLoading();
-
+        
         audioService.loadSound(assetService.resolvePath("characters/soldier/hit.wav", config.paths.sounds));
         audioService.loadSound(assetService.resolvePath("characters/soldier/death.wav", config.paths.sounds));
+        
+        loadStarted = true;
+    }
 
-        // Load map-specific weapon configuration
+    private void finishInitialization() {
+        if (mapConfig == null) return;
+
         String mapFolder = mapPath.contains("/") ? mapPath.substring(0, mapPath.lastIndexOf('/')) : config.paths.maps + "/default";
         configService.loadWeaponConfigForMap(mapFolder);
         WeaponConfig weaponConfig = configService.getWeaponConfig();
 
         GameMap map = mapService.createGameMap(mapConfig);
-        
         RenderSystem renderSystem = new RenderSystem(engine.getEntityManager(), assetService);
         renderSystem.setMap(map);
         renderSystem.setShowDebugPaths(config.debug.showPaths);
         renderSystem.setShowDebugHitboxes(config.debug.showHitboxes);
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager());
-        lightSystem.setAmbientColor(
-            mapConfig.settings.ambientColor.r, 
-            mapConfig.settings.ambientColor.g, 
-            mapConfig.settings.ambientColor.b, 
-            mapConfig.settings.ambientColor.a
-        );
+        lightSystem.setAmbientColor(mapConfig.settings.ambientColor.r, mapConfig.settings.ambientColor.g, mapConfig.settings.ambientColor.b, mapConfig.settings.ambientColor.a);
         renderSystem.setLightSystem(lightSystem);
 
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService);
@@ -125,16 +139,13 @@ public class PlayState extends GameState {
         engine.addSystem(uiSystem);
 
         mapService.spawnEntities(mapConfig);
-        assetService.finishLoading();
-
+        
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
         if (!players.isEmpty()) {
             Entity player = players.getFirst();
             engine.getEntityManager().addComponent(player, new LightComponent(400f, new Color(1, 1, 0.9f, 1f), 0.9f));
-            
             InventoryComponent inv = engine.getEntityManager().getComponent(player, InventoryComponent.class);
             if (inv == null) inv = new InventoryComponent();
-            
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.KNIFE, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.PISTOL, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.SHOTGUN, weaponConfig));
@@ -146,35 +157,12 @@ public class PlayState extends GameState {
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.RAIL_GUN, weaponConfig));
             inv.addWeapon(WeaponComponent.create(WeaponComponent.Type.GRENADE, weaponConfig));
             inv.currentWeaponIndex = 1;
-            
             engine.getEntityManager().addComponent(player, inv);
             engine.getEntityManager().addComponent(player, inv.getActiveWeapon());
         }
-    }
-
-    @Override
-    public void update(float deltaTime) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) && !isGameOver) {
-            gsm.push(new PauseState(gsm));
-            return;
-        }
-
-        if (isGameOver) {
-            RenderSystem rs = null;
-            UISystem ui = null;
-            for (pl.shooter.engine.ecs.GameSystem system : engine.getSystems()) {
-                if (system instanceof RenderSystem) rs = (RenderSystem) system;
-                if (system instanceof UISystem) ui = (UISystem) system;
-            }
-            if (rs != null) rs.update(deltaTime);
-            if (ui != null) ui.update(deltaTime);
-
-            if (Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) resetState();
-            return;
-        }
-
-        engine.update(deltaTime);
-        checkGameOver();
+        
+        isLoading = false;
+        Gdx.app.log("PlayState", "Loading finished for: " + mapPath);
     }
 
     private void checkGameOver() {
@@ -183,30 +171,109 @@ public class PlayState extends GameState {
             isGameOver = true;
             return;
         }
-        
         HealthComponent health = engine.getEntityManager().getComponent(players.getFirst(), HealthComponent.class);
-        if (health != null && health.isDead) {
-            isGameOver = true;
+        if (health != null && health.isDead) isGameOver = true;
+    }
+
+    @Override
+    public void update(float deltaTime) {
+        if (!loadStarted) {
+            startLoading();
+            return;
+        }
+
+        if (isLoading) {
+            minLoadTimer += deltaTime;
+            boolean assetsLoaded = assetService.update();
+            float assetProgress = assetService.getProgress();
+            float timerProgress = Math.min(1.0f, minLoadTimer / MIN_LOAD_TIME);
+            loadProgress = Math.min(assetProgress, timerProgress);
+
+            if (assetsLoaded && minLoadTimer >= MIN_LOAD_TIME) {
+                finishInitialization();
+            }
+            return;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) && !isGameOver) {
+            gsm.push(new PauseState(gsm));
+            return;
+        }
+
+        if (isGameOver) {
+            updateGameOverSystems(deltaTime);
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+                gsm.setAbsoluteState(new PlayState(gsm, mapPath));
+            }
+            return;
+        }
+
+        engine.update(deltaTime);
+        checkGameOver();
+    }
+
+    private void updateGameOverSystems(float deltaTime) {
+        RenderSystem rs = null;
+        UISystem ui = null;
+        for (pl.shooter.engine.ecs.GameSystem system : engine.getSystems()) {
+            if (system instanceof RenderSystem) rs = (RenderSystem) system;
+            if (system instanceof UISystem) ui = (UISystem) system;
+        }
+        if (rs != null) rs.update(deltaTime);
+        if (ui != null) ui.update(deltaTime);
+    }
+
+    @Override
+    public void render() {
+        if (isLoading) {
+            renderLoadingScreen();
         }
     }
 
-    @Override public void render() {}
-    @Override public void resize(int width, int height) { if (engine != null) engine.resize(width, height); }
+    private void renderLoadingScreen() {
+        ScreenUtils.clear(0, 0, 0, 1);
+        uiViewport.apply();
+
+        float barWidth = uiViewport.getWorldWidth() * 0.6f;
+        float barHeight = 20;
+        float x = (uiViewport.getWorldWidth() - barWidth) / 2;
+        float y = uiViewport.getWorldHeight() / 3;
+
+        shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(Color.DARK_GRAY);
+        shapeRenderer.rect(x - 2, y - 2, barWidth + 4, barHeight + 4);
+        shapeRenderer.setColor(Color.GOLD);
+        shapeRenderer.rect(x, y, barWidth * loadProgress, barHeight);
+        shapeRenderer.end();
+
+        uiBatch.setProjectionMatrix(uiViewport.getCamera().combined);
+        uiBatch.begin();
+        font.setColor(Color.WHITE);
+        String msg = "PREPARING BATTLEFIELD...";
+        layout.setText(font, msg);
+        font.draw(uiBatch, msg, (uiViewport.getWorldWidth() - layout.width) / 2, y + 60);
+        
+        font.getData().setScale(0.8f);
+        String percent = (int)(loadProgress * 100) + "%";
+        font.draw(uiBatch, percent, x + barWidth - 40, y - 10);
+        font.getData().setScale(1.2f);
+        uiBatch.end();
+    }
+
+    @Override public void resize(int width, int height) {
+        if (uiViewport != null) uiViewport.update(width, height, true);
+        if (engine != null) engine.resize(width, height);
+    }
     
     @Override public void dispose() {
         Gdx.app.log("PlayState", "Disposing PlayState for map: " + mapPath);
-        if (engine != null) {
-            engine.dispose();
-            engine = null;
-        }
-        if (assetService != null) {
-            assetService.dispose();
-            assetService = null;
-        }
-        if (audioService != null) {
-            audioService.dispose();
-            audioService = null;
-        }
+        if (engine != null) engine.dispose();
+        if (assetService != null) assetService.dispose();
+        if (audioService != null) audioService.dispose();
+        if (uiBatch != null) uiBatch.dispose();
+        if (shapeRenderer != null) shapeRenderer.dispose();
+        if (font != null) font.dispose();
 
         if (config != null && config.ui.useCustomCursor) {
             Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);

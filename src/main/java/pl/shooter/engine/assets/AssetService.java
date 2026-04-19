@@ -28,6 +28,14 @@ public class AssetService {
         this.currentMapFolder = folderPath;
     }
 
+    public float getProgress() {
+        return manager.getProgress();
+    }
+
+    public boolean update() {
+        return manager.update();
+    }
+
     public void loadTexture(String path) {
         String resolvedPath = resolvePath(path, config.paths.textures);
         if (resolvedPath != null && !manager.isLoaded(resolvedPath)) {
@@ -53,37 +61,24 @@ public class AssetService {
         if (currentMapFolder != null) {
             String subPath = (subfolder == null || subfolder.isEmpty()) ? "" : subfolder + "/";
             String mapPath = currentMapFolder + "/" + subPath + cleanPath;
-            if (exists(mapPath)) return mapPath;
+            if (Gdx.files.internal(mapPath).exists()) return mapPath;
             
             String mapDirect = currentMapFolder + "/" + cleanPath;
-            if (exists(mapDirect)) return mapDirect;
+            if (Gdx.files.internal(mapDirect).exists()) return mapDirect;
         }
 
         // 3. TRY CORE FOLDER
         String subPath = (subfolder == null || subfolder.isEmpty()) ? "" : subfolder + "/";
         String corePath = config.paths.coreAssets + "/" + subPath + cleanPath;
-        if (exists(corePath)) return corePath;
+        if (Gdx.files.internal(corePath).exists()) return corePath;
         
         String coreDirect = config.paths.coreAssets + "/" + cleanPath;
-        if (exists(coreDirect)) return coreDirect;
+        if (Gdx.files.internal(coreDirect).exists()) return coreDirect;
 
         // 4. ABSOLUTE FALLBACK
         if (Gdx.files.internal(originalPath).exists()) return originalPath;
 
         return originalPath;
-    }
-
-    private boolean exists(String path) {
-        if (path == null) return false;
-        return Gdx.files.internal(path).exists() || Gdx.files.internal(path + "0.png").exists();
-    }
-
-    public void finishLoading() {
-        try {
-            manager.finishLoading();
-        } catch (Exception e) {
-            Gdx.app.error("ResourceManager", "Loading failed: " + e.getMessage());
-        }
     }
 
     public Texture getTexture(String path) {

@@ -8,11 +8,19 @@ Silnik opiera się na trzech filarach: **ECS (Entity Component System)**, **Even
 ### Engine (`pl.shooter.engine.Engine`)
 Główna klasa zarządzająca cyklem życia gry.
 - `update(float deltaTime)`: Wywołuje wszystkie systemy w zdefiniowanej kolejności.
-- `dispose()`: Gwarantuje poprawne zwolnienie zasobów wszystkich systemów (np. zatrzymanie audio).
+- `dispose()`: Gwarantuje poprawne zwolnienie zasobów wszystkich systemów (np. uciszenie audio).
 - `getEntityManager()`: Zarządzanie bazą danych encji.
 - `getEventBus()`: Centralny system zdarzeń.
 
-## 2. System ECS
+## 2. System Stanów (State Management)
+Silnik zarządza logiką poprzez stos stanów (`GameStateManager`).
+
+- **MenuState**: Główne menu.
+- **PlayState**: Aktywna rozgrywka na mapie.
+- **PauseState**: Nakładka pauzy (renderowana nad PlayState).
+- **LoadingState**: Generyczny ekran ładowania z paskiem postępu. Przyjmuje `targetState` i automatycznie przełącza się na niego po zakończeniu ładowania zasobów przez `AssetService`.
+
+## 3. System ECS
 
 ### Komponenty (`pl.shooter.engine.ecs.components`)
 Klasy POJO przechowujące czyste dane:
@@ -37,7 +45,7 @@ Kolejność wywołań w pętli gry (kluczowa dla spójności):
 2. `PathfindingSystem`: Wyznaczanie ścieżek A*.
 3. `AISystem`: Decyzje botów.
 4. `SteeringSystem`: Płynny ruch AI.
-5. `CombatSystem`: Logika strzału i przeładowania (korzysta z `WeaponConfig`).
+5. `CombatSystem`: Logika strzału i przeładowania.
 6. `ProjectileSystem`: Fizyka pocisków.
 7. `ParticleUpdateSystem`: Efekty wizualne.
 8. `PushingSystem`: Fizyka przesuwania obiektów.
@@ -51,26 +59,24 @@ Kolejność wywołań w pętli gry (kluczowa dla spójności):
 16. `AmbientSoundSystem`: Zarządzanie muzyką i pętlami tła.
 17. `WaveSystem`: Dynamiczne fale przeciwników.
 18. `RenderSystem`: Renderowanie świata (Scene -> Lights -> Mix).
-19. `UISystem`: HUD i menu.
+19. `UISystem`: HUD, menu i Profiler wydajności.
 
-## 3. Usługi (Services)
+## 4. Usługi (Services)
 
-- **ConfigService**: Zarządza ładowaniem `engine_config.json` oraz lokalnych konfiguracji broni per mapa.
-- **AssetService**: Inteligentny resolver ścieżek (Map-First) z asynchronicznym ładowaniem.
+- **ConfigService**: Zarządza ładowaniem `engine_config.json` oraz lokalnych konfiguracji broni.
+- **AssetService**: Inteligentny resolver ścieżek (Map-First) z asynchronicznym ładowaniem. Wspiera metodę `getProgress()` dla ekranów ładowania.
 - **AudioService**: Zarządza dźwiękami i muzyką. Posiada unikalny ID instancji dla bezpiecznego czyszczenia zasobów.
-- **JsonService**: Udostępnia globalny singleton `ObjectMapper` (Jackson) dla wydajnej serializacji.
+- **JsonService**: Udostępnia globalny singleton `ObjectMapper` (Jackson).
 - **MapService**: Orkiestrator wczytywania map i pre-loadingu zasobów encji.
 
-## 4. System Zdarzeń (Event Bus)
-
-Systemy komunikują się za pomocą zdarzeń implementujących interfejs `Event`:
+## 5. System Zdarzeń (Event Bus)
+Systemy komunikują się asynchronicznie:
 - `ShootEvent`, `HitEvent`, `DeathEvent`, `TriggerEvent`, `PickupEvent`, `BulletFiredEvent`, `EmptyWeaponEvent`, `TerrainChangeEvent`, `ScoreEvent`.
 
-## 5. Dane i Konfiguracja (Data-Driven)
+## 6. Dane i Konfiguracja (Data-Driven)
 
 ### Struktura Zasobów:
 - `assets/core/`: Zasoby krytyczne (shadery, bazowe tekstury).
-- `assets/shared/`: Encje i zasoby używane na wielu mapach.
 - `assets/maps/[name]/`: Odizolowane zasoby specyficzne dla poziomu.
 - `assets/configs/engine_config.json`: Centralne ustawienia silnika i ścieżek.
 

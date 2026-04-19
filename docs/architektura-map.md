@@ -27,7 +27,18 @@ assets/maps/[map_name]/
 
 ---
 
-## 2. Struktura Pliku `map.json`
+## 2. Logika ładowania (LoadingState)
+
+Przełączanie map powinno odbywać się za pośrednictwem `LoadingState`, co zapewnia płynność UI i wyświetlenie paska postępu podczas pre-loadingu zasobów (tekstur, shaderów, audio).
+
+Przykład wywołania zmiany mapy:
+```java
+gsm.setAbsoluteState(new LoadingState(gsm, new PlayState(gsm, mapPath), "LOADING LEVEL..."));
+```
+
+---
+
+## 3. Struktura Pliku `map.json`
 
 Silnik wspiera mapy oparte na kafelkach (Tilemaps) z obsługą atlasów.
 
@@ -59,39 +70,26 @@ Silnik wspiera mapy oparte na kafelkach (Tilemaps) z obsługą atlasów.
 
 ---
 
-## 3. Logika Rozwiązywania Ścieżek (AssetService)
+## 4. Logika Rozwiązywania Ścieżek (AssetService)
 
 Silnik stosuje politykę **Map-First**:
 1. Najpierw szuka zasobu w folderze aktualnie wczytanej mapy (`assets/maps/[current]/...`).
-2. Jeśli nie znajdzie, szuka w folderze `assets/shared/`.
-3. Ostatecznym fallbackiem są zasoby systemowe w `assets/core/`.
-
-To pozwala na łatwe tworzenie "tematycznych" map bez modyfikowania kodu silnika.
+2. Jeśli nie znajdzie, szuka w folderze `assets/shared/` (lub `assets/core/`).
+3. Ostatecznym fallbackiem są zasoby systemowe.
 
 ---
 
-## 4. Konfiguracja Broni (Map-Specific Weapons)
+## 5. Konfiguracja Broni (Map-Specific Weapons)
 
-Przy wczytywaniu mapy, `ConfigService` automatycznie ładuje pliki JSON z folderu `configs/weapons/` danej mapy. Pozwala to na:
-- Zmianę obrażeń broni na konkretnym poziomie.
-- Dodanie unikalnych typów pocisków specyficznych dla mapy.
-- Zmianę dźwięków wystrzału dla klimatu mapy.
+Przy wczytywaniu mapy, `ConfigService` automatycznie ładuje pliki JSON z folderu `configs/weapons/` danej mapy. Pozwala to na pełne zbalansowanie rozgrywki per poziom.
 
 ---
 
-## 5. System Triggerów na Mapie
+## 6. System Triggerów na Mapie
 
 Triggery są definiowane jako encje z komponentem `TriggerComponent`. Obsługiwane akcje:
 - `AMBIENT_SOUND`: Uruchamia pętlę dźwiękową (parametry `isLooping`, `volume`).
 - `STOP_AMBIENT`: Ucisza wszystkie pętle ambientowe.
 - `MUSIC_CHANGE`: Zmienia ścieżkę muzyczną.
 - `MESSAGE`: Wyświetla komunikat na ekranie (UI).
-- `TRAP`: Aktywuje pułapkę (np. dźwięk i obrażenia).
-
----
-
-## 6. Zalety Rozwiązania
-
-- **Zero Hardcodingu**: Nazwy plików i ścieżki są w pełni konfigurowalne.
-- **Bezpieczeństwo Audio**: Każda mapa ma własną instancję serwisu audio, która jest czyszczona przy wyjściu, co zapobiega nakładaniu się dźwięków.
-- **Modularność**: Mapy można przenosić między projektami jako pojedyncze foldery.
+- `TRAP`: Aktywuje pułapkę.

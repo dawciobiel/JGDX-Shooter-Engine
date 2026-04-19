@@ -14,6 +14,7 @@ public class ShooterGame extends ApplicationAdapter {
     @Override
     public void create() {
         gsm = new GameStateManager();
+        // Start directly with MenuState, PlayState handles its own loading
         gsm.push(new MenuState(gsm));
     }
 

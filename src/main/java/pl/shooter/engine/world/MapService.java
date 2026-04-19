@@ -6,23 +6,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.config.JsonService;
 import pl.shooter.engine.ecs.EntityFactory;
-import pl.shooter.engine.ecs.EntityManager;
 
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * Responsible for loading maps and preloading all required entity assets.
- * Updated to use shared ObjectMapper from JsonService.
+ * Non-blocking: Queues assets in AssetService but doesn't wait for them.
  */
 public class MapService {
-    private final EntityManager entityManager;
     private final EntityFactory entityFactory;
     private final ObjectMapper objectMapper;
     private final AssetService assetService;
 
-    public MapService(EntityManager entityManager, EntityFactory entityFactory, AssetService assetService) {
-        this.entityManager = entityManager;
+    public MapService(EntityFactory entityFactory, AssetService assetService) {
         this.entityFactory = entityFactory;
         this.assetService = assetService;
         this.objectMapper = JsonService.getMapper(); // Use Singleton
@@ -39,11 +36,11 @@ public class MapService {
 
             MapConfig config = objectMapper.readValue(file.read(), MapConfig.class);
             
-            // 1. Load map-specific textures
+            // 1. Queue map-specific textures
             if (config.settings.backgroundTexture != null) assetService.loadTexture(config.settings.backgroundTexture);
             if (config.tileLayer != null && config.tileLayer.tilesetPath != null) assetService.loadTexture(config.tileLayer.tilesetPath);
             
-            // 2. Pre-scan entities to load their assets BEFORE spawning
+            // 2. Pre-scan entities to queue their assets
             Set<String> typesToLoad = new HashSet<>();
             typesToLoad.add("player");
             if (config.entities != null) {
@@ -56,8 +53,6 @@ public class MapService {
                 entityFactory.loadEntity(type, -1000, -1000); 
             }
             
-            assetService.finishLoading();
-
             return config;
         } catch (Exception e) {
             Gdx.app.error("MapService", "Failed to load map: " + mapJsonPath, e);
