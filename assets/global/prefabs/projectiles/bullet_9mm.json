@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "data": {
+    "name": "9mm Bullet",
+    "baseDamage": 15,
+    "speed": 600,
+    "radius": 3,
+    "texturePath": "projectiles/bullet_yellow.png"
+  }
+}

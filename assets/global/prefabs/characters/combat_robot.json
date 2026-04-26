@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Chrono Robot",
+    "stats": {
+      "health": 250,
+      "speed": 110,
+      "radius": 22
+    },
+    "visuals": {
+      "texturePath": "characters/combat_robot/combat-robot-walk.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "animations": {
+        "IDLE": { "path": "characters/combat_robot/combat-robot-walk.png", "type": "SHEET", "rows": 1, "cols": 12, "frameDuration": 0.1 },
+        "WALK": { "path": "characters/combat_robot/combat-robot-walk.png", "type": "SHEET", "rows": 1, "cols": 12, "frameDuration": 0.08 },
+        "ATTACK": { "path": "characters/combat_robot/combat-robot-shoot.png", "type": "SHEET", "rows": 1, "cols": 8, "frameDuration": 0.05 },
+        "HIT": { "path": "characters/combat_robot/combat-robot-hit.png", "type": "SHEET", "rows": 1, "cols": 4, "frameDuration": 0.1 },
+        "DIE": { "path": "characters/combat_robot/combat-robot-explode.png", "type": "SHEET", "rows": 1, "cols": 7, "frameDuration": 0.1 }
+      }
+    },
+    "visualsAudio": {
+      "sounds": {
+        "HIT": "sfx/characters/combat_robot/robot1.wav",
+        "DEATH": "sfx/characters/combat_robot/robotstomp.wav",
+        "IDLE": "sfx/characters/combat_robot/robotstand.wav"
+      }
+    }
+  }
+}

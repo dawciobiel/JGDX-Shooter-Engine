@@ -24,7 +24,12 @@ Thumbs.db
 *.log
 
 # backups
+backups/
 assets-backup/
+asset_todo-file-segregation/
+
+# download
+download/
 
 # Keep Gradle wrapper JAR
 !gradle/wrapper/gradle-wrapper.jar

@@ -23,6 +23,9 @@ dependencies {
 
     // JSON support
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+    
+    // TOML support for external configuration files
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.15.2")
 
     testImplementation(platform("org.junit:junit-bom:6.0.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")

@@ -21,6 +21,14 @@ public class EntityManager {
         return entity;
     }
 
+    /**
+     * Checks if an entity is still active in the system.
+     */
+    public boolean isValid(Entity entity) {
+        if (entity == null) return false;
+        return entities.contains(entity);
+    }
+
     public Entity getEntityById(int id) {
         for (Entity e : entities) {
             if (e.getId() == id) return e;
@@ -82,7 +90,6 @@ public class EntityManager {
 
     /**
      * Returns entities that possess a specific set of components.
-     * Useful for Systems to filter entities they need to process.
      */
     @SafeVarargs
     public final List<Entity> getEntitiesWithComponents(Class<? extends Component>... componentClasses) {

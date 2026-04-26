@@ -2,52 +2,49 @@ package pl.shooter.engine.world;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
-import java.util.Set;
 
 /**
- * Data model for the map.json file.
+ * Modern Map Configuration aggregate.
+ * Separates tilemap data, level settings, and entity placements.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MapConfig {
-    public String id;
-    public String name;
-    public Settings settings = new Settings();
-    public TileLayer tileLayer;
-    public SpawnPoint playerSpawn = new SpawnPoint();
+    public LevelSettings settings = new LevelSettings();
+    public TileLayer tileLayer = new TileLayer();
     public List<EntityEntry> entities;
+    public SpawnPoint playerSpawn;
 
-    public static class Settings {
-        public float width = 2000;
-        public float height = 2000;
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class LevelSettings {
+        public String mapName = "Unnamed Map";
         public String backgroundTexture;
         public AmbientColor ambientColor = new AmbientColor();
-        public String musicTrack;
+        
+        public static class AmbientColor {
+            public float r = 0.1f, g = 0.1f, b = 0.2f, a = 1.0f;
+        }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TileLayer {
         public String tilesetPath;
-        public int tileSize = 64;
-        public int displaySize = 0;
+        public int tileSize = 32;
+        public int displaySize = 32;
+        public List<Integer> collidableTiles; // IDs of tiles that have collisions
         public int[][] data;
-        public Set<Integer> collidableTiles; // IDs of tiles that block movement
     }
 
-    public static class SpawnPoint {
-        public float x;
-        public float y;
-    }
-
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class EntityEntry {
-        public String type;
-        public float x;
-        public float y;
-        public float rotation = 0;
+        public String role;       // PLAYER, ENEMY, NEUTRAL, OBJECT
+        public String prefabPath; // e.g. "characters/zombie" or "objects/barrel"
+        public float x, y;
+        public boolean pushable = false;
+        public boolean destructible = false;
     }
 
-    public static class AmbientColor {
-        public float r = 0.1f;
-        public float g = 0.1f;
-        public float b = 0.2f;
-        public float a = 0.5f;
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SpawnPoint {
+        public float x, y;
     }
 }

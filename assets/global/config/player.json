@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "data": {
+    "nickname": "Slayer",
+    "characterPrefab": "characters/robot",
+    "startingWeapons": [
+      "weapons/pistol"
+    ],
+    "startingAmmo": {
+      "9mm_regular": 45
+    },
+    "initialScore": 0,
+    "invincible": false,
+    "infiniteAmmo": true
+  }
+}

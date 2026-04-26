@@ -1,8 +1,0 @@
-{
-  "components": {
-    "Transform": {},
-    "Render": { "color": { "r": 0.8, "g": 0.8, "b": 0, "a": 1 }, "radius": 10, "isCircle": false },
-    "Collider": { "radius": 10 },
-    "Interactable": { "type": "MESSAGE", "targetId": "Witaj w Shooter Engine!", "interactionRadius": 50 }
-  }
-}

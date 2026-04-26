@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "data": {
+    "id": "pistol_m9",
+    "name": "M9 Pistol",
+    "allowedAmmoCategories": ["9MM"],
+    "stats": {
+      "fireRate": 0.3,
+      "spread": 2.0,
+      "magazineSize": 15,
+      "isAutomatic": false,
+      "recoil": 0.5
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_pistol.png",
+      "muzzleFlashParticle": "particles/muzzle_flash_small"
+    },
+    "audio": {
+      "shootSound": "weapons/pistol/shoot.wav",
+      "reloadSound": "weapons/pistol/reload.wav",
+      "emptySound": "weapons/pistol/empty.wav"
+    }
+  }
+}

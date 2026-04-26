@@ -6,7 +6,8 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import pl.shooter.engine.config.ConfigService;
-import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.models.EngineConfig;
+import pl.shooter.engine.config.models.InputConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
@@ -19,8 +20,7 @@ import pl.shooter.engine.input.InputMapper;
 import java.util.List;
 
 /**
- * Handles player input for movement, aiming, and weapon management.
- * Uses abstract GameActions via InputMapper for decoupling physical input.
+ * Handles player input using abstract GameActions via InputMapper.
  */
 public class InputSystem extends GameSystem {
     private final EventBus eventBus;
@@ -28,18 +28,14 @@ public class InputSystem extends GameSystem {
     private final Vector3 mouseBuffer = new Vector3();
     private final InputMapper inputMapper;
 
-    public InputSystem(EntityManager entityManager, EventBus eventBus, OrthographicCamera camera) {
+    public InputSystem(EntityManager entityManager, EventBus eventBus, OrthographicCamera camera, InputMapper inputMapper) {
         super(entityManager);
         this.eventBus = eventBus;
         this.camera = camera;
-        ConfigService configService = new ConfigService();
-        GameConfig config = configService.getConfig();
-        this.inputMapper = new InputMapper(configService.getInputConfig());
+        this.inputMapper = inputMapper;
         
-        if (config.ui.useCustomCursor) {
-            Gdx.input.setCursorCatched(false);
-            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.None);
-        }
+        // Cursor handling
+        Gdx.input.setCursorCatched(false);
     }
 
     @Override
@@ -90,7 +86,6 @@ public class InputSystem extends GameSystem {
     }
 
     private void handleWeaponSelection(InventoryComponent inv, Entity player) {
-        // Direct number selection
         if (inputMapper.isJustPressed(GameAction.WEAPON_1)) inv.currentWeaponIndex = 0;
         if (inputMapper.isJustPressed(GameAction.WEAPON_2) && inv.weapons.size() > 1) inv.currentWeaponIndex = 1;
         if (inputMapper.isJustPressed(GameAction.WEAPON_3) && inv.weapons.size() > 2) inv.currentWeaponIndex = 2;
@@ -102,10 +97,12 @@ public class InputSystem extends GameSystem {
         if (inputMapper.isJustPressed(GameAction.WEAPON_9) && inv.weapons.size() > 8) inv.currentWeaponIndex = 8;
         if (inputMapper.isJustPressed(GameAction.WEAPON_0) && inv.weapons.size() > 9) inv.currentWeaponIndex = 9;
 
-        // Cycle selection
         if (inputMapper.isJustPressed(GameAction.WEAPON_PREV)) inv.previousWeapon();
         if (inputMapper.isJustPressed(GameAction.WEAPON_NEXT)) inv.nextWeapon();
         
-        entityManager.addComponent(player, inv.getActiveWeapon());
+        WeaponComponent active = inv.getActiveWeapon();
+        if (active != null) {
+            entityManager.addComponent(player, active);
+        }
     }
 }

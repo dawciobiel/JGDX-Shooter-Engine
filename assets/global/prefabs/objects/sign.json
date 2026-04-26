@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Directional Sign",
+    "stats": {
+      "health": 100,
+      "speed": 0,
+      "radius": 12
+    },
+    "visuals": {
+      "texturePath": "environment/props/sign.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "animations": {}
+    }
+  }
+}

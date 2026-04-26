@@ -1,5 +1,6 @@
 package pl.shooter.game.states;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -15,29 +16,33 @@ import pl.shooter.engine.Engine;
 import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.assets.AudioService;
 import pl.shooter.engine.config.ConfigService;
-import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.models.*;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 import pl.shooter.engine.world.MapConfig;
 import pl.shooter.engine.world.MapService;
 
+import java.util.List;
+
 /**
- * Professional Loading State using Scene2D for UI.
- * Handles asynchronous asset loading and initialization before switching to PlayState.
+ * Professional Loading State with Asset Error Reporting.
  */
 public class LoadingState extends GameState {
     private final String mapPath;
-    
-    // UI
     private final Stage stage;
     private final Skin skin;
     private ProgressBar progressBar;
     private Label statusLabel;
+    private Table errorTable;
     
-    // Logic/Services
     private final ConfigService configService;
-    private final GameConfig config;
+    private final EngineConfig engineConfig;
+    private final RenderingConfig renderingConfig;
+    private final GameplayConfig gameplayConfig;
+    private final InputConfig defaultInputConfig;
+    private final InputConfig userInputConfig;
+
     private AssetService assetService;
     private AudioService audioService;
     private MapService mapService;
@@ -52,13 +57,15 @@ public class LoadingState extends GameState {
     public LoadingState(GameStateManager gsm, String mapPath) {
         super(gsm);
         this.mapPath = mapPath;
-        
         this.configService = new ConfigService();
-        this.config = configService.getConfig();
-        
-        this.stage = new Stage(new FitViewport(config.graphics.width, config.graphics.height));
+        this.engineConfig = configService.getEngineConfig();
+        this.renderingConfig = configService.getRenderingConfig();
+        this.gameplayConfig = configService.getGameplayConfig();
+        this.defaultInputConfig = configService.getDefaultInputConfig();
+        this.userInputConfig = configService.getUserInputConfig();
+
+        this.stage = new Stage(new FitViewport(renderingConfig.width, renderingConfig.height));
         this.skin = createLoadingSkin();
-        
         initUI();
     }
 
@@ -66,12 +73,10 @@ public class LoadingState extends GameState {
         Skin newSkin = new Skin();
         BitmapFont font = new BitmapFont();
         newSkin.add("default", font);
-
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
-        Texture whiteTexture = new Texture(pixmap);
-        newSkin.add("white", whiteTexture);
+        newSkin.add("white", new Texture(pixmap));
 
         ProgressBar.ProgressBarStyle barStyle = new ProgressBar.ProgressBarStyle();
         barStyle.background = newSkin.newDrawable("white", Color.DARK_GRAY);
@@ -82,6 +87,11 @@ public class LoadingState extends GameState {
         labelStyle.font = font;
         labelStyle.fontColor = Color.WHITE;
         newSkin.add("default", labelStyle);
+        
+        Label.LabelStyle errorStyle = new Label.LabelStyle();
+        errorStyle.font = font;
+        errorStyle.fontColor = Color.RED;
+        newSkin.add("error", errorStyle);
 
         return newSkin;
     }
@@ -100,30 +110,26 @@ public class LoadingState extends GameState {
 
         statusLabel = new Label("Preparing engine...", skin);
         statusLabel.setFontScale(0.8f);
-        root.add(statusLabel);
+        root.add(statusLabel).padBottom(20).row();
+        
+        errorTable = new Table();
+        root.add(errorTable).growX();
     }
 
     private void startLoading() {
         this.engine = new Engine();
-        this.assetService = new AssetService(config);
+        this.assetService = new AssetService(engineConfig);
         this.audioService = new AudioService();
-        this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService, config);
-        this.mapService = new MapService(entityFactory, assetService);
+        this.entityFactory = new EntityFactory(engine.getEntityManager(), assetService, configService);
+        this.mapService = new MapService(entityFactory, assetService, configService);
         
-        // Setup folder context BEFORE loading map
-        String mapFolder = mapPath.contains("/") ? mapPath.substring(0, mapPath.lastIndexOf('/')) : config.paths.maps + "/default";
-        assetService.setCurrentMapFolder(mapFolder);
-        entityFactory.setCurrentMapFolder(mapFolder);
-        
-        // Queue map assets and entity templates
+        assetService.setCurrentMapFolder(mapPath);
         this.mapConfig = mapService.loadMap(mapPath);
         
-        if (config.ui.useCustomCursor && config.ui.cursorImagePath != null) {
-            assetService.loadTexture(config.ui.cursorImagePath);
+        // Use RenderingConfig for UI cursor - simplified call
+        if (renderingConfig.ui.useCustomCursor && renderingConfig.ui.cursorImagePath != null) {
+            assetService.loadTexture(renderingConfig.ui.cursorImagePath);
         }
-        
-        audioService.loadSound(assetService.resolvePath("characters/soldier/hit.wav", config.paths.sounds));
-        audioService.loadSound(assetService.resolvePath("characters/soldier/death.wav", config.paths.sounds));
         
         loadStarted = true;
     }
@@ -137,44 +143,39 @@ public class LoadingState extends GameState {
 
         minLoadTimer += deltaTime;
         boolean assetsLoaded = assetService.update();
-        float progress = assetService.getProgress();
-        
-        progressBar.setValue(progress);
-        
-        if (progress < 0.5f) {
-            statusLabel.setText("Loading map data...");
-        } else if (progress < 0.9f) {
-            statusLabel.setText("Loading textures and sounds...");
-        } else {
-            statusLabel.setText("Finalizing initialization...");
+        progressBar.setValue(assetService.getProgress());
+
+        List<String> errors = assetService.getLoadingErrors();
+        if (!errors.isEmpty()) {
+            updateErrorDisplay(errors);
+            statusLabel.setText("MISSING ASSETS DETECTED!");
+            statusLabel.setColor(Color.RED);
         }
 
-        if (assetsLoaded && minLoadTimer >= MIN_LOAD_TIME) {
-            goToPlayState();
+        // If no errors and loading finished, proceed
+        if (assetsLoaded && minLoadTimer >= MIN_LOAD_TIME && errors.isEmpty()) {
+            gsm.setAbsoluteState(new PlayState(gsm, mapPath, engine, assetService, audioService, configService, entityFactory, mapService, mapConfig,
+                    engineConfig, renderingConfig, gameplayConfig, defaultInputConfig, userInputConfig));
         }
         
         stage.act(deltaTime);
     }
 
-    private void goToPlayState() {
-        PlayState playState = new PlayState(gsm, mapPath, engine, assetService, audioService, configService, entityFactory, mapService, mapConfig);
-        gsm.setAbsoluteState(playState);
+    private void updateErrorDisplay(List<String> errors) {
+        errorTable.clear();
+        Label errorTitle = new Label("ERROR: Failed to load some files:", skin, "error");
+        errorTable.add(errorTitle).padBottom(5).row();
+        for (String error : errors) {
+            Label errLabel = new Label(error, skin, "error");
+            errLabel.setFontScale(0.7f);
+            errorTable.add(errLabel).row();
+        }
     }
 
-    @Override
-    public void render() {
+    @Override public void render() {
         ScreenUtils.clear(0.05f, 0.05f, 0.1f, 1);
         stage.draw();
     }
-
-    @Override
-    public void resize(int width, int height) {
-        stage.getViewport().update(width, height, true);
-    }
-
-    @Override
-    public void dispose() {
-        stage.dispose();
-        skin.dispose();
-    }
+    @Override public void resize(int width, int height) { stage.getViewport().update(width, height, true); }
+    @Override public void dispose() { stage.dispose(); skin.dispose(); }
 }

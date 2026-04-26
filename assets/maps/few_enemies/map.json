@@ -1,13 +1,7 @@
 {
-  "id": "few_enemies",
-  "name": "Few enemies (Small)",
-  "settings": {
-    "width": 960,
-    "height": 960,
-    "ambientColor": { "r": 0.4, "g": 0.4, "b": 0.4, "a": 0.3 }
-  },
-  "tileLayer": {
-    "tilesetPath": "environment/environment-city.png",
+  "version": 1,
+  "data": {
+    "tilesetPath": "maps/few_enemies/local/textures/environment/city/environment-city.png",
     "tileSize": 132,
     "displaySize": 32,
     "collidableTiles": [0, 5, 25],
@@ -43,13 +37,5 @@
       [0,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,295,0],
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     ]
-  },
-  "playerSpawn": { "x": 64, "y": 64 },
-  "entities": [
-    { "type": "zombie", "x": 800, "y": 200 },
-    { "type": "zombie_runner", "x": 700, "y": 700 },
-    { "type": "zombie_fat", "x": 200, "y": 800 },
-    { "type": "combat_robot", "x": 350, "y": 350 },
-    { "type": "sign", "x": 150, "y": 64 }
-  ]
+  }
 }

@@ -2,7 +2,7 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
-import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.models.GameplayConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
@@ -21,9 +21,9 @@ import java.util.List;
 public class DamageSystem extends GameSystem {
     private final EntityFactory factory;
     private final EventBus eventBus;
-    private final GameConfig config;
+    private final GameplayConfig config;
 
-    public DamageSystem(EntityManager entityManager, EventBus eventBus, EntityFactory factory, GameConfig config) {
+    public DamageSystem(EntityManager entityManager, EventBus eventBus, EntityFactory factory, GameplayConfig config) {
         super(entityManager);
         this.eventBus = eventBus;
         this.factory = factory;
@@ -33,7 +33,6 @@ public class DamageSystem extends GameSystem {
 
     @Override
     public void update(float deltaTime) {
-        // Handle corpse fading and removal
         List<Entity> healthEntities = entityManager.getEntitiesWithComponents(HealthComponent.class);
         for (Entity entity : healthEntities) {
             HealthComponent health = entityManager.getComponent(entity, HealthComponent.class);
@@ -50,14 +49,11 @@ public class DamageSystem extends GameSystem {
         Entity victim = event.victim;
         HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
         
-        // Don't hit things that are already dead
         if (health == null || health.isDead) return;
 
         boolean isVictimPlayer = entityManager.hasComponent(victim, PlayerComponent.class);
         
-        // DEBUG: Invincibility
-        if (isVictimPlayer && config.debug.invinciblePlayer) return;
-
+        // Debug/GodMode can be moved to PlayerConfig later if needed
         int attackerId = event.attackerId;
         int damage = event.damage;
 
@@ -66,12 +62,11 @@ public class DamageSystem extends GameSystem {
         Entity attacker = entityManager.getEntityById(attackerId);
         boolean isAttackerPlayer = attacker != null && entityManager.hasComponent(attacker, PlayerComponent.class);
 
-        // --- Friendly Fire Logic ---
         boolean shouldDamage = false;
         if (isVictimPlayer && !isAttackerPlayer) {
-            shouldDamage = true; // Monster/Explosion hits player
+            shouldDamage = true;
         } else if (!isVictimPlayer && isAttackerPlayer) {
-            shouldDamage = true; // Player hits monster or scenery
+            shouldDamage = true;
         }
 
         if (!shouldDamage) return;
@@ -81,13 +76,12 @@ public class DamageSystem extends GameSystem {
         if (trans != null) {
             health.hp -= damage;
             
-            // Effects of hit
             if (isVictimDestructible) {
                 factory.createExplosion(trans.x, trans.y, new Color(0.6f, 0.4f, 0.2f, 1f));
             } else if (health.hasBlood) {
-                factory.createExplosion(trans.x, trans.y, health.bloodColor); // Splatter effect
+                factory.createExplosion(trans.x, trans.y, health.bloodColor);
             } else {
-                factory.createExplosion(trans.x, trans.y, Color.GRAY); // Sparks/Dust
+                factory.createExplosion(trans.x, trans.y, Color.GRAY);
             }
 
             if (health.hp <= 0) {
@@ -109,7 +103,7 @@ public class DamageSystem extends GameSystem {
 
         if (entityManager.hasComponent(victim, PlayerComponent.class)) {
             factory.createExplosion(x, y, Color.RED);
-            health.isDead = true; // Mark player dead, but don't remove yet for death screen/fade
+            health.isDead = true;
         } else {
             if (killedByPlayer) {
                 List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, ScoreComponent.class);
@@ -122,13 +116,12 @@ public class DamageSystem extends GameSystem {
                 
                 float roll = MathUtils.random();
                 if (roll < 0.20f) {
-                    factory.createAmmoPickup(x, y, MathUtils.random(5, 15));
+                    factory.createAmmoBox("weapons/ammo/9mm_regular", 15, x, y);
                 } else if (roll < 0.10f) {
                     factory.createHealthPickup(x, y, 20f);
                 }
             }
             
-            // CORPSE SYSTEM: Start death timer and disable AI/Collisions
             health.isDead = true;
             entityManager.removeComponent(victim, AIComponent.class);
             entityManager.removeComponent(victim, ColliderComponent.class);

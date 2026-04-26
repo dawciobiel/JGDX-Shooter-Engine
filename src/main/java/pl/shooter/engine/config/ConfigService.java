@@ -2,121 +2,128 @@ package pl.shooter.engine.config;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import pl.shooter.engine.config.models.*;
 
 import java.io.File;
+import java.io.FileInputStream;
 
 /**
- * Service for loading and saving game configuration.
- * Handles Engine, Input, and Weapon configurations.
+ * Advanced Config Service with Verbose Logging for Debugging.
  */
 public class ConfigService {
-    private static final String DEFAULT_CONFIG_PATH = "assets/configs/engine_config.json";
-    private static final String USER_CONFIG_PATH = "user_config.json";
-    private final ObjectMapper mapper;
-    private GameConfig cachedConfig;
-    private InputConfig cachedInputConfig;
-    private WeaponConfig cachedWeaponConfig;
+    private final ObjectMapper jsonMapper;
+    private final ObjectMapper tomlMapper;
+    
+    private EngineConfig engineConfig;
+    private RenderingConfig renderingConfig;
+    private PhysicsConfig physicsConfig;
+    private InputConfig userInputConfig;
+    private GameplayConfig gameplayConfig;
+    private InputConfig defaultInputConfig;
 
     public ConfigService() {
-        this.mapper = JsonService.getMapper();
+        this.jsonMapper = JsonService.getMapper();
+        this.tomlMapper = JsonService.getTomlMapper();
     }
 
-    public GameConfig getConfig() {
-        if (cachedConfig != null) return cachedConfig;
-
-        GameConfig config = loadConfig(DEFAULT_CONFIG_PATH, GameConfig.class);
-        if (config == null) config = new GameConfig();
-
-        GameConfig userConfig = loadConfig(USER_CONFIG_PATH, GameConfig.class);
-        if (userConfig != null) {
-            mergeConfigs(config, userConfig);
+    public EngineConfig getEngineConfig() {
+        if (engineConfig == null) {
+            engineConfig = loadExternalConfig("engine.toml", EngineConfig.class);
+            if (engineConfig == null) engineConfig = new EngineConfig();
         }
-
-        cachedConfig = config;
-        return cachedConfig;
+        return engineConfig;
     }
 
-    public InputConfig getInputConfig() {
-        if (cachedInputConfig != null) return cachedInputConfig;
-
-        String path = getConfig().paths.inputConfigPath;
-        InputConfig config = loadConfig(path, InputConfig.class);
-        if (config == null) {
-            config = new InputConfig();
+    public RenderingConfig getRenderingConfig() {
+        if (renderingConfig == null) {
+            renderingConfig = loadExternalConfig("rendering.toml", RenderingConfig.class);
+            if (renderingConfig == null) renderingConfig = new RenderingConfig();
         }
-        
-        cachedInputConfig = config;
-        return cachedInputConfig;
+        return renderingConfig;
     }
 
-    public WeaponConfig getWeaponConfig() {
-        if (cachedWeaponConfig == null) {
-            cachedWeaponConfig = new WeaponConfig();
+    public PhysicsConfig getPhysicsConfig() {
+        if (physicsConfig == null) {
+            physicsConfig = loadExternalConfig("physics.toml", PhysicsConfig.class);
+            if (physicsConfig == null) physicsConfig = new PhysicsConfig();
         }
-        return cachedWeaponConfig;
+        return physicsConfig;
     }
 
-    public void loadWeaponConfigForMap(String mapFolder) {
-        WeaponConfig fullConfig = new WeaponConfig();
-        String weaponsFolder = mapFolder + "/configs/weapons";
-        FileHandle dir = Gdx.files.internal(weaponsFolder);
+    public InputConfig getUserInputConfig() {
+        if (userInputConfig == null) {
+            userInputConfig = loadExternalConfig("input.toml", InputConfig.class);
+        }
+        return userInputConfig;
+    }
 
-        if (dir.exists() && dir.isDirectory()) {
-            for (FileHandle file : dir.list(".json")) {
-                try {
-                    WeaponConfig.WeaponData data = mapper.readValue(file.read(), WeaponConfig.WeaponData.class);
-                    String weaponName = file.nameWithoutExtension().toUpperCase();
-                    fullConfig.weapons.put(weaponName, data);
-                } catch (Exception e) {
-                    Gdx.app.error("ConfigService", "Error loading weapon file: " + file.name(), e);
-                }
+    public GameplayConfig getGameplayConfig() {
+        if (gameplayConfig == null) {
+            String path = "assets/global/config/game.json";
+            gameplayConfig = loadAssetConfig(path, GameplayConfig.class);
+            if (gameplayConfig == null) gameplayConfig = new GameplayConfig();
+        }
+        return gameplayConfig;
+    }
+
+    public InputConfig getDefaultInputConfig() {
+        if (defaultInputConfig == null) {
+            String path = "assets/global/config/input.json";
+            defaultInputConfig = loadAssetConfig(path, InputConfig.class);
+            if (defaultInputConfig == null) defaultInputConfig = new InputConfig();
+        }
+        return defaultInputConfig;
+    }
+
+    private <T> T loadExternalConfig(String fileName, Class<T> dataClass) {
+        String fullPath = "config/" + fileName;
+        File file = new File(fullPath);
+        if (file.exists()) {
+            try (FileInputStream is = new FileInputStream(file)) {
+                JavaType type = tomlMapper.getTypeFactory().constructParametricType(DataWrapper.class, dataClass);
+                DataWrapper<T> wrapper = tomlMapper.readValue(is, type);
+                return wrapper.data;
+            } catch (Exception e) {
+                System.err.println("[ConfigService] ERROR loading external TOML " + fullPath + ": " + e.getMessage());
             }
-        } else {
-            Gdx.app.error("ConfigService", "Weapons folder NOT FOUND: " + weaponsFolder);
-        }
-        
-        this.cachedWeaponConfig = fullConfig;
-    }
-
-    private <T> T loadConfig(String path, Class<T> clazz) {
-        try {
-            FileHandle file = Gdx.files.internal(path);
-            if (file.exists()) {
-                return mapper.readValue(file.read(), clazz);
-            } else if (new File(path).exists()) {
-                return mapper.readValue(new File(path), clazz);
-            }
-        } catch (Exception e) {
-            Gdx.app.error("ConfigService", "Error loading config " + path + ": " + e.getMessage());
         }
         return null;
     }
 
-    private void mergeConfigs(GameConfig base, GameConfig user) {
-        if (user.graphics != null) {
-            if (user.graphics.width > 0) base.graphics.width = user.graphics.width;
-            if (user.graphics.height > 0) base.graphics.height = user.graphics.height;
-            base.graphics.fullscreen = user.graphics.fullscreen;
+    public <T> T loadAssetConfig(String internalPath, Class<T> dataClass) {
+        if (Gdx.files == null) return null;
+        FileHandle handle = Gdx.files.internal(internalPath);
+        if (handle.exists()) {
+            return unwrap(handle, dataClass, jsonMapper);
+        } else {
+            System.err.println("[ConfigService] Asset file NOT FOUND: " + internalPath);
         }
-        if (user.debug != null) {
-            base.debug.showHitboxes = user.debug.showHitboxes;
-            base.debug.showFps = user.debug.showFps;
-            base.debug.showPaths = user.debug.showPaths;
-        }
-        if (user.ui != null) {
-            base.ui.useCustomCursor = user.ui.useCustomCursor;
-            if (user.ui.cursorImagePath != null) base.ui.cursorImagePath = user.ui.cursorImagePath;
-            base.ui.cursorSize = user.ui.cursorSize;
-            base.ui.cursorAlpha = user.ui.cursorAlpha;
+        return null;
+    }
+
+    private <T> T unwrap(FileHandle file, Class<T> dataClass, ObjectMapper currentMapper) {
+        try {
+            JavaType type = currentMapper.getTypeFactory().constructParametricType(DataWrapper.class, dataClass);
+            DataWrapper<T> wrapper = currentMapper.readValue(file.read(), type);
+            if (wrapper == null || wrapper.data == null) {
+                System.err.println("[ConfigService] FAILED UNWRAP (data is null): " + file.path());
+                return null;
+            }
+            return wrapper.data;
+        } catch (Exception e) {
+            System.err.println("[ConfigService] ERROR unwrapping " + file.path() + ": " + e.getMessage());
+            return null;
         }
     }
 
-    public void saveUserConfig(GameConfig config) {
-        try {
-            mapper.writeValue(new File(USER_CONFIG_PATH), config);
-        } catch (Exception e) {
-            Gdx.app.error("ConfigService", "Error saving user config", e);
+    public <T> T loadPrefab(String prefabPath, Class<T> prefabClass) {
+        String fullPath = "assets/global/prefabs/" + prefabPath + ".json";
+        T prefab = loadAssetConfig(fullPath, prefabClass);
+        if (prefab == null) {
+            System.err.println("[ConfigService] FAILED to load prefab: " + fullPath);
         }
+        return prefab;
     }
 }

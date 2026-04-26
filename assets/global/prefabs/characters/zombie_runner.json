@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Fast Zombie",
+    "stats": {
+      "health": 30,
+      "speed": 160,
+      "radius": 12
+    },
+    "visuals": {
+      "texturePath": "characters/zombie/skeleton-idle_0.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "animations": {
+        "IDLE": { "path": "characters/zombie/skeleton-idle", "type": "FILES", "count": 16, "frameDuration": 0.03 },
+        "WALK": { "path": "characters/zombie/skeleton-move", "type": "FILES", "count": 16, "frameDuration": 0.03 }
+      }
+    },
+    "visualsAudio": {
+      "sounds": {
+        "HIT": "characters/zombie/hit.wav",
+        "DEATH": "characters/zombie/death.wav"
+      }
+    }
+  }
+}

@@ -14,7 +14,8 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import pl.shooter.engine.ai.pathfinding.Node;
 import pl.shooter.engine.assets.AssetService;
-import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.models.EngineConfig;
+import pl.shooter.engine.config.models.GameplayConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
@@ -26,7 +27,7 @@ import java.util.List;
 
 /**
  * Renders the game world. 
- * Optimized to use shared SpriteBatch and ShapeRenderer.
+ * Updated to use new Asset Architecture and EngineConfig.
  */
 public class RenderSystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
@@ -34,7 +35,8 @@ public class RenderSystem extends GameSystem {
     private final OrthographicCamera camera;
     private final Viewport viewport;
     private final AssetService assetService;
-    private final GameConfig config;
+    private EngineConfig config;
+    private GameplayConfig gameplayConfig;
     private GameMap currentMap;
     private final BitmapFont nameFont;
     private final Vector3 mouseBuffer = new Vector3();
@@ -51,20 +53,23 @@ public class RenderSystem extends GameSystem {
     public RenderSystem(EntityManager entityManager, AssetService assetService, SpriteBatch batch, ShapeRenderer shapeRenderer) {
         super(entityManager);
         this.assetService = assetService;
-        this.config = assetService.getConfig();
         this.spriteBatch = batch;
         this.shapeRenderer = shapeRenderer;
         this.camera = new OrthographicCamera();
-        this.viewport = new ExtendViewport(config.graphics.width, config.graphics.height, camera);
+        this.viewport = new ExtendViewport(800, 600, camera);
         this.nameFont = new BitmapFont();
         this.nameFont.getData().setScale(0.8f);
+    }
 
-        initShaders();
+    public void init(EngineConfig engineConfig, GameplayConfig gameplayConfig) {
+        this.config = engineConfig;
+        this.gameplayConfig = gameplayConfig;
+        initShaders(engineConfig);
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
-    private void initShaders() {
-        String shaderBase = config.paths.coreAssets + "/" + config.paths.shaders + "/";
+    private void initShaders(EngineConfig config) {
+        String shaderBase = config.paths.globalRoot + "/" + config.paths.shaders + "/";
         String vert = Gdx.files.internal(shaderBase + "lighting.vert").readString();
         String frag = Gdx.files.internal(shaderBase + "lighting.frag").readString();
         this.lightingShader = new ShaderProgram(vert, frag);
@@ -107,12 +112,10 @@ public class RenderSystem extends GameSystem {
                 shapeRenderer.end();
             }
 
-            if (config.effects.showBloodDecals) {
-                shapeRenderer.setProjectionMatrix(camera.combined);
-                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                renderBloodDecals(healthEntities);
-                shapeRenderer.end();
-            }
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            renderBloodDecals(healthEntities);
+            shapeRenderer.end();
 
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -124,7 +127,7 @@ public class RenderSystem extends GameSystem {
             spriteBatch.begin();
             renderTexturedEntities(texturedEntities);
             renderAnimatedEntities(animatedEntities);
-            if (config.gameplay.showUnitNames) {
+            if (gameplayConfig != null && gameplayConfig.showUnitNames) {
                 renderUnitNames(namedEntities);
             }
             spriteBatch.end();
@@ -141,10 +144,6 @@ public class RenderSystem extends GameSystem {
         
         if (showDebugPaths || showDebugHitboxes) {
             renderDebugInfo();
-        }
-
-        if (config.ui.useCustomCursor) {
-            renderCustomCursor();
         }
     }
 
@@ -203,21 +202,6 @@ public class RenderSystem extends GameSystem {
         }
     }
 
-    private void renderCustomCursor() {
-        Texture cursorTex = assetService.getTexture(config.ui.cursorImagePath);
-        if (cursorTex != null) {
-            mouseBuffer.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-            camera.unproject(mouseBuffer);
-            spriteBatch.setProjectionMatrix(camera.combined);
-            spriteBatch.setShader(null);
-            spriteBatch.begin();
-            spriteBatch.setColor(config.ui.cursorRed, config.ui.cursorGreen, config.ui.cursorBlue, config.ui.cursorAlpha);
-            float size = config.ui.cursorSize;
-            spriteBatch.draw(cursorTex, mouseBuffer.x - size/2, mouseBuffer.y - size/2, size, size);
-            spriteBatch.end();
-        }
-    }
-
     private void renderBloodDecals(List<Entity> healthEntities) {
         for (Entity entity : healthEntities) {
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
@@ -248,6 +232,7 @@ public class RenderSystem extends GameSystem {
 
     private void renderTexturedEntities(List<Entity> entities) {
         for (Entity entity : entities) {
+            if (entityManager.hasComponent(entity, AnimationComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             TextureComponent tex = entityManager.getComponent(entity, TextureComponent.class);
             Texture texture = assetService.getTexture(tex.assetPath);
@@ -380,7 +365,6 @@ public class RenderSystem extends GameSystem {
 
     @Override
     public void dispose() {
-        // shapeRenderer and spriteBatch are shared, do NOT dispose them here
         if (lightingShader != null) lightingShader.dispose();
         if (sceneFbo != null) sceneFbo.dispose();
         if (nameFont != null) nameFont.dispose();

@@ -1,0 +1,26 @@
+version = 1
+
+[data]
+[data.paths]
+assetsRoot = "assets"
+globalRoot = "assets/global"
+mapsRoot = "assets/maps"
+textures = "textures"
+audio = "audio"
+fonts = "fonts"
+shaders = "shaders"
+ui = "ui"
+materials = "materials"
+particles = "particles"
+prefabs = "prefabs"
+globalConfig = "config"
+
+[data.debug]
+showHitboxes = false
+showFps = true
+showPaths = false
+showProfiler = false
+
+[data.performance]
+targetFps = 60
+maxGlobalEntities = 100

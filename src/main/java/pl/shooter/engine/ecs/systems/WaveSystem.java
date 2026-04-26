@@ -1,7 +1,7 @@
 package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.math.MathUtils;
-import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.models.GameplayConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
 import pl.shooter.engine.ecs.EntityManager;
@@ -20,11 +20,11 @@ import java.util.List;
 public class WaveSystem extends GameSystem {
     private final EntityFactory entityFactory;
     private final GameMap map;
-    private final GameConfig config;
+    private final GameplayConfig config;
     private float spawnTimer = 0;
     private int spawnedCount = 0;
 
-    public WaveSystem(EntityManager entityManager, EntityFactory entityFactory, GameMap map, GameConfig config) {
+    public WaveSystem(EntityManager entityManager, EntityFactory entityFactory, GameMap map, GameplayConfig config) {
         super(entityManager);
         this.entityFactory = entityFactory;
         this.map = map;
@@ -40,7 +40,6 @@ public class WaveSystem extends GameSystem {
         
         ScoreComponent score = entityManager.getComponent(players.getFirst(), ScoreComponent.class);
 
-        // Advance wave every 5 spawns
         if (spawnedCount >= 5) {
             score.wave++;
             spawnedCount = 0;
@@ -52,10 +51,9 @@ public class WaveSystem extends GameSystem {
             
             int currentEnemies = entityManager.getEntitiesWithComponents(AIComponent.class).size();
             
-            // Hard limit from config and scaling wave limit
             int maxEnemiesBase = 8;
             int waveLimit = maxEnemiesBase + score.wave * 2;
-            int globalLimit = config.gameplay.maxGlobalEntities;
+            int globalLimit = 100; // Can be moved to EngineConfig later
 
             if (currentEnemies < Math.min(waveLimit, globalLimit)) {
                 spawnEnemyNearPlayer();
@@ -81,8 +79,9 @@ public class WaveSystem extends GameSystem {
         } while (!map.isWalkable(spawnX, spawnY) && attempts < 20);
 
         if (attempts < 20) {
-            String enemyType = MathUtils.randomBoolean() ? "zombie_runner" : "zombie_fat";
-            entityFactory.loadEntity(enemyType, spawnX, spawnY);
+            // Using new Role/Prefab logic
+            String enemyType = MathUtils.randomBoolean() ? "characters/zombie" : "characters/zombie_fat";
+            entityFactory.createEnemy(enemyType, spawnX, spawnY);
         }
     }
 }

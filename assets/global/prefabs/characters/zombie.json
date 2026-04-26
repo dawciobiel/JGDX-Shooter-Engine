@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Skeleton Zombie",
+    "stats": {
+      "health": 50,
+      "speed": 80,
+      "radius": 16
+    },
+    "visuals": {
+      "texturePath": "characters/zombie/skeleton-idle_0.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "animations": {
+        "IDLE": { "path": "characters/zombie/skeleton-idle", "type": "FILES", "count": 16, "frameDuration": 0.05 },
+        "WALK": { "path": "characters/zombie/skeleton-move", "type": "FILES", "count": 16, "frameDuration": 0.05 },
+        "ATTACK": { "path": "characters/zombie/skeleton-attack", "type": "FILES", "count": 8, "frameDuration": 0.05 }
+      }
+    },
+    "visualsAudio": {
+      "sounds": {
+        "HIT": "characters/zombie/hit.wav",
+        "DEATH": "characters/zombie/death.wav"
+      }
+    }
+  }
+}
