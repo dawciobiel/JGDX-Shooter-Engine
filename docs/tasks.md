@@ -17,7 +17,7 @@
 - [ ] **Zweryfikować obiekty statyczne, które da się umieścić na mapie** (Silnik obsługuje obiekty statyczne, które można i które nie można niszczyć. Stworzyć mapę do testów. Zeryfikować i refaktoryzować kod)
 - [ ] **Dostrajanie fizyki i kolizji** (Przyjrzeć się kolizjom wrogów z obiektami przesuwalnymi jak beczki/skrzynie pod kątem stabilności)
 - [ ] **Zweryfikować system trigger-ów** (Weryfikacja czy trigger system wciąż działa po refactoring-u)
-- [ ] **Refaktoryzacja dokumentacji z katalogu `docs/`** (Posegregować, ujednolicić dokumenty)
+- [x] **Refaktoryzacja dokumentacji z katalogu `docs/`** (Posegregować, ujednolicić dokumenty)
 - [x] **Refaktoryzacja kodu (Clean Code)** (Optymalizacja systemów Movement, UI, AI oraz fabryki encji)
 - [x] **Ujednolicenie JSON/Serialization** (Zastąpienie wielokrotnych instancji `ObjectMapper` jednym współdzielonym singletonem)
 - [x] **Izolacja zasobów Map (Asset Isolation)** (Każda mapa jest niezależnym kontenerem zasobów)
