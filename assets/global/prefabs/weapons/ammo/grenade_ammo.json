@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "data": {
+    "id": "grenade_ammo",
+    "name": "Grenade",
+    "category": "GRENADE",
+    "projectilePrefabPath": "projectiles/bullet_9mm",
+    "projectilesPerUnit": 1,
+    "spreadMultiplier": 1.0,
+    "iconPath": "ui/icons/ammo_grenade.png"
+  }
+}

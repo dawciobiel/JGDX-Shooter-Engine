@@ -1,12 +1,24 @@
 {
-  "fireRate": 0.1,
-  "projectileSpeed": 600,
-  "spread": 5,
-  "range": 600,
-  "maxAmmo": 200,
-  "magazineSize": 30,
-  "reloadTime": 1.8,
-  "hasInfiniteAmmo": false,
-  "shootSound": "weapons/machine_gun/cg1.wav",
-  "projectile": { "damage": 10, "radius": 2, "color": "GOLD" }
+  "version": 1,
+  "data": {
+    "id": "machine_gun",
+    "name": "Machine Gun",
+    "allowedAmmoCategories": ["MG_AMMO"],
+    "stats": {
+      "fireRate": 0.1,
+      "spread": 5.0,
+      "magazineSize": 30,
+      "isAutomatic": true,
+      "recoil": 0.2
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_machinegun.png",
+      "muzzleFlashParticle": "particles/muzzle_flash_large"
+    },
+    "audio": {
+      "shootSound": "weapons/machine_gun/shoot.wav",
+      "reloadSound": "weapons/machine_gun/reload.wav",
+      "emptySound": "weapons/machine_gun/empty.wav"
+    }
+  }
 }

@@ -11,6 +11,7 @@ import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.models.*;
 import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.graphics.CharacterRendererFactory;
+import pl.shooter.engine.world.MapConfig;
 
 import java.util.Map;
 import java.util.Random;
@@ -67,7 +68,7 @@ public class EntityFactory {
                         WeaponComponent wc = new WeaponComponent(wp);
                         if (wc.allowedAmmoCategories != null && !wc.allowedAmmoCategories.isEmpty()) {
                             for (String ammoId : equipment.ammo.keySet()) {
-                                AmmoPrefab ap = configService.loadPrefab("ammo/" + ammoId, AmmoPrefab.class);
+                                AmmoPrefab ap = configService.loadPrefab("weapons/ammo/" + ammoId, AmmoPrefab.class);
                                 if (ap != null && wc.allowedAmmoCategories.contains(ap.category)) {
                                     wc.activeAmmo = ap;
                                     break;

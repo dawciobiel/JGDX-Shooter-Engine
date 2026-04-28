@@ -11,7 +11,7 @@
 ## Etap 11: Optymalizacja i Stabilizacja (W TRAKCIE)
 - [ ] **Architektura tekstur** (Zaprojektowanie ostatecznego formatu przechowywania tekstur dla obiektów. Jakie pliki (png, jpg?), jaki format (pliki graficzne, asset), format pojedynczych plików czy raczej jako paczka np. zip )
 - [ ] **Task Management za pomocą GitHub Issue** (Przejście z plików markdown na GitHub Issue)
-- [ ] **System wielu różnych broni** (Czy po refactoring-u wciąż działa system wielu broni? System powinien działać na zasadzie dodawania i modyfikowania konfiguracji plików .json)
+- [x] **System wielu różnych broni** (Czy po refactoring-u wciąż działa system wielu broni? System powinien działać na zasadzie dodawania i modyfikowania konfiguracji plików .json)
 - [ ] **Wyłączyć pliki tekstur dla postaci i obiektów** (Na chwile obecna tekstury nie są jednolite, więc trzeba je wyłączyć, posegregować, ustrukturyzować jako całość)
 - [ ] **Zweryfikować elementy mapy, które da się zniszczyć** (Czy obecnie silnik gry to obsługuje? Jeżeli nie, to umożliwić taką funkcjonalność. Stworzyć mapę do testów. Zeryfikować i refaktoryzować kod))
 - [ ] **Zweryfikować obiekty statyczne, które da się umieścić na mapie** (Silnik obsługuje obiekty statyczne, które można i które nie można niszczyć. Stworzyć mapę do testów. Zeryfikować i refaktoryzować kod)

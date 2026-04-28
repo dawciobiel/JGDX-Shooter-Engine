@@ -1,12 +1,24 @@
 {
-  "fireRate": 0.3,
-  "projectileSpeed": 0,
-  "spread": 0,
-  "range": 45,
-  "maxAmmo": 0,
-  "magazineSize": 0,
-  "reloadTime": 0,
-  "hasInfiniteAmmo": true,
-  "shootSound": "weapons/knife/knife.wav",
-  "projectile": { "damage": 25 }
+  "version": 1,
+  "data": {
+    "id": "knife",
+    "name": "Combat Knife",
+    "allowedAmmoCategories": [],
+    "stats": {
+      "fireRate": 0.3,
+      "spread": 0.0,
+      "magazineSize": 0,
+      "isAutomatic": false,
+      "recoil": 0.0
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_knife.png",
+      "muzzleFlashParticle": null
+    },
+    "audio": {
+      "shootSound": "weapons/knife/shoot.wav",
+      "reloadSound": null,
+      "emptySound": null
+    }
+  }
 }

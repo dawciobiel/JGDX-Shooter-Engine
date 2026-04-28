@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "data": {
+    "id": "shells_regular",
+    "name": "Shotgun Shells",
+    "category": "SHELLS",
+    "projectilePrefabPath": "projectiles/bullet_9mm",
+    "projectilesPerUnit": 8,
+    "spreadMultiplier": 2.0,
+    "iconPath": "ui/icons/ammo_shells.png"
+  }
+}

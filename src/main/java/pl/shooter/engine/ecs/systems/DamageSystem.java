@@ -146,7 +146,7 @@ private void onEntityDeath(Entity victim, float x, float y, boolean killedByPlay
                         if (weapon != null && weapon.activeAmmo != null) {
                             ammoType = weapon.activeAmmo.id;
                         }
-                        factory.createAmmoBox("ammo/" + ammoType, 15, x, y);
+                        factory.createAmmoBox("weapons/ammo/" + ammoType, 15, x, y);
                     } else if (roll < 0.10f) {
                         factory.createHealthPickup(x, y, 20f);
                     }

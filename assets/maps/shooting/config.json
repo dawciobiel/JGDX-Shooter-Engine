@@ -2,6 +2,29 @@
   "version": 1,
   "data": {
     "mapName": "Shooting Test Map",
-    "ambientColor": { "r": 0.8, "g": 0.8, "b": 0.8, "a": 1.0 }
+    "ambientColor": { "r": 0.8, "g": 0.8, "b": 0.8, "a": 1.0, "brightness": 1.0 },
+    "startingEquipment": {
+      "weapons": [
+        "weapons/pistol", 
+        "weapons/machine_gun", 
+        "weapons/shotgun", 
+        "weapons/sniper_rifle", 
+        "weapons/rocket_launcher", 
+        "weapons/plasma_gun", 
+        "weapons/lightning_gun", 
+        "weapons/knife", 
+        "weapons/grenade"
+      ],
+      "ammo": { 
+        "9mm_regular": 100, 
+        "machine_gun_ammo": 200, 
+        "shells_regular": 50,
+        "sniper_ammo": 30,
+        "rocket_ammo": 10,
+        "plasma_ammo": 100,
+        "lightning_ammo": 500,
+        "grenade_ammo": 10
+      }
+    }
   }
 }

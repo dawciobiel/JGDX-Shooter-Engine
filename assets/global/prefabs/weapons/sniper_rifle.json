@@ -1,12 +1,24 @@
 {
-  "fireRate": 1.5,
-  "projectileSpeed": 1200,
-  "spread": 0.1,
-  "range": 1200,
-  "maxAmmo": 20,
-  "magazineSize": 5,
-  "reloadTime": 1.0,
-  "hasInfiniteAmmo": false,
-  "shootSound": null,
-  "projectile": { "damage": 80, "radius": 2, "color": "WHITE", "behavior": "PIERCING" }
+  "version": 1,
+  "data": {
+    "id": "sniper_rifle",
+    "name": "Sniper Rifle",
+    "allowedAmmoCategories": ["SNIPER"],
+    "stats": {
+      "fireRate": 1.5,
+      "spread": 0.1,
+      "magazineSize": 5,
+      "isAutomatic": false,
+      "recoil": 3.0
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_sniper.png",
+      "muzzleFlashParticle": "particles/muzzle_flash_small"
+    },
+    "audio": {
+      "shootSound": "weapons/sniper_rifle/shoot.wav",
+      "reloadSound": "weapons/sniper_rifle/reload.wav",
+      "emptySound": "weapons/sniper_rifle/empty.wav"
+    }
+  }
 }

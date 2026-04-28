@@ -1,12 +1,24 @@
 {
-  "fireRate": 0.05,
-  "projectileSpeed": 600,
-  "spread": 3,
-  "range": 400,
-  "maxAmmo": 500,
-  "magazineSize": 500,
-  "reloadTime": 1.0,
-  "hasInfiniteAmmo": true,
-  "shootSound": null,
-  "projectile": { "damage": 50, "radius": 2, "color": "BLUE" }
+  "version": 1,
+  "data": {
+    "id": "lightning_gun",
+    "name": "Lightning Gun",
+    "allowedAmmoCategories": ["LIGHTNING"],
+    "stats": {
+      "fireRate": 0.05,
+      "spread": 3.0,
+      "magazineSize": 500,
+      "isAutomatic": true,
+      "recoil": 0.1
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_lightning.png",
+      "muzzleFlashParticle": "particles/muzzle_flash_lightning"
+    },
+    "audio": {
+      "shootSound": "weapons/lightning_gun/shoot.wav",
+      "reloadSound": "weapons/lightning_gun/reload.wav",
+      "emptySound": "weapons/lightning_gun/empty.wav"
+    }
+  }
 }

@@ -1,13 +1,24 @@
 {
-  "fireRate": 0.8,
-  "projectileSpeed": 450,
-  "spread": 12,
-  "projectilesPerShot": 6,
-  "range": 300,
-  "maxAmmo": 50,
-  "magazineSize": 8,
-  "reloadTime": 2.0,
-  "hasInfiniteAmmo": false,
-  "shootSound": "weapons/shotgun/shotgun.wav",
-  "projectile": { "damage": 8, "radius": 2.5, "color": "GRAY" }
+  "version": 1,
+  "data": {
+    "id": "shotgun",
+    "name": "Shotgun",
+    "allowedAmmoCategories": ["SHELLS"],
+    "stats": {
+      "fireRate": 0.8,
+      "spread": 12.0,
+      "magazineSize": 8,
+      "isAutomatic": false,
+      "recoil": 2.0
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_shotgun.png",
+      "muzzleFlashParticle": "particles/muzzle_flash_large"
+    },
+    "audio": {
+      "shootSound": "weapons/shotgun/shoot.wav",
+      "reloadSound": "weapons/shotgun/reload.wav",
+      "emptySound": "weapons/shotgun/empty.wav"
+    }
+  }
 }

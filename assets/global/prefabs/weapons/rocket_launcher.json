@@ -1,12 +1,24 @@
 {
-  "fireRate": 1.2,
-  "projectileSpeed": 300,
-  "spread": 1,
-  "range": 1000,
-  "maxAmmo": 15,
-  "magazineSize": 1,
-  "reloadTime": 1.0,
-  "hasInfiniteAmmo": false,
-  "shootSound": null,
-  "projectile": { "damage": 100, "radius": 8, "color": "ORANGE", "behavior": "EXPLOSIVE", "explosionRadius": 100 }
+  "version": 1,
+  "data": {
+    "id": "rocket_launcher",
+    "name": "Rocket Launcher",
+    "allowedAmmoCategories": ["ROCKETS"],
+    "stats": {
+      "fireRate": 1.2,
+      "spread": 1.0,
+      "magazineSize": 1,
+      "isAutomatic": false,
+      "recoil": 5.0
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_rocket.png",
+      "muzzleFlashParticle": "particles/muzzle_flash_large"
+    },
+    "audio": {
+      "shootSound": "weapons/rocket_launcher/shoot.wav",
+      "reloadSound": "weapons/rocket_launcher/reload.wav",
+      "emptySound": "weapons/rocket_launcher/empty.wav"
+    }
+  }
 }

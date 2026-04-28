@@ -1,12 +1,24 @@
 {
-  "fireRate": 0.3,
-  "projectileSpeed": 350,
-  "spread": 2,
-  "range": 800,
-  "maxAmmo": 60,
-  "magazineSize": 20,
-  "reloadTime": 2.2,
-  "hasInfiniteAmmo": false,
-  "shootSound": null,
-  "projectile": { "damage": 30, "radius": 6, "color": "CYAN" }
+  "version": 1,
+  "data": {
+    "id": "plasma_gun",
+    "name": "Plasma Gun",
+    "allowedAmmoCategories": ["PLASMA"],
+    "stats": {
+      "fireRate": 0.3,
+      "spread": 2.0,
+      "magazineSize": 20,
+      "isAutomatic": true,
+      "recoil": 0.5
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_plasma.png",
+      "muzzleFlashParticle": "particles/muzzle_flash_plasma"
+    },
+    "audio": {
+      "shootSound": "weapons/plasma_gun/shoot.wav",
+      "reloadSound": "weapons/plasma_gun/reload.wav",
+      "emptySound": "weapons/plasma_gun/empty.wav"
+    }
+  }
 }

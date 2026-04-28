@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "data": {
+    "id": "plasma_ammo",
+    "name": "Plasma Cells",
+    "category": "PLASMA",
+    "projectilePrefabPath": "projectiles/bullet_9mm",
+    "projectilesPerUnit": 1,
+    "spreadMultiplier": 1.0,
+    "iconPath": "ui/icons/ammo_plasma.png"
+  }
+}

@@ -1,12 +1,24 @@
 {
-  "fireRate": 1.0,
-  "projectileSpeed": 250,
-  "spread": 5,
-  "range": 400,
-  "maxAmmo": 10,
-  "magazineSize": 1,
-  "reloadTime": 1.0,
-  "hasInfiniteAmmo": false,
-  "shootSound": null,
-  "projectile": { "damage": 80, "radius": 5, "color": "GREEN", "behavior": "EXPLOSIVE", "explosionRadius": 80 }
+  "version": 1,
+  "data": {
+    "id": "grenade",
+    "name": "Grenade",
+    "allowedAmmoCategories": ["GRENADE"],
+    "stats": {
+      "fireRate": 1.0,
+      "spread": 5.0,
+      "magazineSize": 1,
+      "isAutomatic": false,
+      "recoil": 1.0
+    },
+    "visuals": {
+      "iconPath": "ui/icons/weapon_grenade.png",
+      "muzzleFlashParticle": "particles/explosion"
+    },
+    "audio": {
+      "shootSound": "weapons/grenade/shoot.wav",
+      "reloadSound": "weapons/grenade/reload.wav",
+      "emptySound": "weapons/grenade/empty.wav"
+    }
+  }
 }

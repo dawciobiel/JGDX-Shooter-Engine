@@ -2,6 +2,7 @@ package pl.shooter.engine.world;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Modern Map Configuration aggregate.
@@ -21,8 +22,10 @@ public class MapConfig {
         public AmbientColor ambientColor = new AmbientColor();
         public StartingEquipment startingEquipment = new StartingEquipment();
         
+        @JsonIgnoreProperties(ignoreUnknown = true)
         public static class AmbientColor {
             public float r = 0.1f, g = 0.1f, b = 0.2f, a = 1.0f;
+            public float brightness = 1.0f;
         }
 
         public static class StartingEquipment {
