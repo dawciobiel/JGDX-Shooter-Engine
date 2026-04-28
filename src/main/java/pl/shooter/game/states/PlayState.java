@@ -13,10 +13,10 @@ import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.models.*;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
-import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.components.HealthComponent;
 import pl.shooter.engine.ecs.components.PlayerComponent;
 import pl.shooter.engine.ecs.systems.*;
+import pl.shooter.engine.events.MessageEvent;
 import pl.shooter.engine.input.InputMapper;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
@@ -90,7 +90,7 @@ public class PlayState extends GameState {
         renderSystem.setLightSystem(lightSystem);
 
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService, spriteBatch, shapeRenderer);
-        uiSystem.setRenderingConfig(renderingConfig); // Fixed: Pass config for cursor
+        uiSystem.setRenderingConfig(renderingConfig);
         uiSystem.init(engine, engineConfig);
 
         AISystem aiSystem = new AISystem(engine.getEntityManager(), engine.getEventBus());
@@ -125,9 +125,12 @@ public class PlayState extends GameState {
 
     private void checkGameOver() {
         List<Entity> players = engine.getEntityManager().getEntitiesWithComponents(PlayerComponent.class);
-        if (players.isEmpty()) { isGameOver = true; return; }
-        HealthComponent health = engine.getEntityManager().getComponent(players.getFirst(), HealthComponent.class);
-        if (health != null && health.isDead) isGameOver = true;
+        boolean dead = players.isEmpty() || (engine.getEntityManager().getComponent(players.getFirst(), HealthComponent.class).isDead);
+        
+        if (dead && !isGameOver) {
+            isGameOver = true;
+            engine.getEventBus().publish(new MessageEvent("GAME OVER! Press R to restart", 9999f));
+        }
     }
 
     @Override
@@ -136,17 +139,22 @@ public class PlayState extends GameState {
             gsm.push(new PauseState(gsm));
             return;
         }
+
+        // Update engine systems so UI can process incoming events (like MessageEvent)
+        engine.update(deltaTime);
+
         if (isGameOver) {
             if (inputMapper.isJustPressed(pl.shooter.engine.input.GameAction.RESTART)) {
                 gsm.setAbsoluteState(new LoadingState(gsm, mapPath));
             }
             return;
         }
-        engine.update(deltaTime);
+        
         checkGameOver();
     }
 
     @Override public void render() {}
+
     @Override public void resize(int width, int height) {
         if (uiViewport != null) uiViewport.update(width, height, true);
         if (engine != null) engine.resize(width, height);

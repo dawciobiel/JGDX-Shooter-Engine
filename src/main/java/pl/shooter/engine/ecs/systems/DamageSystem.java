@@ -106,12 +106,18 @@ public class DamageSystem extends GameSystem {
         PlayerComponent pc = entityManager.getComponent(entity, PlayerComponent.class);
         return pc != null && pc.invincible;
     }
+private void onEntityDeath(Entity victim, float x, float y, boolean killedByPlayer, boolean isDestructible) {
+    HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
+    health.isDead = true;
 
-    private void onEntityDeath(Entity victim, float x, float y, boolean killedByPlayer, boolean isDestructible) {
-        HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
-        
-        if (isDestructible) {
-            factory.createExplosion(x, y, new Color(0.4f, 0.2f, 0.1f, 1f));
+    VelocityComponent v = entityManager.getComponent(victim, VelocityComponent.class);
+    if (v != null) {
+        v.vx = 0;
+        v.vy = 0;
+    }
+
+    if (isDestructible) {
+        factory.createExplosion(x, y, new Color(0.4f, 0.2f, 0.1f, 1f));
             entityManager.removeEntity(victim);
             return;
         }

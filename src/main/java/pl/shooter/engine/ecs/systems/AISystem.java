@@ -41,6 +41,7 @@ public class AISystem extends GameSystem {
         if (players.isEmpty()) return;
         Entity player = players.getFirst();
         TransformComponent playerTrans = entityManager.getComponent(player, TransformComponent.class);
+        HealthComponent playerHealth = entityManager.getComponent(player, HealthComponent.class);
 
         for (Entity entity : aiEntities) {
             AIComponent ai = entityManager.getComponent(entity, AIComponent.class);
@@ -50,24 +51,29 @@ public class AISystem extends GameSystem {
             
             float dist = Vector2.dst(t.x, t.y, playerTrans.x, playerTrans.y);
             
-            if (ai.behavior == AIComponent.Behavior.CHASE && dist < 800f) {
+            if (ai.behavior == AIComponent.Behavior.CHASE && dist < 800f && (playerHealth == null || !playerHealth.isDead)) {
+                // Separation logic: avoid other collidable entities
+                Separation<Vector2> separation = new Separation<>(steering, allEntities);
+                
+                com.badlogic.gdx.ai.steer.SteeringBehavior<Vector2> targetBehavior;
                 if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
                     com.badlogic.gdx.utils.Array<Vector2> waypoints = new com.badlogic.gdx.utils.Array<>();
                     for (Node node : ai.currentPath) waypoints.add(new Vector2(node.x * 32 + 16, node.y * 32 + 16));
-                    LinePath<Vector2> path = new LinePath<Vector2>(waypoints, false);
-                    steering.behavior = new FollowPath<>(steering, path, 20f, 50f);
+                    targetBehavior = new FollowPath<>(steering, new LinePath<Vector2>(waypoints, false), 20f, 50f);
                 } else {
-                    steering.behavior = new com.badlogic.gdx.ai.steer.behaviors.Seek<>(steering, new SimpleLocation(playerTrans.x, playerTrans.y));
+                    targetBehavior = new com.badlogic.gdx.ai.steer.behaviors.Seek<>(steering, new SimpleLocation(playerTrans.x, playerTrans.y));
                 }
+                
+                PrioritySteering<Vector2> priority = new PrioritySteering<>(steering);
+                priority.add(separation);
+                priority.add(targetBehavior);
+                steering.behavior = priority;
                 
                 // Rotate towards player
                 t.rotation = (float) Math.toDegrees(Math.atan2(playerTrans.y - t.y, playerTrans.x - t.x));
                 
                 // Shooting/Melee logic
-                float currentTime = com.badlogic.gdx.Gdx.graphics.getDeltaTime(); // Simplification: use a system timer if possible
-                // Actually need to track total time
                 if (dist < ai.attackRange) { 
-                    // Melee range
                     if (ai.lastAttackTime == 0 || (com.badlogic.gdx.utils.TimeUtils.nanoTime() - ai.lastAttackTime) / 1000000000.0 >= ai.attackRate) {
                         eventBus.publish(new HitEvent(player, entity.getId(), ai.attackDamage));
                         ai.lastAttackTime = com.badlogic.gdx.utils.TimeUtils.nanoTime();
