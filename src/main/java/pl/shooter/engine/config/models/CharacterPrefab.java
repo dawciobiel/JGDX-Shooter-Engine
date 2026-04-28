@@ -25,6 +25,15 @@ public class CharacterPrefab {
         public int frameWidth;
         public int frameHeight;
         public Map<String, AnimationData> animations;
+        public String style = "sprite"; // "sprite" or "procedural"
+        public ProceduralConfig procedural;
+    }
+
+    public static class ProceduralConfig {
+        public String primaryColor = "#FFFFFF";
+        public String accentColor = "#FF0000";
+        public float radius = 16f;
+        public boolean useWeaponGraphic = true;
     }
 
     public static class AnimationData {

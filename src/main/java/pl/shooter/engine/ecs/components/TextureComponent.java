@@ -27,8 +27,8 @@ public class TextureComponent implements Component {
 
     public TextureComponent(ProjectilePrefab prefab) {
         this.assetPath = prefab.texturePath;
-        // Projectiles usually have 1:1 scale or fixed size, let's use radius as base
-        this.width = prefab.radius * 2;
-        this.height = prefab.radius * 2;
+        // Use custom visual size if defined, otherwise fallback to radius
+        this.width = prefab.visualWidth > 0 ? prefab.visualWidth : prefab.radius * 2;
+        this.height = prefab.visualHeight > 0 ? prefab.visualHeight : prefab.radius * 2;
     }
 }

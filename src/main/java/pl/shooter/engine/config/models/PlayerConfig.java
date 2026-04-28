@@ -11,12 +11,12 @@ import java.util.Map;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlayerConfig {
-    public String nickname = "Player 1";
-    public String characterPrefab = "characters/soldier";
+    public String nickname = "Unknown Player";
+    public String characterPrefab = null;
     
     // Starting equipment
-    public List<String> startingWeapons = new ArrayList<>(); // Paths to WeaponPrefabs
-    public Map<String, Integer> startingAmmo = new HashMap<>(); // AmmoPrefab.id -> quantity
+    public List<String> startingWeapons = new ArrayList<>(); 
+    public Map<String, Integer> startingAmmo = new HashMap<>(); 
 
     public float initialScore = 0;
     public boolean invincible = false;

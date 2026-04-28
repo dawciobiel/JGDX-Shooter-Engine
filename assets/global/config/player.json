@@ -1,8 +1,8 @@
 {
   "version": 1,
   "data": {
-    "nickname": "Slayer",
-    "characterPrefab": "characters/robot",
+    "nickname": "gracz",
+    "characterPrefab": "characters/combat_robot_procedural",
     "startingWeapons": [
       "weapons/pistol"
     ],
@@ -11,6 +11,6 @@
     },
     "initialScore": 0,
     "invincible": false,
-    "infiniteAmmo": true
+    "infiniteAmmo": false
   }
 }

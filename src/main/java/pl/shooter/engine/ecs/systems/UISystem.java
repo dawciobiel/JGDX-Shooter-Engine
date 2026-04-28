@@ -37,10 +37,12 @@ public class UISystem extends GameSystem {
     private final GlyphLayout layout = new GlyphLayout();
     
     private RenderingConfig renderingConfig;
+    private EngineConfig engineConfig;
     private String lastWeaponPrefabId = null;
     private Texture cachedWeaponIcon = null;
 
-    private static final String DEFAULT_ICON = "ui/icons/weapon_default.png";
+    private String activeMessage = null;
+    private float messageTimer = 0;
 
     public UISystem(EntityManager entityManager, AssetService assetService, SpriteBatch batch, ShapeRenderer shapeRenderer) {
         super(entityManager);
@@ -50,14 +52,16 @@ public class UISystem extends GameSystem {
         this.font.getData().setScale(1.1f);
         this.assetService = assetService;
         this.viewport = new FitViewport(800, 600);
-        this.assetService.loadTexture(DEFAULT_ICON);
     }
 
     public void init(Engine engine, EngineConfig engineConfig) {
-        // Find rendering config from wherever available or pass it in
+        this.engineConfig = engineConfig;
         EventBus eventBus = engine.getEventBus();
         if (eventBus != null) {
-            eventBus.subscribe(MessageEvent.class, event -> {});
+            eventBus.subscribe(MessageEvent.class, event -> {
+                this.activeMessage = event.text;
+                this.messageTimer = event.duration;
+            });
         }
     }
 
@@ -68,11 +72,19 @@ public class UISystem extends GameSystem {
         if (config.ui.useCustomCursor) {
             assetService.loadTexture(config.ui.cursorImagePath);
         }
+        if (config.ui.defaultWeaponIconPath != null) {
+            assetService.loadTexture(config.ui.defaultWeaponIconPath);
+        }
     }
 
     @Override
     public void update(float deltaTime) {
         viewport.apply();
+
+        if (messageTimer > 0) {
+            messageTimer -= deltaTime;
+            if (messageTimer <= 0) activeMessage = null;
+        }
 
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class);
         if (players.isEmpty()) return;
@@ -82,6 +94,18 @@ public class UISystem extends GameSystem {
         ScoreComponent score = entityManager.getComponent(player, ScoreComponent.class);
         InventoryComponent inv = entityManager.getComponent(player, InventoryComponent.class);
         WeaponComponent weapon = entityManager.getComponent(player, WeaponComponent.class);
+
+        // Update Weapon Icon Cache
+        if (weapon != null && (lastWeaponPrefabId == null || !lastWeaponPrefabId.equals(weapon.name))) {
+            lastWeaponPrefabId = weapon.name;
+            if (weapon.iconPath != null) {
+                assetService.loadTexture(weapon.iconPath);
+                cachedWeaponIcon = assetService.getTexture(weapon.iconPath);
+            }
+            if (cachedWeaponIcon == null && renderingConfig != null) {
+                cachedWeaponIcon = assetService.getTexture(renderingConfig.ui.defaultWeaponIconPath);
+            }
+        }
 
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -96,8 +120,19 @@ public class UISystem extends GameSystem {
         if (renderingConfig != null && renderingConfig.ui.useCustomCursor) {
             renderCursor();
         }
+
+        // RENDER DEBUG INFO (FPS)
+        if (engineConfig != null && engineConfig.debug.showFps) {
+            renderDebugInfo();
+        }
         
         batch.end();
+    }
+
+    private void renderDebugInfo() {
+        font.setColor(Color.YELLOW);
+        font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 10, viewport.getWorldHeight() - 10);
+        font.setColor(Color.WHITE);
     }
 
     private void renderCursor() {
@@ -128,9 +163,51 @@ public class UISystem extends GameSystem {
     }
 
     private void renderHUDText(HealthComponent health, ScoreComponent score, WeaponComponent weapon, InventoryComponent inv) {
-        if (health != null) font.draw(batch, "HP: " + (int)health.hp, 25, viewport.getWorldHeight() - 23);
+        float vh = viewport.getWorldHeight();
+        float vw = viewport.getWorldWidth();
+
+        // 1. HP
+        if (health != null) {
+            font.setColor(Color.WHITE);
+            font.draw(batch, "HP: " + (int)health.hp, 25, vh - 23);
+        }
+
+        // 2. Score & Kills (Top Right)
+        if (score != null) {
+            font.setColor(Color.GOLD);
+            font.draw(batch, "SCORE: " + score.score, vw - 180, vh - 20);
+            font.setColor(Color.WHITE);
+            font.draw(batch, "KILLS: " + score.kills, vw - 180, vh - 45);
+            font.setColor(Color.RED);
+            font.draw(batch, "WAVE: " + score.wave, vw - 180, vh - 70);
+        }
+
+        // 3. Weapon & Ammo (Bottom Right)
         if (weapon != null) {
-            font.draw(batch, weapon.name, viewport.getWorldWidth() - 150, 65);
+            font.setColor(Color.CYAN);
+            font.draw(batch, weapon.name, vw - 180, 80);
+            
+            String ammoText;
+            if (weapon.magazineSize > 0) {
+                int reserve = (inv != null && weapon.activeAmmo != null) ? inv.getAmmoCount(weapon.activeAmmo.id) : 0;
+                ammoText = weapon.magazineAmmo + " / " + reserve;
+            } else {
+                ammoText = "---";
+            }
+            font.setColor(Color.WHITE);
+            font.draw(batch, "AMMO: " + ammoText, vw - 180, 55);
+
+            if (cachedWeaponIcon != null) {
+                batch.draw(cachedWeaponIcon, vw - 240, 45, 48, 48);
+            }
+        }
+
+        // 4. Center Messages (Multi-kills, etc.)
+        if (activeMessage != null) {
+            layout.setText(font, activeMessage);
+            font.setColor(Color.YELLOW);
+            font.draw(batch, activeMessage, (vw - layout.width) / 2f, vh * 0.75f);
+            font.setColor(Color.WHITE);
         }
     }
 

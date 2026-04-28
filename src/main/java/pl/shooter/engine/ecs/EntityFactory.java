@@ -10,6 +10,7 @@ import pl.shooter.engine.assets.AssetService;
 import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.models.*;
 import pl.shooter.engine.ecs.components.*;
+import pl.shooter.engine.graphics.CharacterRendererFactory;
 
 import java.util.Map;
 import java.util.Random;
@@ -35,7 +36,7 @@ public class EntityFactory {
     // --- CHARACTER CREATION ---
 
     public Entity createPlayer(float x, float y) {
-        PlayerConfig playerConfig = configService.loadAssetConfig("assets/global/config/player.json", PlayerConfig.class);
+        PlayerConfig playerConfig = configService.loadAssetConfig("assets/global/config/player.json", PlayerConfig.class); // fixme ścieżka oraz nazwa pliku konfig `player.json` jest wpisana na sztywno.
         if (playerConfig == null) playerConfig = new PlayerConfig();
 
         CharacterPrefab character = configService.loadPrefab(playerConfig.characterPrefab, CharacterPrefab.class);
@@ -43,7 +44,12 @@ public class EntityFactory {
 
         Entity entity = entityManager.createEntity();
         entityManager.addComponent(entity, new TransformComponent(x, y));
-        entityManager.addComponent(entity, new PlayerComponent(character.stats.speed));
+        
+        PlayerComponent pc = new PlayerComponent(character.stats.speed);
+        pc.invincible = playerConfig.invincible;
+        pc.infiniteAmmo = playerConfig.infiniteAmmo;
+        entityManager.addComponent(entity, pc);
+        
         entityManager.addComponent(entity, new HealthComponent(character.stats));
         
         VelocityComponent vc = new VelocityComponent(0, 0);
@@ -52,6 +58,7 @@ public class EntityFactory {
         
         entityManager.addComponent(entity, new ColliderComponent(character.stats));
         entityManager.addComponent(entity, new TextureComponent(character));
+        entityManager.addComponent(entity, new CharacterRendererComponent(CharacterRendererFactory.create(character)));
         
         // Setup Inventory with starting equipment
         InventoryComponent inv = new InventoryComponent();
@@ -59,13 +66,16 @@ public class EntityFactory {
             WeaponPrefab wp = configService.loadPrefab(weaponPath, WeaponPrefab.class);
             if (wp != null) {
                 WeaponComponent wc = new WeaponComponent(wp);
-                // Assign first allowed ammo as active by default
+                // Assign active ammo based on available ammo in inventory or defaults
                 if (wc.allowedAmmoCategories != null && !wc.allowedAmmoCategories.isEmpty()) {
-                    String category = wc.allowedAmmoCategories.get(0);
-                    // This is a simplification: finding first ammo prefab that matches category
-                    // In real engine we'd have an AmmoRegistry. For now, assume id match.
-                    AmmoPrefab ap = configService.loadPrefab("ammo/9mm_regular", AmmoPrefab.class);
-                    if (ap != null) wc.activeAmmo = ap;
+                    // Try to find the first ammo prefab id in the inventory that matches the weapon category
+                    for (String ammoId : playerConfig.startingAmmo.keySet()) {
+                        AmmoPrefab ap = configService.loadPrefab("ammo/" + ammoId, AmmoPrefab.class);  // fixme fragment ścieżki `ammo/` jest wpisana na sztywno. A powinna być raczej w konfigu
+                        if (ap != null && wc.allowedAmmoCategories.contains(ap.category)) {
+                            wc.activeAmmo = ap;
+                            break;
+                        }
+                    }
                 }
                 inv.addWeapon(wc);
             }
@@ -94,7 +104,10 @@ public class EntityFactory {
         Entity entity = entityManager.createEntity();
         TransformComponent tc = new TransformComponent(x, y);
         entityManager.addComponent(entity, tc);
-        entityManager.addComponent(entity, new AIComponent());
+        
+        AIComponent ai = new AIComponent();
+        ai.behavior = AIComponent.Behavior.CHASE; // Enable pathfinding by default
+        entityManager.addComponent(entity, ai);
         
         VelocityComponent vc = new VelocityComponent(0, 0);
         vc.baseSpeed = character.stats.speed;
@@ -104,35 +117,40 @@ public class EntityFactory {
         entityManager.addComponent(entity, new HealthComponent(character.stats));
         entityManager.addComponent(entity, new ColliderComponent(character.stats));
         entityManager.addComponent(entity, new TextureComponent(character));
+        entityManager.addComponent(entity, new CharacterRendererComponent(CharacterRendererFactory.create(character)));
 
         setupAnimations(entity, character);
         return entity;
     }
 
     private void setupAnimations(Entity entity, CharacterPrefab prefab) {
-        if (prefab.visuals.animations == null || prefab.visuals.animations.isEmpty()) return;
-        AnimationComponent animComp = new AnimationComponent(prefab.visuals.frameWidth, prefab.visuals.frameHeight);
-        for (Map.Entry<String, CharacterPrefab.AnimationData> entry : prefab.visuals.animations.entrySet()) {
-            AnimationComponent.State state;
-            try { state = AnimationComponent.State.valueOf(entry.getKey().toUpperCase()); } catch (Exception e) { continue; }
-            CharacterPrefab.AnimationData data = entry.getValue();
-            Animation<TextureRegion> anim;
-            if ("SHEET".equals(data.type)) {
-                String resolved = assetService.resolvePath(data.path, "textures");
-                anim = (resolved != null) ? createAnimationFromSheet(resolved, data.rows, data.cols, data.frameDuration) : null;
-            } else if ("ATLAS_REGION".equals(data.type)) {
-                anim = createAnimationFromAtlasRegion(
-                        data.path,
-                        data.region,
-                        data.frameDuration,
-                        data.rows,
-                        data.cols,
-                        data.count
-                );
-            } else {
-                anim = createAnimationFromFiles(data.path, data.count, data.frameDuration);
+        float width = prefab.visuals.frameWidth > 0 ? prefab.visuals.frameWidth : 32f;
+        float height = prefab.visuals.frameHeight > 0 ? prefab.visuals.frameHeight : 32f;
+        AnimationComponent animComp = new AnimationComponent(width, height);
+        
+        if (prefab.visuals.animations != null && !prefab.visuals.animations.isEmpty()) {
+            for (Map.Entry<String, CharacterPrefab.AnimationData> entry : prefab.visuals.animations.entrySet()) {
+                AnimationComponent.State state;
+                try { state = AnimationComponent.State.valueOf(entry.getKey().toUpperCase()); } catch (Exception e) { continue; }
+                CharacterPrefab.AnimationData data = entry.getValue();
+                Animation<TextureRegion> anim;
+                if ("SHEET".equals(data.type)) {
+                    String resolved = assetService.resolvePath(data.path, "textures");
+                    anim = (resolved != null) ? createAnimationFromSheet(resolved, data.rows, data.cols, data.frameDuration) : null;
+                } else if ("ATLAS_REGION".equals(data.type)) {
+                    anim = createAnimationFromAtlasRegion(
+                            data.path,
+                            data.region,
+                            data.frameDuration,
+                            data.rows,
+                            data.cols,
+                            data.count
+                    );
+                } else {
+                    anim = createAnimationFromFiles(data.path, data.count, data.frameDuration);
+                }
+                if (anim != null) animComp.addAnimation(state, anim);
             }
-            if (anim != null) animComp.addAnimation(state, anim);
         }
         entityManager.addComponent(entity, animComp);
     }
@@ -234,7 +252,7 @@ public class EntityFactory {
         if (ammo == null) return;
         Entity entity = entityManager.createEntity();
         entityManager.addComponent(entity, new TransformComponent(x, y));
-        entityManager.addComponent(entity, new AmmoPickupComponent(quantity));
+        entityManager.addComponent(entity, new AmmoPickupComponent(ammo.id, quantity));
         entityManager.addComponent(entity, new ColliderComponent(12f));
         entityManager.addComponent(entity, new TextureComponent(ammo.iconPath, 24, 24));
     }
@@ -246,6 +264,7 @@ public class EntityFactory {
         if (visualData != null) {
             entityManager.addComponent(entity, new TextureComponent(visualData));
             entityManager.addComponent(entity, new ColliderComponent(visualData.stats));
+            entityManager.addComponent(entity, new CharacterRendererComponent(CharacterRendererFactory.create(visualData)));
             if (destructible) entityManager.addComponent(entity, new HealthComponent(visualData.stats));
         }
         if (pushable) entityManager.addComponent(entity, new PushableComponent());
@@ -260,6 +279,7 @@ public class EntityFactory {
         entityManager.addComponent(entity, new HealthComponent(character.stats));
         entityManager.addComponent(entity, new ColliderComponent(character.stats));
         entityManager.addComponent(entity, new TextureComponent(character));
+        entityManager.addComponent(entity, new CharacterRendererComponent(CharacterRendererFactory.create(character)));
         setupAnimations(entity, character);
         return entity;
     }

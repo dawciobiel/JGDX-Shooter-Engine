@@ -99,17 +99,35 @@ public class AssetService implements AssetErrorListener {
     public Texture getTexture(String path) {
         if (path == null) return null;
         if (manager.isLoaded(path)) return manager.get(path, Texture.class);
+        
         String resolved = resolvePath(path, "textures");
-        if (resolved != null && manager.isLoaded(resolved)) return manager.get(resolved, Texture.class);
-        return null;
+        if (resolved == null) return null;
+        
+        if (manager.isLoaded(resolved)) {
+            return manager.get(resolved, Texture.class);
+        } else {
+            // Lazy load synchronously if not already loaded
+            manager.load(resolved, Texture.class);
+            manager.finishLoadingAsset(resolved);
+            return manager.get(resolved, Texture.class);
+        }
     }
 
     public TextureAtlas getAtlas(String path) {
         if (path == null) return null;
         if (manager.isLoaded(path)) return manager.get(path, TextureAtlas.class);
+        
         String resolved = resolvePath(path, "textures");
-        if (resolved != null && manager.isLoaded(resolved)) return manager.get(resolved, TextureAtlas.class);
-        return null;
+        if (resolved == null) return null;
+        
+        if (manager.isLoaded(resolved)) {
+            return manager.get(resolved, TextureAtlas.class);
+        } else {
+            // Lazy load synchronously if not already loaded
+            manager.load(resolved, TextureAtlas.class);
+            manager.finishLoadingAsset(resolved);
+            return manager.get(resolved, TextureAtlas.class);
+        }
     }
 
     public void dispose() { manager.dispose(); }

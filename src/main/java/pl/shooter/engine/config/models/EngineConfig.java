@@ -32,6 +32,8 @@ public class EngineConfig {
         public boolean showFps = true;
         public boolean showPaths = false;
         public boolean showProfiler = false;
+        public boolean invinciblePlayer = false;
+        public boolean infiniteAmmo = false;
     }
     
     public static class PerformanceConfig {

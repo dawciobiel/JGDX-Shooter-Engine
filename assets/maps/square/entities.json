@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "data": {
+    "entities": [
+      {
+        "role": "PLAYER",
+        "x": 300,
+        "y": 300
+      },
+      {
+        "role": "ENEMY",
+        "prefabPath": "characters/enemy_procedural",
+        "x": 75,
+        "y": 170
+      }
+    ]
+  }
+}

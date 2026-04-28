@@ -73,8 +73,10 @@ public class CombatSystem extends GameSystem {
         if (weapon == null || shooterTransform == null || weapon.isReloading) return;
         if (totalTime - weapon.lastShotTime < weapon.fireRate) return;
 
+        boolean infinite = isInfiniteAmmo(shooter);
+
         // Check ammo
-        if (weapon.magazineAmmo <= 0 && weapon.magazineSize > 0) {
+        if (!infinite && weapon.magazineAmmo <= 0 && weapon.magazineSize > 0) {
             eventBus.publish(new EmptyWeaponEvent(shooter));
             weapon.lastShotTime = totalTime; 
             return;
@@ -82,7 +84,7 @@ public class CombatSystem extends GameSystem {
 
         // --- Execute Shot ---
         weapon.lastShotTime = totalTime;
-        if (weapon.magazineSize > 0) {
+        if (!infinite && weapon.magazineSize > 0) {
             weapon.magazineAmmo--;
         }
 
@@ -110,9 +112,20 @@ public class CombatSystem extends GameSystem {
         }
     }
 
+    private boolean isInfiniteAmmo(Entity entity) {
+        // Global debug flag
+        if (configService.getEngineConfig().debug.infiniteAmmo) return true;
+        
+        // Entity specific flag (Player)
+        PlayerComponent pc = entityManager.getComponent(entity, PlayerComponent.class);
+        return pc != null && pc.infiniteAmmo;
+    }
+
     private void startReload(WeaponComponent weapon, InventoryComponent inv) {
         if (weapon.isReloading || weapon.activeAmmo == null) return;
         
+        // If entity has infinite ammo, no need to reload (magazine never empties anyway)
+        // But we check just in case it was called manually
         int available = inv.getAmmoCount(weapon.activeAmmo.id);
         if (available > 0) {
             weapon.isReloading = true;

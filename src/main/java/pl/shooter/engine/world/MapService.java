@@ -59,7 +59,7 @@ public class MapService {
     }
 
     private void preloadPlayerAssets() {
-        PlayerConfig pc = configService.loadAssetConfig("assets/global/config/player.json", PlayerConfig.class);
+        PlayerConfig pc = configService.loadAssetConfig("assets/global/config/player.json", PlayerConfig.class);  // fixme Ścieżka `assets/global/config/` wraz z nazwą pliku `player.json` jest wpisana na sztywno. A powinna być raczej w konfig.
         if (pc != null) {
             CharacterPrefab cp = configService.loadPrefab(pc.characterPrefab, CharacterPrefab.class);
             if (cp != null && cp.visuals != null) {

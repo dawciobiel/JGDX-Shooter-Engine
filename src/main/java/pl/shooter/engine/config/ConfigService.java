@@ -119,11 +119,7 @@ public class ConfigService {
     }
 
     public <T> T loadPrefab(String prefabPath, Class<T> prefabClass) {
-        String fullPath = "assets/global/prefabs/" + prefabPath + ".json";
-        T prefab = loadAssetConfig(fullPath, prefabClass);
-        if (prefab == null) {
-            System.err.println("[ConfigService] FAILED to load prefab: " + fullPath);
-        }
-        return prefab;
+        String fullPath = "assets/global/prefabs/" + prefabPath + ".json"; //fixme Ścieżka `assets/global/prefabs/` jest wpisana na sztywno w kodzie.
+        return loadAssetConfig(fullPath, prefabClass);
     }
 }

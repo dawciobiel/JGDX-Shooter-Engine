@@ -1,7 +1,11 @@
 package pl.shooter.engine.ecs.systems;
 
-import com.badlogic.gdx.ai.steer.behaviors.Seek;
+import com.badlogic.gdx.ai.steer.behaviors.FollowPath;
+import com.badlogic.gdx.ai.steer.behaviors.Separation;
+import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
+import com.badlogic.gdx.ai.steer.utils.paths.LinePath;
 import com.badlogic.gdx.math.Vector2;
+import pl.shooter.engine.ai.pathfinding.Node;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
@@ -9,11 +13,13 @@ import pl.shooter.engine.ecs.components.*;
 import pl.shooter.engine.events.EventBus;
 import pl.shooter.engine.events.ShootEvent;
 import pl.shooter.engine.world.GameMap;
+import pl.shooter.events.HitEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Advanced AI System using GDX AI Steering.
+ * Advanced AI System using GDX AI Steering and Pathfinding.
  */
 public class AISystem extends GameSystem {
     private final EventBus eventBus;
@@ -29,38 +35,38 @@ public class AISystem extends GameSystem {
     @Override
     public void update(float deltaTime) {
         List<Entity> aiEntities = entityManager.getEntitiesWithComponents(AIComponent.class, TransformComponent.class, SteeringComponent.class);
+        List<Entity> allEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, ColliderComponent.class);
         List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, TransformComponent.class);
 
         if (players.isEmpty()) return;
         Entity player = players.getFirst();
         TransformComponent playerTrans = entityManager.getComponent(player, TransformComponent.class);
-        
-        // We use the player's SteeringComponent (or just a fake location) as target
-        // For simplicity, let's treat the player as a static location for the Seek behavior
-        SimpleLocation playerLocation = new SimpleLocation(playerTrans.x, playerTrans.y);
 
         for (Entity entity : aiEntities) {
+            AIComponent ai = entityManager.getComponent(entity, AIComponent.class);
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             SteeringComponent steering = entityManager.getComponent(entity, SteeringComponent.class);
             VelocityComponent v = entityManager.getComponent(entity, VelocityComponent.class);
             
             float dist = Vector2.dst(t.x, t.y, playerTrans.x, playerTrans.y);
             
-            if (dist < 800f) {
-                // If not already seeking, or target moved, update behavior
-                if (steering.seekBehavior == null) {
-                    steering.seekBehavior = new Seek<>(steering, playerLocation);
-                    steering.behavior = steering.seekBehavior;
+            if (ai.behavior == AIComponent.Behavior.CHASE && dist < 800f) {
+                if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
+                    com.badlogic.gdx.utils.Array<Vector2> waypoints = new com.badlogic.gdx.utils.Array<>();
+                    for (Node node : ai.currentPath) waypoints.add(new Vector2(node.x * 32 + 16, node.y * 32 + 16));
+                    LinePath<Vector2> path = new LinePath<Vector2>(waypoints, false);
+                    steering.behavior = new FollowPath<>(steering, path, 20f, 50f);
+                } else {
+                    steering.behavior = new com.badlogic.gdx.ai.steer.behaviors.Seek<>(steering, new SimpleLocation(playerTrans.x, playerTrans.y));
                 }
-                
-                // Update simple location target
-                playerLocation.set(playerTrans.x, playerTrans.y);
                 
                 // Rotate towards player
                 t.rotation = (float) Math.toDegrees(Math.atan2(playerTrans.y - t.y, playerTrans.x - t.x));
                 
-                // Shooting logic
-                if (dist < 350f) {
+                // Shooting/Melee logic
+                if (dist < 40f) { // Melee range
+                    eventBus.publish(new HitEvent(player, entity.getId(), 10)); // Simple melee hit
+                } else if (dist < 350f) {
                     eventBus.publish(new ShootEvent(entity, playerTrans.x, playerTrans.y));
                 }
             } else {

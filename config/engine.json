@@ -21,12 +21,12 @@
     "maxGlobalEntities": 100
   },
   "debug": {
-    "showHitboxes": false,
+    "showHitboxes": true,
     "showFps": true,
     "showPaths": false,
     "showProfiler": false,
     "invinciblePlayer": false,
-    "infiniteAmmo": false
+    "infiniteAmmo": true
   },
   "controls": {
     "moveUpKey": 51,

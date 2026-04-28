@@ -11,6 +11,8 @@ public class ProjectilePrefab {
     public float baseDamage = 10f;
     public float speed = 600f;
     public float radius = 4f; // Collision radius
+    public float visualWidth = 0;  // 0 means use radius*2
+    public float visualHeight = 0; // 0 means use radius*2
     public String texturePath;
     public ExplosionData explosion; // Optional area of effect data
 

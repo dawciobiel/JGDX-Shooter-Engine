@@ -16,9 +16,9 @@ prefabs = "prefabs"
 globalConfig = "config"
 
 [data.debug]
-showHitboxes = false
+showHitboxes = true
 showFps = true
-showPaths = false
+showPaths = true
 showProfiler = false
 
 [data.performance]

@@ -2,6 +2,7 @@ package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
+import pl.shooter.engine.config.ConfigService;
 import pl.shooter.engine.config.models.GameplayConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityFactory;
@@ -22,12 +23,14 @@ public class DamageSystem extends GameSystem {
     private final EntityFactory factory;
     private final EventBus eventBus;
     private final GameplayConfig config;
+    private final ConfigService configService;
 
-    public DamageSystem(EntityManager entityManager, EventBus eventBus, EntityFactory factory, GameplayConfig config) {
+    public DamageSystem(EntityManager entityManager, EventBus eventBus, EntityFactory factory, GameplayConfig config, ConfigService configService) {
         super(entityManager);
         this.eventBus = eventBus;
         this.factory = factory;
         this.config = config;
+        this.configService = configService;
         eventBus.subscribe(HitEvent.class, this::handleHit);
     }
 
@@ -50,6 +53,9 @@ public class DamageSystem extends GameSystem {
         HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
         
         if (health == null || health.isDead) return;
+
+        // Check for invincibility (God Mode)
+        if (isInvincible(victim)) return;
 
         boolean isVictimPlayer = entityManager.hasComponent(victim, PlayerComponent.class);
         
@@ -90,6 +96,17 @@ public class DamageSystem extends GameSystem {
         }
     }
 
+    private boolean isInvincible(Entity entity) {
+        // Global debug flag from EngineConfig
+        if (configService != null && configService.getEngineConfig().debug.invinciblePlayer) {
+            if (entityManager.hasComponent(entity, PlayerComponent.class)) return true;
+        }
+
+        // Entity specific flag (from PlayerConfig)
+        PlayerComponent pc = entityManager.getComponent(entity, PlayerComponent.class);
+        return pc != null && pc.invincible;
+    }
+
     private void onEntityDeath(Entity victim, float x, float y, boolean killedByPlayer, boolean isDestructible) {
         HealthComponent health = entityManager.getComponent(victim, HealthComponent.class);
         
@@ -108,17 +125,25 @@ public class DamageSystem extends GameSystem {
             if (killedByPlayer) {
                 List<Entity> players = entityManager.getEntitiesWithComponents(PlayerComponent.class, ScoreComponent.class);
                 if (!players.isEmpty()) {
-                    ScoreComponent score = entityManager.getComponent(players.getFirst(), ScoreComponent.class);
+                    Entity player = players.getFirst();
+                    ScoreComponent score = entityManager.getComponent(player, ScoreComponent.class);
                     score.score += 100;
                     score.kills += 1;
-                }
-                eventBus.publish(new ScoreEvent(100));
-                
-                float roll = MathUtils.random();
-                if (roll < 0.20f) {
-                    factory.createAmmoBox("weapons/ammo/9mm_regular", 15, x, y);
-                } else if (roll < 0.10f) {
-                    factory.createHealthPickup(x, y, 20f);
+                    
+                    eventBus.publish(new ScoreEvent(100));
+                    
+                    float roll = MathUtils.random();
+                    if (roll < 0.20f) {
+                        // Drop ammo compatible with current player weapon
+                        WeaponComponent weapon = entityManager.getComponent(player, WeaponComponent.class);
+                        String ammoType = "9mm_regular"; // Use ID, not category
+                        if (weapon != null && weapon.activeAmmo != null) {
+                            ammoType = weapon.activeAmmo.id;
+                        }
+                        factory.createAmmoBox("ammo/" + ammoType, 15, x, y);
+                    } else if (roll < 0.10f) {
+                        factory.createHealthPickup(x, y, 20f);
+                    }
                 }
             }
             

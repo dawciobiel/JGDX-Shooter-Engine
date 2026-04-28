@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Enemy Procedural",
+    "stats": {
+      "health": 150,
+      "speed": 120,
+      "radius": 18
+    },
+    "visuals": {
+      "style": "procedural",
+      "procedural": {
+        "primaryColor": "#8A2BE2",
+        "accentColor": "#FFD700",
+        "radius": 18,
+        "useWeaponGraphic": true
+      }
+    },
+    "visualsAudio": {
+      "sounds": {
+        "HIT": "sfx/characters/enemy/hit.wav",
+        "DEATH": "sfx/characters/enemy/death.wav"
+      }
+    }
+  }
+}

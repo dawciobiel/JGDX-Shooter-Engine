@@ -21,6 +21,7 @@ bin/
 Thumbs.db
 
 # logs
+logs/
 *.log
 
 # backups
@@ -31,5 +32,10 @@ asset_todo-file-segregation/
 # download
 download/
 
+# AI chats
+GEMINI.md
+tools/dev/gemini-with-loh-history.sh
+
 # Keep Gradle wrapper JAR
 !gradle/wrapper/gradle-wrapper.jar
+typescript

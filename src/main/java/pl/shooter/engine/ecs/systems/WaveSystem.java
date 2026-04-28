@@ -40,19 +40,17 @@ public class WaveSystem extends GameSystem {
         
         ScoreComponent score = entityManager.getComponent(players.getFirst(), ScoreComponent.class);
 
-        if (spawnedCount >= 5) {
+        if (spawnedCount >= config.killsPerWave) {
             score.wave++;
             spawnedCount = 0;
         }
 
-        float spawnInterval = 5.0f;
-        if (spawnTimer >= (spawnInterval / (1 + score.wave * 0.1f))) {
+        if (spawnTimer >= (config.spawnInterval / (1 + score.wave * 0.1f))) {
             spawnTimer = 0;
             
             int currentEnemies = entityManager.getEntitiesWithComponents(AIComponent.class).size();
             
-            int maxEnemiesBase = 8;
-            int waveLimit = maxEnemiesBase + score.wave * 2;
+            int waveLimit = config.maxEnemiesBase + score.wave * 2;
             int globalLimit = 100; // Can be moved to EngineConfig later
 
             if (currentEnemies < Math.min(waveLimit, globalLimit)) {
@@ -79,9 +77,11 @@ public class WaveSystem extends GameSystem {
         } while (!map.isWalkable(spawnX, spawnY) && attempts < 20);
 
         if (attempts < 20) {
-            // Using new Role/Prefab logic
-            String enemyType = MathUtils.randomBoolean() ? "characters/zombie" : "characters/zombie_fat";
-            entityFactory.createEnemy(enemyType, spawnX, spawnY);
+            // Using pool from config
+            if (config.enemyPool != null && !config.enemyPool.isEmpty()) {
+                String enemyType = config.enemyPool.get(MathUtils.random(0, config.enemyPool.size() - 1));
+                entityFactory.createEnemy(enemyType, spawnX, spawnY);
+            }
         }
     }
 }

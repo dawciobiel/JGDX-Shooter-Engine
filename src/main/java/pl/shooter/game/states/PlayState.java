@@ -80,7 +80,13 @@ public class PlayState extends GameState {
         renderSystem.setShowDebugHitboxes(engineConfig.debug.showHitboxes);
 
         LightSystem lightSystem = new LightSystem(engine.getEntityManager(), spriteBatch);
-        lightSystem.setAmbientColor(renderingConfig.ambientColor.r, renderingConfig.ambientColor.g, renderingConfig.ambientColor.b, renderingConfig.ambientColor.a);
+        lightSystem.setAmbientColor(
+            renderingConfig.ambientColor.r, 
+            renderingConfig.ambientColor.g, 
+            renderingConfig.ambientColor.b, 
+            renderingConfig.ambientColor.a,
+            renderingConfig.ambientColor.brightness
+        );
         renderSystem.setLightSystem(lightSystem);
 
         UISystem uiSystem = new UISystem(engine.getEntityManager(), assetService, spriteBatch, shapeRenderer);
@@ -100,10 +106,11 @@ public class PlayState extends GameState {
         engine.addSystem(new PushingSystem(engine.getEntityManager(), map));
         engine.addSystem(new InteractionSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new MapSystem(engine.getEntityManager(), map, engine.getEventBus()));
+        engine.addSystem(new LocalAvoidanceSystem(engine.getEntityManager(), map));
         engine.addSystem(new MovementSystem(engine.getEntityManager(), map)); 
         engine.addSystem(new TriggerSystem(engine.getEntityManager(), engine.getEventBus()));
         engine.addSystem(new CollisionSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory));
-        engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, gameplayConfig));
+        engine.addSystem(new DamageSystem(engine.getEntityManager(), engine.getEventBus(), entityFactory, gameplayConfig, configService));
         engine.addSystem(new SoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService, assetService));
         engine.addSystem(new AmbientSoundSystem(engine.getEntityManager(), engine.getEventBus(), audioService, assetService));
         engine.addSystem(new MultiKillSystem(engine.getEntityManager(), engine.getEventBus(), gameplayConfig));
