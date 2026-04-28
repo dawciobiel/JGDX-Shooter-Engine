@@ -1,8 +1,6 @@
 package pl.shooter.engine.ecs.systems;
 
 import com.badlogic.gdx.ai.steer.behaviors.FollowPath;
-import com.badlogic.gdx.ai.steer.behaviors.Separation;
-import com.badlogic.gdx.ai.steer.behaviors.PrioritySteering;
 import com.badlogic.gdx.ai.steer.utils.paths.LinePath;
 import com.badlogic.gdx.math.Vector2;
 import pl.shooter.engine.ai.pathfinding.Node;
@@ -52,22 +50,29 @@ public class AISystem extends GameSystem {
             float dist = Vector2.dst(t.x, t.y, playerTrans.x, playerTrans.y);
             
             if (ai.behavior == AIComponent.Behavior.CHASE && dist < 800f && (playerHealth == null || !playerHealth.isDead)) {
-                // Separation logic: avoid other collidable entities
-                Separation<Vector2> separation = new Separation<>(steering, allEntities);
-                
-                com.badlogic.gdx.ai.steer.SteeringBehavior<Vector2> targetBehavior;
+                // Manual separation: apply slight force away from nearby entities
+                Vector2 separationForce = new Vector2();
+                for (Entity other : allEntities) {
+                    if (other.equals(entity)) continue;
+                    TransformComponent ot = entityManager.getComponent(other, TransformComponent.class);
+                    float d = Vector2.dst(t.x, t.y, ot.x, ot.y);
+                    if (d < 30f && d > 0.001f) {
+                        Vector2 push = new Vector2(t.x - ot.x, t.y - ot.y).nor().scl(100f / d);
+                        separationForce.add(push);
+                    }
+                }
+
                 if (ai.currentPath != null && ai.currentPath.getCount() > 1) {
                     com.badlogic.gdx.utils.Array<Vector2> waypoints = new com.badlogic.gdx.utils.Array<>();
                     for (Node node : ai.currentPath) waypoints.add(new Vector2(node.x * 32 + 16, node.y * 32 + 16));
-                    targetBehavior = new FollowPath<>(steering, new LinePath<Vector2>(waypoints, false), 20f, 50f);
+                    LinePath<Vector2> path = new LinePath<Vector2>(waypoints, false);
+                    steering.behavior = new FollowPath<>(steering, path, 20f, 50f);
                 } else {
-                    targetBehavior = new com.badlogic.gdx.ai.steer.behaviors.Seek<>(steering, new SimpleLocation(playerTrans.x, playerTrans.y));
+                    steering.behavior = new com.badlogic.gdx.ai.steer.behaviors.Seek<>(steering, new SimpleLocation(playerTrans.x, playerTrans.y));
                 }
                 
-                PrioritySteering<Vector2> priority = new PrioritySteering<>(steering);
-                priority.add(separation);
-                priority.add(targetBehavior);
-                steering.behavior = priority;
+                v.vx += separationForce.x;
+                v.vy += separationForce.y;
                 
                 // Rotate towards player
                 t.rotation = (float) Math.toDegrees(Math.atan2(playerTrans.y - t.y, playerTrans.x - t.x));
