@@ -64,8 +64,14 @@ public class AISystem extends GameSystem {
                 t.rotation = (float) Math.toDegrees(Math.atan2(playerTrans.y - t.y, playerTrans.x - t.x));
                 
                 // Shooting/Melee logic
-                if (dist < 40f) { // Melee range
-                    eventBus.publish(new HitEvent(player, entity.getId(), 10)); // Simple melee hit
+                float currentTime = com.badlogic.gdx.Gdx.graphics.getDeltaTime(); // Simplification: use a system timer if possible
+                // Actually need to track total time
+                if (dist < ai.attackRange) { 
+                    // Melee range
+                    if (ai.lastAttackTime == 0 || (com.badlogic.gdx.utils.TimeUtils.nanoTime() - ai.lastAttackTime) / 1000000000.0 >= ai.attackRate) {
+                        eventBus.publish(new HitEvent(player, entity.getId(), ai.attackDamage));
+                        ai.lastAttackTime = com.badlogic.gdx.utils.TimeUtils.nanoTime();
+                    }
                 } else if (dist < 350f) {
                     eventBus.publish(new ShootEvent(entity, playerTrans.x, playerTrans.y));
                 }

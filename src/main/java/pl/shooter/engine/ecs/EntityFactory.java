@@ -107,6 +107,9 @@ public class EntityFactory {
         
         AIComponent ai = new AIComponent();
         ai.behavior = AIComponent.Behavior.CHASE; // Enable pathfinding by default
+        ai.attackRange = character.melee.range;
+        ai.attackDamage = character.melee.damage;
+        ai.attackRate = character.melee.attackRate;
         entityManager.addComponent(entity, ai);
         
         VelocityComponent vc = new VelocityComponent(0, 0);

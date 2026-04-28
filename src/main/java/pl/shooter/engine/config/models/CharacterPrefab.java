@@ -11,6 +11,7 @@ import java.util.Map;
 public class CharacterPrefab {
     public String name;
     public Stats stats = new Stats();
+    public MeleeStats melee = new MeleeStats();
     public Visuals visuals = new Visuals();
     public Audio visualsAudio = new Audio();
 
@@ -18,6 +19,12 @@ public class CharacterPrefab {
         public float health = 100f;
         public float speed = 150f;
         public float radius = 16f; // Collision radius
+    }
+    
+    public static class MeleeStats {
+        public float range = 40f;
+        public int damage = 10;
+        public float attackRate = 1.0f;
     }
 
     public static class Visuals {
