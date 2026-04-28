@@ -147,6 +147,9 @@ public class PlayState extends GameState {
             if (inputMapper.isJustPressed(pl.shooter.engine.input.GameAction.RESTART)) {
                 gsm.setAbsoluteState(new LoadingState(gsm, mapPath));
             }
+            if (inputMapper.isJustPressed(pl.shooter.engine.input.GameAction.PAUSE)) {
+                gsm.setAbsoluteState(new MenuState(gsm));
+            }
             return;
         }
         
