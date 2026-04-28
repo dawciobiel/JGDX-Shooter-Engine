@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "data": {
+    "showUnitNames": true,
+    "multiKillThreshold": 3,
+    "multiKillWindow": 3.0,
+    "difficulty": "NORMAL"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "data": {
+    "moveUpKeys": [51, 19],
+    "moveDownKeys": [47, 20],
+    "moveLeftKeys": [29, 21],
+    "moveRightKeys": [32, 22],
+    "prevWeaponKeys": [45],
+    "nextWeaponKeys": [33],
+    "reloadKeys": [46],
+    "interactKeys": [34],
+    "pauseKeys": [111],
+    "restartKeys": [62, 46],
+    "weapon1Keys": [8],
+    "weapon2Keys": [9],
+    "weapon3Keys": [10],
+    "weapon4Keys": [11],
+    "weapon5Keys": [12],
+    "weapon6Keys": [13],
+    "weapon7Keys": [14],
+    "weapon8Keys": [15],
+    "weapon9Keys": [16],
+    "weapon0Keys": [7],
+    "shootButtons": [0]
+  }
+}

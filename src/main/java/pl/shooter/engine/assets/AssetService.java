@@ -1,95 +1,134 @@
 package pl.shooter.engine.assets;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.assets.AssetDescriptor;
+import com.badlogic.gdx.assets.AssetErrorListener;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.Texture;
-import pl.shooter.engine.config.GameConfig;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import pl.shooter.engine.config.models.EngineConfig;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Strict Asset Resolver. 
- * Normalizes all paths by stripping legacy prefixes and prioritizing local map data.
- * Uses GameConfig for path resolution.
+ * Only checks explicitly defined locations (Map-Local then Global).
+ * Provides detailed debug output for missing files.
  */
-public class AssetService {
+public class AssetService implements AssetErrorListener {
     private final AssetManager manager;
-    private final GameConfig config;
+    private final EngineConfig config;
     private String currentMapFolder = null;
+    private final List<String> loadingErrors = new ArrayList<>();
 
-    public AssetService(GameConfig config) {
+    public AssetService(EngineConfig config) {
         this.manager = new AssetManager();
-        this.config = config != null ? config : new GameConfig();
+        this.manager.setErrorListener(this);
+        this.config = config != null ? config : new EngineConfig();
     }
 
-    public GameConfig getConfig() {
-        return config;
+    @Override
+    public void error(AssetDescriptor asset, Throwable throwable) {
+        String msg = "[AssetManager] CRITICAL: File not found in internal storage: " + asset.fileName;
+        System.err.println(msg);
+        if (!loadingErrors.contains(msg)) loadingErrors.add(msg);
     }
 
-    public void setCurrentMapFolder(String folderPath) {
-        this.currentMapFolder = folderPath;
-    }
-
-    public float getProgress() {
-        return manager.getProgress();
-    }
-
-    public boolean update() {
-        return manager.update();
-    }
+    public List<String> getLoadingErrors() { return loadingErrors; }
+    public void setCurrentMapFolder(String folderPath) { this.currentMapFolder = folderPath; }
+    public float getProgress() { return manager.getProgress(); }
+    public boolean update() { return manager.update(); }
 
     public void loadTexture(String path) {
-        String resolvedPath = resolvePath(path, config.paths.textures);
-        if (resolvedPath != null && !manager.isLoaded(resolvedPath)) {
-            manager.load(resolvedPath, Texture.class);
+        if (path == null || path.isEmpty()) return;
+        String resolved = resolvePath(path, "textures");
+        if (resolved != null) {
+            if (!manager.isLoaded(resolved)) manager.load(resolved, Texture.class);
+        } else {
+            // Error already logged by resolvePath
         }
     }
 
-    public String resolvePath(String originalPath, String subfolder) {
-        if (originalPath == null || originalPath.isEmpty()) return null;
-        
-        // 1. STRIP EVERYTHING EXCEPT THE REAL FILENAME/SUBPATH
-        String coreAssetsPrefix = config.paths.coreAssets + "/";
-        String basePrefix = config.paths.baseAssetsPrefix + "/";
-        String cleanPath = originalPath.replace(coreAssetsPrefix, "").replace(basePrefix, "");
-        
-        if (subfolder != null && !subfolder.isEmpty()) {
-            if (cleanPath.startsWith(subfolder + "/")) {
-                cleanPath = cleanPath.substring(subfolder.length() + 1);
-            }
+    public void loadAtlas(String path) {
+        if (path == null || path.isEmpty()) return;
+        String resolved = resolvePath(path, "textures");
+        if (resolved != null) {
+            if (!manager.isLoaded(resolved)) manager.load(resolved, TextureAtlas.class);
         }
+    }
 
-        // 2. TRY MAP FOLDER (Priority)
-        if (currentMapFolder != null) {
-            String subPath = (subfolder == null || subfolder.isEmpty()) ? "" : subfolder + "/";
-            String mapPath = currentMapFolder + "/" + subPath + cleanPath;
-            if (Gdx.files.internal(mapPath).exists()) return mapPath;
-            
-            String mapDirect = currentMapFolder + "/" + cleanPath;
-            if (Gdx.files.internal(mapDirect).exists()) return mapDirect;
-        }
+    /**
+     * Strict path resolution. Checks only MapLocal and Global folders.
+     */
+    public String resolvePath(String originalPath, String assetTypeSubfolder) {
+        if (originalPath == null || originalPath.isEmpty() || originalPath.equals("null")) return null;
 
-        // 3. TRY CORE FOLDER
-        String subPath = (subfolder == null || subfolder.isEmpty()) ? "" : subfolder + "/";
-        String corePath = config.paths.coreAssets + "/" + subPath + cleanPath;
-        if (Gdx.files.internal(corePath).exists()) return corePath;
-        
-        String coreDirect = config.paths.coreAssets + "/" + cleanPath;
-        if (Gdx.files.internal(coreDirect).exists()) return coreDirect;
+        // Clean path (we expect relative paths in JSON, e.g., "characters/soldier/torso.png")
+        String cleanPath = originalPath.replace("assets/", "").replace("global/", "").replace("local/", "");
 
-        // 4. ABSOLUTE FALLBACK
+        // Define search order
+        String mapPath = currentMapFolder != null ? currentMapFolder + "/local/" + assetTypeSubfolder + "/" + cleanPath : null;
+        String globalPath = config.paths.globalRoot + "/" + assetTypeSubfolder + "/" + cleanPath;
+        String absolutePath = "assets/" + originalPath;
+
+        // 1. Try Map Local
+        if (mapPath != null && Gdx.files.internal(mapPath).exists()) return mapPath;
+
+        // 2. Try Global
+        if (Gdx.files.internal(globalPath).exists()) return globalPath;
+
+        // 3. Try fallback (raw path)
+        if (Gdx.files.internal(absolutePath).exists()) return absolutePath;
         if (Gdx.files.internal(originalPath).exists()) return originalPath;
 
-        return originalPath;
+        // FAILED: Provide detailed report
+        System.err.println("----------------------------------------------------------------");
+        System.err.println("[AssetService] ERROR: Could not find " + assetTypeSubfolder + ": " + originalPath);
+        System.err.println("[AssetService]   Checked MapLocal: " + (mapPath != null ? mapPath : "N/A"));
+        System.err.println("[AssetService]   Checked Global:   " + globalPath);
+        System.err.println("[AssetService]   Checked Fallback: " + absolutePath);
+        System.err.println("----------------------------------------------------------------");
+
+        String err = "MISSING: " + originalPath;
+        if (!loadingErrors.contains(err)) loadingErrors.add(err);
+        
+        return null;
     }
 
     public Texture getTexture(String path) {
         if (path == null) return null;
         if (manager.isLoaded(path)) return manager.get(path, Texture.class);
-        String resolved = resolvePath(path, config.paths.textures);
-        if (manager.isLoaded(resolved)) return manager.get(resolved, Texture.class);
-        return null;
+        
+        String resolved = resolvePath(path, "textures");
+        if (resolved == null) return null;
+        
+        if (manager.isLoaded(resolved)) {
+            return manager.get(resolved, Texture.class);
+        } else {
+            // Lazy load synchronously if not already loaded
+            manager.load(resolved, Texture.class);
+            manager.finishLoadingAsset(resolved);
+            return manager.get(resolved, Texture.class);
+        }
     }
 
-    public void dispose() {
-        manager.dispose();
+    public TextureAtlas getAtlas(String path) {
+        if (path == null) return null;
+        if (manager.isLoaded(path)) return manager.get(path, TextureAtlas.class);
+        
+        String resolved = resolvePath(path, "textures");
+        if (resolved == null) return null;
+        
+        if (manager.isLoaded(resolved)) {
+            return manager.get(resolved, TextureAtlas.class);
+        } else {
+            // Lazy load synchronously if not already loaded
+            manager.load(resolved, TextureAtlas.class);
+            manager.finishLoadingAsset(resolved);
+            return manager.get(resolved, TextureAtlas.class);
+        }
     }
+
+    public void dispose() { manager.dispose(); }
 }

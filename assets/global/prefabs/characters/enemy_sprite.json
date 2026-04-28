@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Enemy Sprite",
+    "stats": {
+      "health": 80,
+      "speed": 140,
+      "radius": 16
+    },
+    "visuals": {
+      "style": "sprite",
+      "texturePath": "characters/enemy_sprite/red/default.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "animations": {
+        "IDLE": {
+          "path": "characters/enemy_sprite/red/idle/idle",
+          "type": "FILES",
+          "count": 1,
+          "frameDuration": 0.1
+        },
+        "WALK": {
+          "path": "characters/enemy_sprite/red/walking/walking",
+          "type": "FILES",
+          "count": 1,
+          "frameDuration": 0.1
+        },
+        "ATTACK": {
+          "path": "characters/enemy_sprite/red/standing/standing",
+          "type": "FILES",
+          "count": 1,
+          "frameDuration": 0.1
+        }
+      }
+    },
+    "visualsAudio": {
+      "sounds": {
+        "HIT": "sfx/characters/enemy/hit.wav",
+        "DEATH": "sfx/characters/enemy/death.wav"
+      }
+    }
+  }
+}

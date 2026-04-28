@@ -7,9 +7,11 @@ import pl.shooter.engine.ecs.Component;
  */
 public class AmmoPickupComponent implements Component {
     public int amount;
+    public String ammoId;
 
     public AmmoPickupComponent() {}
-    public AmmoPickupComponent(int amount) {
+    public AmmoPickupComponent(String ammoId, int amount) {
+        this.ammoId = ammoId;
         this.amount = amount;
     }
 }

@@ -2,53 +2,30 @@ package pl.shooter.game;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import pl.shooter.engine.config.GameConfig;
-
-import java.io.File;
-import java.io.IOException;
+import pl.shooter.engine.config.ConfigService;
+import pl.shooter.engine.config.models.RenderingConfig;
 
 /**
  * Launcher for the desktop version of the game.
+ * Uses ConfigService to determine initial window settings.
  */
 public class DesktopLauncher {
     public static void main(String[] arg) {
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         
-        GameConfig gameConfig = loadConfig();
+        // Use our new ConfigService to get window settings
+        ConfigService configService = new ConfigService();
+        RenderingConfig rendering = configService.getRenderingConfig();
         
-        config.setForegroundFPS(gameConfig.graphics.targetFps);
+        config.setForegroundFPS(60); // Default or get from future PerformanceConfig
         config.setTitle("Shooter Game Engine");
         
-        if (gameConfig.graphics.fullscreen) {
+        if (rendering.fullscreen) {
             config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
         } else {
-            config.setWindowedMode(gameConfig.graphics.width, gameConfig.graphics.height);
+            config.setWindowedMode(rendering.width, rendering.height);
         }
         
         new Lwjgl3Application(new ShooterGame(), config);
-    }
-
-    private static GameConfig loadConfig() {
-        ObjectMapper mapper = new ObjectMapper();
-        GameConfig config = new GameConfig();
-        
-        try {
-            // 1. Load defaults from file if it exists
-            File defaultFile = new File("assets/configs/engine_config.json");
-            if (defaultFile.exists()) {
-                config = mapper.readerForUpdating(config).readValue(defaultFile);
-            }
-            
-            // 2. Override with user settings if they exist
-            File userFile = new File("user_config.json");
-            if (userFile.exists()) {
-                config = mapper.readerForUpdating(config).readValue(userFile);
-            }
-        } catch (IOException e) {
-            System.err.println("Error loading configuration in DesktopLauncher: " + e.getMessage());
-        }
-        
-        return config;
     }
 }

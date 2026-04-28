@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "data": {
+    "id": "9mm_regular",
+    "name": "Standard 9mm Rounds",
+    "category": "9MM",
+    "projectilePrefabPath": "projectiles/bullet_9mm",
+    "projectilesPerUnit": 1,
+    "spreadMultiplier": 1.0,
+    "iconPath": "ui/icons/ammo_9mm.png"
+  }
+}

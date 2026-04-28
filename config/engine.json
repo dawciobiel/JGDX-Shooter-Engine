@@ -1,0 +1,57 @@
+{
+  "graphics": {
+    "width": 800,
+    "height": 600,
+    "fullscreen": true,
+    "targetFps": 60,
+    "ambientBrightness": 1.0,
+    "ambientRed": 0.1,
+    "ambientGreen": 0.1,
+    "ambientBlue": 0.2
+  },
+  "audio": {
+    "masterVolume": 1.0,
+    "sfxVolume": 1.0,
+    "musicVolume": 0.5
+  },
+  "gameplay": {
+    "showUnitNames": true,
+    "multiKillThreshold": 3,
+    "multiKillWindow": 3.0,
+    "maxGlobalEntities": 100
+  },
+  "debug": {
+    "showHitboxes": true,
+    "showFps": true,
+    "showPaths": false,
+    "showProfiler": false,
+    "invinciblePlayer": false,
+    "infiniteAmmo": true
+  },
+  "controls": {
+    "moveUpKey": 51,
+    "prevWeaponKey": 45,
+    "nextWeaponKey": 33
+  },
+  "effects": {
+    "showBloodDecals": true
+  },
+  "paths": {
+    "baseAssetsPrefix": "assets",
+    "maps": "assets/maps",
+    "engineConfigs": "assets/configs",
+    "coreAssets": "assets/core",
+    "entities": "entities",
+    "triggers": "entities/triggers",
+    "enemies": "entities/enemies",
+    "objects": "entities/objects",
+    "player": "entities/player",
+    "mapConfigs": "configs",
+    "weapons": "configs/weapons",
+    "sounds": "audio/sfx",
+    "music": "audio/music",
+    "textures": "graphics/textures",
+    "shaders": "graphics/shaders",
+    "mapFileName": "map.json"
+  }
+}

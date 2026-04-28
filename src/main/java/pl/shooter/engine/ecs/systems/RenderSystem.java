@@ -14,11 +14,13 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import pl.shooter.engine.ai.pathfinding.Node;
 import pl.shooter.engine.assets.AssetService;
-import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.models.EngineConfig;
+import pl.shooter.engine.config.models.GameplayConfig;
 import pl.shooter.engine.ecs.Entity;
 import pl.shooter.engine.ecs.EntityManager;
 import pl.shooter.engine.ecs.GameSystem;
 import pl.shooter.engine.ecs.components.*;
+import pl.shooter.engine.graphics.CharacterRenderer;
 import pl.shooter.engine.world.GameMap;
 import pl.shooter.engine.world.JsonMap;
 
@@ -26,7 +28,7 @@ import java.util.List;
 
 /**
  * Renders the game world. 
- * Optimized to use shared SpriteBatch and ShapeRenderer.
+ * Updated to use new Asset Architecture and EngineConfig.
  */
 public class RenderSystem extends GameSystem {
     private final ShapeRenderer shapeRenderer;
@@ -34,7 +36,8 @@ public class RenderSystem extends GameSystem {
     private final OrthographicCamera camera;
     private final Viewport viewport;
     private final AssetService assetService;
-    private final GameConfig config;
+    private EngineConfig config;
+    private GameplayConfig gameplayConfig;
     private GameMap currentMap;
     private final BitmapFont nameFont;
     private final Vector3 mouseBuffer = new Vector3();
@@ -51,20 +54,23 @@ public class RenderSystem extends GameSystem {
     public RenderSystem(EntityManager entityManager, AssetService assetService, SpriteBatch batch, ShapeRenderer shapeRenderer) {
         super(entityManager);
         this.assetService = assetService;
-        this.config = assetService.getConfig();
         this.spriteBatch = batch;
         this.shapeRenderer = shapeRenderer;
         this.camera = new OrthographicCamera();
-        this.viewport = new ExtendViewport(config.graphics.width, config.graphics.height, camera);
+        this.viewport = new ExtendViewport(800, 600, camera);
         this.nameFont = new BitmapFont();
         this.nameFont.getData().setScale(0.8f);
+    }
 
-        initShaders();
+    public void init(EngineConfig engineConfig, GameplayConfig gameplayConfig) {
+        this.config = engineConfig;
+        this.gameplayConfig = gameplayConfig;
+        initShaders(engineConfig);
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
-    private void initShaders() {
-        String shaderBase = config.paths.coreAssets + "/" + config.paths.shaders + "/";
+    private void initShaders(EngineConfig config) {
+        String shaderBase = config.paths.globalRoot + "/" + config.paths.shaders + "/";
         String vert = Gdx.files.internal(shaderBase + "lighting.vert").readString();
         String frag = Gdx.files.internal(shaderBase + "lighting.frag").readString();
         this.lightingShader = new ShaderProgram(vert, frag);
@@ -85,6 +91,7 @@ public class RenderSystem extends GameSystem {
         List<Entity> texturedEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, TextureComponent.class);
         List<Entity> animatedEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, AnimationComponent.class);
         List<Entity> primitiveEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, RenderComponent.class);
+        List<Entity> hybridEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, CharacterRendererComponent.class);
         List<Entity> healthEntities = entityManager.getEntitiesWithComponents(HealthComponent.class, TransformComponent.class);
         List<Entity> namedEntities = entityManager.getEntitiesWithComponents(TransformComponent.class, NameComponent.class);
 
@@ -107,16 +114,15 @@ public class RenderSystem extends GameSystem {
                 shapeRenderer.end();
             }
 
-            if (config.effects.showBloodDecals) {
-                shapeRenderer.setProjectionMatrix(camera.combined);
-                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                renderBloodDecals(healthEntities);
-                shapeRenderer.end();
-            }
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            renderBloodDecals(healthEntities);
+            shapeRenderer.end();
 
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             renderPrimitiveEntities(primitiveEntities);
+            renderHybridEntities(hybridEntities, null, shapeRenderer);
             renderHealthBars(healthEntities);
             shapeRenderer.end();
 
@@ -124,7 +130,8 @@ public class RenderSystem extends GameSystem {
             spriteBatch.begin();
             renderTexturedEntities(texturedEntities);
             renderAnimatedEntities(animatedEntities);
-            if (config.gameplay.showUnitNames) {
+            renderHybridEntities(hybridEntities, spriteBatch, null);
+            if (gameplayConfig != null && gameplayConfig.showUnitNames) {
                 renderUnitNames(namedEntities);
             }
             spriteBatch.end();
@@ -142,9 +149,14 @@ public class RenderSystem extends GameSystem {
         if (showDebugPaths || showDebugHitboxes) {
             renderDebugInfo();
         }
+    }
 
-        if (config.ui.useCustomCursor) {
-            renderCustomCursor();
+    private void renderHybridEntities(List<Entity> entities, SpriteBatch batch, ShapeRenderer shapes) {
+        for (Entity entity : entities) {
+            TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
+            CharacterRendererComponent crc = entityManager.getComponent(entity, CharacterRendererComponent.class);
+            AnimationComponent anim = entityManager.getComponent(entity, AnimationComponent.class);
+            crc.renderer.render(batch, shapes, t.x, t.y, t.rotation, anim, getEntityTint(entity));
         }
     }
 
@@ -203,21 +215,6 @@ public class RenderSystem extends GameSystem {
         }
     }
 
-    private void renderCustomCursor() {
-        Texture cursorTex = assetService.getTexture(config.ui.cursorImagePath);
-        if (cursorTex != null) {
-            mouseBuffer.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-            camera.unproject(mouseBuffer);
-            spriteBatch.setProjectionMatrix(camera.combined);
-            spriteBatch.setShader(null);
-            spriteBatch.begin();
-            spriteBatch.setColor(config.ui.cursorRed, config.ui.cursorGreen, config.ui.cursorBlue, config.ui.cursorAlpha);
-            float size = config.ui.cursorSize;
-            spriteBatch.draw(cursorTex, mouseBuffer.x - size/2, mouseBuffer.y - size/2, size, size);
-            spriteBatch.end();
-        }
-    }
-
     private void renderBloodDecals(List<Entity> healthEntities) {
         for (Entity entity : healthEntities) {
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
@@ -235,7 +232,9 @@ public class RenderSystem extends GameSystem {
 
     private void renderPrimitiveEntities(List<Entity> entities) {
         for (Entity entity : entities) {
-            if (entityManager.hasComponent(entity, TextureComponent.class) || entityManager.hasComponent(entity, AnimationComponent.class)) continue;
+            if (entityManager.hasComponent(entity, TextureComponent.class) || 
+                entityManager.hasComponent(entity, AnimationComponent.class) ||
+                entityManager.hasComponent(entity, CharacterRendererComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             RenderComponent r = entityManager.getComponent(entity, RenderComponent.class);
             HealthComponent h = entityManager.getComponent(entity, HealthComponent.class);
@@ -248,9 +247,15 @@ public class RenderSystem extends GameSystem {
 
     private void renderTexturedEntities(List<Entity> entities) {
         for (Entity entity : entities) {
+            if (entityManager.hasComponent(entity, AnimationComponent.class) ||
+                entityManager.hasComponent(entity, CharacterRendererComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             TextureComponent tex = entityManager.getComponent(entity, TextureComponent.class);
             Texture texture = assetService.getTexture(tex.assetPath);
+            if (texture == null) {
+                assetService.loadTexture(tex.assetPath);
+                texture = assetService.getTexture(tex.assetPath);
+            }
             if (texture != null) {
                 spriteBatch.setColor(getEntityTint(entity));
                 spriteBatch.draw(texture, t.x - tex.width / 2, t.y - tex.height / 2, tex.width / 2, tex.height / 2, tex.width, tex.height, 1, 1, t.rotation - 90, 0, 0, texture.getWidth(), texture.getHeight(), false, false);
@@ -260,6 +265,7 @@ public class RenderSystem extends GameSystem {
 
     private void renderAnimatedEntities(List<Entity> entities) {
         for (Entity entity : entities) {
+            if (entityManager.hasComponent(entity, CharacterRendererComponent.class)) continue;
             TransformComponent t = entityManager.getComponent(entity, TransformComponent.class);
             AnimationComponent anim = entityManager.getComponent(entity, AnimationComponent.class);
             TextureRegion frame = anim.getCurrentKeyFrame();
@@ -318,9 +324,8 @@ public class RenderSystem extends GameSystem {
     }
 
     private void renderFinalPass() {
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        spriteBatch.getProjectionMatrix().idt();
+        // Use a 1:1 projection for drawing the FBO texture to the screen
+        spriteBatch.getProjectionMatrix().setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         spriteBatch.setShader(lightingShader);
         spriteBatch.begin();
         spriteBatch.setColor(Color.WHITE);
@@ -333,7 +338,8 @@ public class RenderSystem extends GameSystem {
         }
         if (sceneFbo != null) {
             Texture fboTexture = sceneFbo.getColorBufferTexture();
-            spriteBatch.draw(fboTexture, -1, -1, 2, 2, 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
+            // Draw full screen
+            spriteBatch.draw(fboTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), 0, 0, fboTexture.getWidth(), fboTexture.getHeight(), false, true);
         }
         spriteBatch.end();
         spriteBatch.setShader(null);
@@ -353,6 +359,10 @@ public class RenderSystem extends GameSystem {
         }
         if (showDebugPaths) {
             shapeRenderer.setColor(Color.CYAN);
+            int ts = 32;
+            if (currentMap instanceof JsonMap jm) ts = jm.getDisplaySize();
+            float offset = ts / 2f;
+
             List<Entity> aiEntities = entityManager.getEntitiesWithComponents(AIComponent.class);
             for (Entity entity : aiEntities) {
                 AIComponent ai = entityManager.getComponent(entity, AIComponent.class);
@@ -360,7 +370,7 @@ public class RenderSystem extends GameSystem {
                     for (int i = 0; i < ai.currentPath.getCount() - 1; i++) {
                         Node n1 = ai.currentPath.get(i);
                         Node n2 = ai.currentPath.get(i + 1);
-                        shapeRenderer.line(n1.x * 32 + 16, n1.y * 32 + 16, n2.x * 32 + 16, n2.y * 32 + 16);
+                        shapeRenderer.line(n1.x * ts + offset, n1.y * ts + offset, n2.x * ts + offset, n2.y * ts + offset);
                     }
                 }
             }
@@ -380,7 +390,6 @@ public class RenderSystem extends GameSystem {
 
     @Override
     public void dispose() {
-        // shapeRenderer and spriteBatch are shared, do NOT dispose them here
         if (lightingShader != null) lightingShader.dispose();
         if (sceneFbo != null) sceneFbo.dispose();
         if (nameFont != null) nameFont.dispose();

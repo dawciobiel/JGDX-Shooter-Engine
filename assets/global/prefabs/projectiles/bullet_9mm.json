@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "data": {
+    "name": "9mm Bullet",
+    "baseDamage": 150,
+    "speed": 600,
+    "radius": 3,
+    "visualWidth": 12,
+    "visualHeight": 24,
+    "texturePath": "projectiles/bullet_yellow.png"
+  }
+}

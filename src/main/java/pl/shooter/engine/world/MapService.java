@@ -1,62 +1,111 @@
 package pl.shooter.engine.world;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import pl.shooter.engine.assets.AssetService;
-import pl.shooter.engine.config.JsonService;
+import pl.shooter.engine.config.ConfigService;
+import pl.shooter.engine.config.models.CharacterPrefab;
+import pl.shooter.engine.config.models.PlayerConfig;
 import pl.shooter.engine.ecs.EntityFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 /**
- * Responsible for loading maps and preloading all required entity assets.
- * Non-blocking: Queues assets in AssetService but doesn't wait for them.
+ * Responsible for loading modular map data and pre-loading required assets.
  */
 public class MapService {
     private final EntityFactory entityFactory;
-    private final ObjectMapper objectMapper;
     private final AssetService assetService;
+    private final ConfigService configService;
 
-    public MapService(EntityFactory entityFactory, AssetService assetService) {
+    public MapService(EntityFactory entityFactory, AssetService assetService, ConfigService configService) {
         this.entityFactory = entityFactory;
         this.assetService = assetService;
-        this.objectMapper = JsonService.getMapper(); // Use Singleton
+        this.configService = configService;
     }
 
-    public MapConfig loadMap(String mapJsonPath) {
+    public MapConfig loadMap(String mapFolderPath) {
         try {
-            FileHandle file = Gdx.files.internal(mapJsonPath);
-            if (!file.exists()) return null;
+            MapConfig aggregate = new MapConfig();
+            assetService.setCurrentMapFolder(mapFolderPath);
 
-            String mapFolder = file.parent().path();
-            assetService.setCurrentMapFolder(mapFolder);
-            entityFactory.setCurrentMapFolder(mapFolder);
+            // 1. Tilemap
+            MapConfig.TileLayer tileData = configService.loadAssetConfig(mapFolderPath + "/map.json", MapConfig.TileLayer.class);
+            if (tileData != null) aggregate.tileLayer = tileData;
 
-            MapConfig config = objectMapper.readValue(file.read(), MapConfig.class);
-            
-            // 1. Queue map-specific textures
-            if (config.settings.backgroundTexture != null) assetService.loadTexture(config.settings.backgroundTexture);
-            if (config.tileLayer != null && config.tileLayer.tilesetPath != null) assetService.loadTexture(config.tileLayer.tilesetPath);
-            
-            // 2. Pre-scan entities to queue their assets
-            Set<String> typesToLoad = new HashSet<>();
-            typesToLoad.add("player");
-            if (config.entities != null) {
-                for (MapConfig.EntityEntry entry : config.entities) {
-                    typesToLoad.add(entry.type);
+            // 2. Settings
+            MapConfig.LevelSettings settings = configService.loadAssetConfig(mapFolderPath + "/config.json", MapConfig.LevelSettings.class);
+            if (settings != null) aggregate.settings = settings;
+
+            // 3. Entities & Player Assets
+            EntityListWrapper wrapper = configService.loadAssetConfig(mapFolderPath + "/entities.json", EntityListWrapper.class);
+            if (wrapper != null && wrapper.entities != null) {
+                aggregate.entities = wrapper.entities;
+                preloadEntityAssets(aggregate.entities);
+            }
+
+            // Preload player assets
+            preloadPlayerAssets();
+
+            // Textures
+            if (aggregate.tileLayer.tilesetPath != null) {
+                assetService.loadTexture(aggregate.tileLayer.tilesetPath);
+            }
+
+            return aggregate;
+        } catch (Exception e) {
+            System.err.println("[MapService] CRITICAL ERROR: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private void preloadPlayerAssets() {
+        PlayerConfig pc = configService.loadAssetConfig("assets/global/config/player.json", PlayerConfig.class);  // fixme Ścieżka `assets/global/config/` wraz z nazwą pliku `player.json` jest wpisana na sztywno. A powinna być raczej w konfig.
+        if (pc != null) {
+            CharacterPrefab cp = configService.loadPrefab(pc.characterPrefab, CharacterPrefab.class);
+            if (cp != null && cp.visuals != null) {
+                assetService.loadTexture(cp.visuals.texturePath);
+                // Preload animations if any
+                if (cp.visuals.animations != null) {
+                    for (CharacterPrefab.AnimationData data : cp.visuals.animations.values()) {
+                        if ("FILES".equals(data.type)) {
+                            for (int i = 0; i < data.count; i++) {
+                                assetService.loadTexture(data.path + "_" + i + ".png");
+                            }
+                        } else if ("ATLAS_REGION".equals(data.type)) {
+                            assetService.loadAtlas(data.path);
+                        } else {
+                            assetService.loadTexture(data.path);
+                        }
+                    }
                 }
             }
+        }
+    }
 
-            for (String type : typesToLoad) {
-                entityFactory.loadEntity(type, -1000, -1000); 
+    private void preloadEntityAssets(List<MapConfig.EntityEntry> entities) {
+        for (MapConfig.EntityEntry entry : entities) {
+            if (entry.prefabPath != null) {
+                if ("ENEMY".equalsIgnoreCase(entry.role) || "NEUTRAL".equalsIgnoreCase(entry.role)) {
+                    CharacterPrefab prefab = configService.loadPrefab(entry.prefabPath, CharacterPrefab.class);
+                    if (prefab != null && prefab.visuals != null) {
+                        assetService.loadTexture(prefab.visuals.texturePath);
+                        // Also preload animations for enemies
+                        if (prefab.visuals.animations != null) {
+                            for (CharacterPrefab.AnimationData data : prefab.visuals.animations.values()) {
+                            if ("FILES".equals(data.type)) {
+                                for (int i = 0; i < data.count; i++) {
+                                    assetService.loadTexture(data.path + "_" + i + ".png");
+                                }
+                            } else if ("ATLAS_REGION".equals(data.type)) {
+                                assetService.loadAtlas(data.path);
+                            } else {
+                                assetService.loadTexture(data.path);
+                            }
+                            }
+                        }
+                    }
+                }
             }
-            
-            return config;
-        } catch (Exception e) {
-            Gdx.app.error("MapService", "Failed to load map: " + mapJsonPath, e);
-            return null;
         }
     }
 
@@ -65,14 +114,18 @@ public class MapService {
     }
 
     public void spawnEntities(MapConfig config) {
-        if (config.playerSpawn != null) {
-            entityFactory.loadEntity("player", config.playerSpawn.x, config.playerSpawn.y);
-        }
-
-        if (config.entities != null) {
-            for (MapConfig.EntityEntry entry : config.entities) {
-                entityFactory.loadEntity(entry.type, entry.x, entry.y);
+        if (config.entities == null) return;
+        for (MapConfig.EntityEntry entry : config.entities) {
+            switch (entry.role.toUpperCase()) {
+                case "PLAYER" -> entityFactory.createPlayer(entry.x, entry.y);
+                case "ENEMY" -> entityFactory.createEnemy(entry.prefabPath, entry.x, entry.y);
+                case "NEUTRAL" -> entityFactory.createNeutral(entry.prefabPath, entry.x, entry.y);
+                case "OBJECT" -> entityFactory.createObject(entry.prefabPath, entry.x, entry.y, entry.pushable, entry.destructible);
             }
         }
+    }
+
+    public static class EntityListWrapper {
+        public List<MapConfig.EntityEntry> entities;
     }
 }

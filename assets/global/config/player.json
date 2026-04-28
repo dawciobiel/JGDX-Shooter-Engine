@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "data": {
+    "nickname": "gracz",
+    "characterPrefab": "characters/combat_robot_procedural",
+    "startingWeapons": [
+      "weapons/pistol"
+    ],
+    "startingAmmo": {
+      "9mm_regular": 45
+    },
+    "initialScore": 0,
+    "invincible": false,
+    "infiniteAmmo": false
+  }
+}

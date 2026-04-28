@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "data": {
+    "entities": [
+      { "role": "PLAYER", "x": 450, "y": 300 },
+
+      { "role": "ENEMY", "prefabPath": "characters/enemy_procedural", "x": 400, "y": 120 },
+      { "role": "ENEMY", "prefabPath": "characters/enemy_procedural", "x": 550, "y": 250 },
+
+      { "role": "ENEMY", "prefabPath": "characters/zombie", "x": 800, "y": 200 },
+      { "role": "ENEMY", "prefabPath": "characters/zombie_runner", "x": 700, "y": 700 },
+      { "role": "ENEMY", "prefabPath": "characters/zombie_fat", "x": 200, "y": 800 },
+      { "role": "ENEMY", "prefabPath": "characters/combat_robot", "x": 350, "y": 350 }
+    ]
+  }
+}

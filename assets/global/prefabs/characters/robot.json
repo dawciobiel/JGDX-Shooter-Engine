@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Combat Robot",
+    "stats": {
+      "health": 100,
+      "speed": 180,
+      "radius": 14
+    },
+    "visuals": {
+      "texturePath": "characters/robot/robot-idleaim-blue/robot-idleAim-blue8.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "IDLE": {
+          "path": "characters/robot/robot-idleaim-blue/robot-idleAim-blue.atlas",
+          "type": "ATLAS_REGION",
+          "region": "n",
+          "rows": 5,
+          "cols": 5,
+          "count": 24,
+          "frameDuration": 0.1
+        },
+        "WALK": {
+          "path": "characters/robot/walking_shoot-blue/walking_shoot-blue.atlas",
+          "type": "ATLAS_REGION",
+          "region": "n",
+          "rows": 4,
+          "cols": 4,
+          "count": 16,
+          "frameDuration": 0.1
+        },
+        "SHOOT": {
+          "path": "characters/robot/standing_shoot-blue/standing_shoot-blue.atlas",
+          "type": "ATLAS_REGION",
+          "region": "n",
+          "rows": 3,
+          "cols": 4,
+          "count": 10,
+          "frameDuration": 0.05
+        }
+      }
+    }
+  }
+}

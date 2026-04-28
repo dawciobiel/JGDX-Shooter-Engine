@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Fat Zombie",
+    "stats": {
+      "health": 150,
+      "speed": 50,
+      "radius": 24
+    },
+    "visuals": {
+      "texturePath": "characters/zombie/skeleton-idle_0.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "animations": {
+        "IDLE": { "path": "characters/zombie/skeleton-idle", "type": "FILES", "count": 16, "frameDuration": 0.08 },
+        "WALK": { "path": "characters/zombie/skeleton-move", "type": "FILES", "count": 16, "frameDuration": 0.08 }
+      }
+    },
+    "visualsAudio": {
+      "sounds": {
+        "HIT": "characters/zombie/hit.wav",
+        "DEATH": "characters/zombie/death.wav"
+      }
+    }
+  }
+}

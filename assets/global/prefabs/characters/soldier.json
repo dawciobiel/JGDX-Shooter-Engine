@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "data": {
+    "name": "Elite Soldier",
+    "stats": {
+      "health": 100,
+      "speed": 180,
+      "radius": 14
+    },
+    "visuals": {
+      "texturePath": "characters/survivor/rifle/idle/survivor-idle_rifle_0.png",
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "animations": {
+        "IDLE": { "path": "characters/survivor/rifle/idle/survivor-idle_rifle", "type": "FILES", "count": 20, "frameDuration": 0.05 },
+        "WALK": { "path": "characters/survivor/rifle/move/survivor-move_rifle", "type": "FILES", "count": 20, "frameDuration": 0.05 },
+        "SHOOT": { "path": "characters/survivor/rifle/shoot/survivor-shoot_rifle", "type": "FILES", "count": 3, "frameDuration": 0.05 },
+        "RELOAD": { "path": "characters/survivor/rifle/reload/survivor-reload_rifle", "type": "FILES", "count": 20, "frameDuration": 0.05 },
+        "MELEE": { "path": "characters/survivor/rifle/meleeattack/survivor-meleeattack_rifle", "type": "FILES", "count": 15, "frameDuration": 0.05 }
+      }
+    },
+    "visualsAudio": {
+      "sounds": {
+        "HIT": "sfx/characters/soldier/hit.wav",
+        "DEATH": "sfx/characters/soldier/deaths/death1.wav"
+      }
+    }
+  }
+}

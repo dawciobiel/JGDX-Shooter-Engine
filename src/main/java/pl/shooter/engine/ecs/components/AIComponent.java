@@ -20,6 +20,12 @@ public class AIComponent implements Component {
     public float pathfindingTimer = 0; 
     public static final float PATHFINDING_RECALC_INTERVAL = 0.1f; 
     public int currentPathIndex = 0;
+    
+    // Attack state
+    public float lastAttackTime = 0;
+    public float attackRange = 40f;
+    public int attackDamage = 10;
+    public float attackRate = 1.0f;
 
     public AIComponent() {}
     public AIComponent(Behavior behavior, float detectRange) {

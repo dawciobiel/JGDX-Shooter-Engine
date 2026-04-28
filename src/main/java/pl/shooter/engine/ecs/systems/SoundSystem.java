@@ -17,7 +17,6 @@ import java.util.List;
 
 /**
  * Listens to game events and plays specific sounds.
- * Hardcoded to look for taunts in "characters/taunt" subfolder of current map.
  */
 public class SoundSystem extends GameSystem {
     private final AudioService audioService;
@@ -47,17 +46,26 @@ public class SoundSystem extends GameSystem {
     }
 
     private void discoverTaunts() {
+        // Taunts are optional, resolvePath will log error if missing, but we handle it
         String resolvedDir = assetService.resolvePath("characters/taunt", "audio/sfx");
-        FileHandle dir = Gdx.files.internal(resolvedDir);
-        
-        if (dir.exists() && dir.isDirectory()) {
-            tauntFiles.clear();
-            for (FileHandle file : dir.list()) {
-                if (file.extension().equalsIgnoreCase("wav") || file.extension().equalsIgnoreCase("mp3")) {
-                    tauntFiles.add(file.path());
-                    audioService.loadSound(file.path());
+        if (resolvedDir == null) {
+            System.out.println("[SoundSystem] No taunts discovered for this map/setup.");
+            return;
+        }
+
+        try {
+            FileHandle dir = Gdx.files.internal(resolvedDir);
+            if (dir.exists() && dir.isDirectory()) {
+                tauntFiles.clear();
+                for (FileHandle file : dir.list()) {
+                    if (file.extension().equalsIgnoreCase("wav") || file.extension().equalsIgnoreCase("mp3")) {
+                        tauntFiles.add(file.path());
+                        audioService.loadSound(file.path());
+                    }
                 }
             }
+        } catch (Exception e) {
+            System.err.println("[SoundSystem] Error listing taunts: " + e.getMessage());
         }
     }
 
@@ -72,12 +80,12 @@ public class SoundSystem extends GameSystem {
         String fallbackSound = assetService.resolvePath("weapons/default/shoot.wav", "audio/sfx");
         if (event.soundPath != null && !event.soundPath.equals("null")) {
             String resolved = assetService.resolvePath(event.soundPath, "audio/sfx");
-            if (Gdx.files.internal(resolved).exists()) {
+            if (resolved != null && Gdx.files.internal(resolved).exists()) {
                 audioService.playSound(resolved, 0.4f);
                 return;
             }
         }
-        audioService.playSound(fallbackSound, 0.3f);
+        if (fallbackSound != null) audioService.playSound(fallbackSound, 0.3f);
     }
 
     private void handleHitSound(HitEvent event) {
@@ -85,7 +93,7 @@ public class SoundSystem extends GameSystem {
         if (sc != null && sc.soundPaths.containsKey(SoundComponent.Action.HIT)) {
             String soundName = sc.soundPaths.get(SoundComponent.Action.HIT);
             String resolved = assetService.resolvePath(soundName, "audio/sfx");
-            audioService.playSound(resolved, 0.6f);
+            if (resolved != null) audioService.playSound(resolved, 0.6f);
         }
     }
 
@@ -94,18 +102,18 @@ public class SoundSystem extends GameSystem {
         if (sc != null && sc.soundPaths.containsKey(SoundComponent.Action.DIE)) {
             String soundName = sc.soundPaths.get(SoundComponent.Action.DIE);
             String resolved = assetService.resolvePath(soundName, "audio/sfx");
-            audioService.playSound(resolved, 0.8f);
+            if (resolved != null) audioService.playSound(resolved, 0.8f);
         }
     }
 
     private void handleEmptyClick(EmptyWeaponEvent event) {
         String sound = assetService.resolvePath("weapons/default/empty.wav", "audio/sfx");
-        audioService.playSound(sound, 0.3f);
+        if (sound != null) audioService.playSound(sound, 0.3f);
     }
 
     private void handlePickupSound(PickupEvent event) {
         String sound = assetService.resolvePath("weapons/default/pickup.wav", "audio/sfx");
-        audioService.playSound(sound, 0.5f);
+        if (sound != null) audioService.playSound(sound, 0.5f);
     }
 
     @Override public void dispose() {

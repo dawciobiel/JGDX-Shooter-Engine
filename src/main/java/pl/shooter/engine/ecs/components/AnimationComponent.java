@@ -8,13 +8,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Stores multiple animations for an entity (e.g. "idle", "walk", "shoot").
+ * Stores multiple animations for an entity.
  */
 public class AnimationComponent implements Component {
     public enum State {
         IDLE,
         WALK,
         SHOOT,
+        ATTACK,
+        HIT,
         DIE
     }
 
@@ -23,7 +25,6 @@ public class AnimationComponent implements Component {
     public float stateTime = 0f;
     public boolean looping = true;
 
-    // Dimensions for rendering
     public float width = 32f;
     public float height = 32f;
 

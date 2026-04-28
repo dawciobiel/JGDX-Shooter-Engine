@@ -1,9 +1,7 @@
 package pl.shooter.game.states;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -14,25 +12,26 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import pl.shooter.engine.config.ConfigService;
-import pl.shooter.engine.config.GameConfig;
+import pl.shooter.engine.config.models.RenderingConfig;
 import pl.shooter.engine.state.GameState;
 import pl.shooter.engine.state.GameStateManager;
 
+/**
+ * Pause Menu Screen.
+ */
 public class PauseState extends GameState {
     private final Stage stage;
     private final Skin skin;
-    private final GameConfig config;
 
     public PauseState(GameStateManager gsm) {
         super(gsm);
-        this.config = new ConfigService().getConfig();
-        
-        // Ensure system cursor is visible in pause menu
-        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+        ConfigService configService = new ConfigService();
+        RenderingConfig renderingConfig = configService.getRenderingConfig();
 
-        this.stage = new Stage(new FitViewport(config.graphics.width, config.graphics.height));
+        this.stage = new Stage(new FitViewport(renderingConfig.width, renderingConfig.height));
         this.skin = createBasicSkin();
         Gdx.input.setInputProcessor(stage);
         initUI();
@@ -44,12 +43,9 @@ public class PauseState extends GameState {
         newSkin.add("default", font);
 
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(new Color(0, 0, 0, 0.5f)); // Semi-transparent black
-        pixmap.fill();
-        newSkin.add("background", new Texture(pixmap));
-
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
+        newSkin.add("background", new Texture(pixmap));
         newSkin.add("white", new Texture(pixmap));
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
@@ -61,7 +57,6 @@ public class PauseState extends GameState {
 
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = newSkin.getFont("default");
-        labelStyle.fontColor = Color.WHITE;
         newSkin.add("default", labelStyle);
 
         return newSkin;
@@ -70,18 +65,19 @@ public class PauseState extends GameState {
     private void initUI() {
         Table table = new Table();
         table.setFillParent(true);
-        table.setBackground(skin.newDrawable("background"));
+        table.center();
+        table.setBackground(skin.newDrawable("background", new Color(0, 0, 0, 0.7f)));
         stage.addActor(table);
 
         Label title = new Label("PAUSE", skin);
-        title.setFontScale(3f);
-        table.add(title).padBottom(50).row();
+        title.setFontScale(2.0f);
+        table.add(title).padBottom(30).row();
 
         TextButton resumeButton = new TextButton("RESUME", skin);
         resumeButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                resumeGame();
+                gsm.pop();
             }
         });
         table.add(resumeButton).width(200).height(50).padBottom(10).row();
@@ -90,27 +86,15 @@ public class PauseState extends GameState {
         menuButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                // Clear entire stack (PauseState + PlayState)
                 gsm.setAbsoluteState(new MenuState(gsm));
             }
         });
         table.add(menuButton).width(200).height(50);
     }
 
-    private void resumeGame() {
-        // Hide system cursor again if using custom cursor
-        if (config.ui.useCustomCursor) {
-            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.None);
-        }
-        gsm.pop();
-    }
-
     @Override
     public void update(float deltaTime) {
         stage.act(deltaTime);
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            resumeGame();
-        }
     }
 
     @Override

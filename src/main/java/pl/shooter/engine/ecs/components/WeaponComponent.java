@@ -1,84 +1,54 @@
 package pl.shooter.engine.ecs.components;
 
 import pl.shooter.engine.ecs.Component;
-import pl.shooter.engine.config.WeaponConfig;
+import pl.shooter.engine.config.models.WeaponPrefab;
+import pl.shooter.engine.config.models.AmmoPrefab;
+
+import java.util.List;
 
 /**
- * Stores weapon data, supporting firing patterns, ammo, and reloading.
+ * Stores operational weapon data. 
+ * Linked to a WeaponPrefab and manages its own magazine/reloading state.
  */
 public class WeaponComponent implements Component {
-    public enum Type {
-        KNIFE,
-        PISTOL,
-        SHOTGUN,
-        MACHINE_GUN,
-        SNIPER_RIFLE,
-        PLASMA_GUN,
-        ROCKET_LAUNCHER,
-        LIGHTNING_GUN,
-        RAIL_GUN,
-        GRENADE
-    }
-
-    public Type type = Type.PISTOL;
+    public String prefabId;
+    public String name;
+    
+    // Operational stats
     public float fireRate;      
     public float lastShotTime;
-    public float projectileSpeed;
     public float spread;        
-    public int projectilesPerShot = 1;
-    public float range = 50f; 
-    public int damage = 10;
-    
-    // Audio info for the weapon
-    public String shootSound;
-
-    // Ammo system
-    public int currentAmmo = 0;      
-    public int maxAmmo = 0;          
-    public boolean hasInfiniteAmmo = false;
-
-    // Reloading system
-    public int magazineAmmo = 0;     
-    public int magazineSize = 0;     
+    public int magazineAmmo;     
+    public int magazineSize;     
     public float reloadTime = 1.5f;  
     public float reloadTimer = 0;    
     public boolean isReloading = false;
+    public boolean isAutomatic = false;
+    
+    // Decoupled Ammo Info
+    public List<String> allowedAmmoCategories;
+    public AmmoPrefab activeAmmo; // The ammo type currently being used
+
+    // Visuals & Audio from prefab
+    public String iconPath;
+    public String shootSound;
 
     public WeaponComponent() {}
 
-    public void applyConfig(WeaponConfig.WeaponData data) {
-        if (data == null) return;
-        this.fireRate = data.fireRate;
-        this.projectileSpeed = data.projectileSpeed;
-        this.spread = data.spread;
-        this.projectilesPerShot = data.projectilesPerShot;
-        this.maxAmmo = data.maxAmmo;
-        this.currentAmmo = data.maxAmmo;
-        this.magazineSize = data.magazineSize;
-        this.magazineAmmo = data.magazineSize;
-        this.reloadTime = data.reloadTime;
-        this.hasInfiniteAmmo = data.hasInfiniteAmmo;
-        this.range = data.range;
-        this.shootSound = data.shootSound; // Set sound from config
-        if (data.projectile != null) {
-            this.damage = data.projectile.damage;
-        }
-    }
-
-    public static WeaponComponent create(Type type, WeaponConfig config) {
-        WeaponComponent wc = new WeaponComponent();
-        wc.type = type;
-        if (config != null && config.weapons.containsKey(type.name())) {
-            wc.applyConfig(config.weapons.get(type.name()));
-        } else {
-            // Fallback default
-            wc.fireRate = 0.4f;
-            wc.projectileSpeed = 450f;
-            wc.spread = 3f;
-            wc.magazineSize = 10;
-            wc.magazineAmmo = 10;
-            wc.hasInfiniteAmmo = (type == Type.PISTOL || type == Type.KNIFE);
-        }
-        return wc;
+    /**
+     * Initializes component from a WeaponPrefab.
+     */
+    public WeaponComponent(WeaponPrefab prefab) {
+        this.prefabId = prefab.id;
+        this.name = prefab.name;
+        this.fireRate = prefab.stats.fireRate;
+        this.spread = prefab.stats.spread;
+        this.magazineSize = prefab.stats.magazineSize;
+        this.magazineAmmo = prefab.stats.magazineSize;
+        this.isAutomatic = prefab.stats.isAutomatic;
+        this.allowedAmmoCategories = prefab.allowedAmmoCategories;
+        
+        this.iconPath = prefab.visuals.iconPath;
+        this.shootSound = prefab.audio.shootSound;
     }
 }

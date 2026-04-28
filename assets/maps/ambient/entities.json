@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "data": {
+    "entities": [
+      { "role": "PLAYER", "x": 255, "y": 224 }
+
+    ,
+
+
+      // TODO
+      /* To są  triggery, więc trzeba AI zaptać jak używać triggerów na mapie.
+      Niech AI stworzy mapę z dwoma triggerami
+      - on_enter_sound_XXXX
+      - on_enter_msg_XXXX
+
+      Niech umieści na mapie obiekty
+      - barrel
+      - crate
+      - ddor open
+      - door close
+      - switch targed_id: door
+
+      Kod który jest poniżej pochodzi ze starej wersji konfiguracji JSON mapy. Dlatego nie jest kompatybilny z obecną wersją kodu java.
+      */
+
+      { "role": "OBJECT", "type": "on_enter_sound_water",  "x": 128, "y": 384 },
+      { "role": "OBJECT", "type": "on_enter_sound_mud",    "x": 384, "y": 384 },
+      { "role": "OBJECT", "type": "on_enter_sound_metal",  "x": 128, "y": 128 },
+      { "role": "OBJECT", "type": "on_enter_sound_fire",   "x": 384, "y": 128 },
+      { "role": "OBJECT", "type": "on_enter_music_change", "x": 256, "y": 256 },
+
+      { "role": "OBJECT", "type": "on_enter_msg_water", "x": 128, "y": 384 },
+      { "role": "OBJECT", "type": "on_enter_msg_mud",   "x": 384, "y": 384 },
+      { "role": "OBJECT", "type": "on_enter_msg_metal", "x": 128, "y": 128 },
+      { "role": "OBJECT", "type": "on_enter_msg_fire",  "x": 384, "y": 128 },
+
+      { "role": "OBJECT", "type": "barrel", "x": 300, "y": 250 },
+
+      { "role": "OBJECT", "type": "crate",  "x": 200, "y": 317 },
+
+      { "role": "OBJECT", "type": "switch", "x": 200, "y": 400 },
+      { "role": "OBJECT", "type": "door",   "x": 300, "y": 400 }
+
+    ]
+  }
+}

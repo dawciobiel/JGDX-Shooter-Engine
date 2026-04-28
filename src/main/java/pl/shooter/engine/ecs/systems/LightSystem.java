@@ -22,7 +22,8 @@ public class LightSystem extends GameSystem {
     private FrameBuffer lightMap;
     private final SpriteBatch batch;
     private final Texture lightTexture;
-    private final Color ambientColor = new Color(0.1f, 0.1f, 0.2f, 0.5f);
+    private final Color ambientColor = new Color(0, 0, 0, 1);
+    private float ambientBrightness = 1.0f;
     private final Matrix4 projectionMatrix = new Matrix4();
 
     public LightSystem(EntityManager entityManager, SpriteBatch batch) {
@@ -75,18 +76,21 @@ public class LightSystem extends GameSystem {
         lightMap.end();
     }
 
-    public void setAmbientColor(float r, float g, float b, float a) {
+    public void setAmbientColor(float r, float g, float b, float a, float brightness) {
         this.ambientColor.set(
             MathUtils.clamp(r, 0, 1),
             MathUtils.clamp(g, 0, 1),
             MathUtils.clamp(b, 0, 1),
             MathUtils.clamp(a, 0, 1)
         );
+        this.ambientBrightness = brightness;
     }
 
     public void setProjectionMatrix(Matrix4 matrix) { this.projectionMatrix.set(matrix); }
     public Texture getLightMapTexture() { return lightMap.getColorBufferTexture(); }
-    public Color getAmbientColor() { return ambientColor; }
+    public Color getAmbientColor() {
+        return new Color(ambientColor.r, ambientColor.g, ambientColor.b, ambientColor.a * ambientBrightness);
+    }
 
     @Override
     public void resize(int width, int height) {

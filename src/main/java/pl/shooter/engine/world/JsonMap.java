@@ -4,8 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A concrete implementation of GameMap that holds dimensions and tile data from JSON.
- * Now supports tile-based collisions.
+ * A concrete implementation of GameMap.
+ * Fixed: Now correctly populates collidableTiles from configuration.
  */
 public class JsonMap implements GameMap {
     private final float width;
@@ -17,29 +17,35 @@ public class JsonMap implements GameMap {
     private final Set<Integer> collidableTiles;
 
     public JsonMap(MapConfig config) {
-        this.width = config.settings.width;
-        this.height = config.settings.height;
-        if (config.tileLayer != null) {
+        if (config.tileLayer != null && config.tileLayer.data != null) {
             this.tileData = config.tileLayer.data;
             this.tileSize = config.tileLayer.tileSize;
-            this.displaySize = config.tileLayer.displaySize > 0 ? config.tileLayer.displaySize : config.tileLayer.tileSize;
+            this.displaySize = config.tileLayer.displaySize > 0 ? config.tileLayer.displaySize : 32;
             this.tilesetPath = config.tileLayer.tilesetPath;
-            this.collidableTiles = config.tileLayer.collidableTiles != null ? config.tileLayer.collidableTiles : new HashSet<>();
+            
+            int gridHeight = tileData.length;
+            int gridWidth = tileData[0].length;
+            this.width = gridWidth * displaySize;
+            this.height = gridHeight * displaySize;
+            
+            // FIX: Correctly populate collidable tiles from config
+            this.collidableTiles = new HashSet<>();
+            if (config.tileLayer.collidableTiles != null) {
+                this.collidableTiles.addAll(config.tileLayer.collidableTiles);
+            }
         } else {
             this.tileData = null;
             this.tileSize = 32;
             this.displaySize = 32;
             this.tilesetPath = null;
             this.collidableTiles = new HashSet<>();
+            this.width = 800;
+            this.height = 600;
         }
     }
 
-    @Override
-    public float getWidth() { return width; }
-
-    @Override
-    public float getHeight() { return height; }
-
+    @Override public float getWidth() { return width; }
+    @Override public float getHeight() { return height; }
     public int[][] getTileData() { return tileData; }
     public int getTileSize() { return tileSize; }
     public int getDisplaySize() { return displaySize; }
@@ -59,19 +65,14 @@ public class JsonMap implements GameMap {
 
     @Override
     public Tile getTile(float x, float y) {
-        // 1. Bounds check
-        if (x < 0 || x >= width || y < 0 || y >= height) return null;
+        if (x < 0 || x >= width || y < 0 || y >= height) return Tile.WALL;
 
-        // 2. Tile data check
         if (tileData != null) {
             int gridX = (int) (x / displaySize);
             int gridY = (int) (y / displaySize);
 
-            // Check if coordinates are within the defined grid data
             if (gridY >= 0 && gridY < tileData.length && gridX >= 0 && gridX < tileData[0].length) {
                 int tileId = tileData[gridY][gridX];
-                // For now, we'll just return GROUND or WALL based on collidableTiles.
-                // In a more advanced scenario, tileId would map to specific Tile enums.
                 if (collidableTiles.contains(tileId)) {
                     return Tile.WALL;
                 } else {
@@ -79,6 +80,6 @@ public class JsonMap implements GameMap {
                 }
             }
         }
-        return Tile.GROUND; // Default to ground if no tile data or outside bounds
+        return Tile.GROUND;
     }
 }
