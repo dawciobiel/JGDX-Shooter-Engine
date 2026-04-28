@@ -9,6 +9,7 @@ System opiera się na spójnej strukturze plików w `assets/global/`.
 - **Prefaby Amunicji**: `assets/global/prefabs/weapons/ammo/<nazwa_amunicji>.json`
 - **Prefaby Pocisków**: `assets/global/prefabs/projectiles/<nazwa_pocisku>.json`
 - **Ikony HUD**: `assets/global/textures/ui/icons/<ikona>.png`
+- **Tekstury broni**: `assets/global/textures/weapons/<nazwa_broni>/<tekstura>.png`
 - **Dźwięki**: `assets/global/audio/sfx/weapons/<nazwa_broni>/<akcja>.wav`
 
 ## 2. Pliki Konfiguracyjne (JSON)
