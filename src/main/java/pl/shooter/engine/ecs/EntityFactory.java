@@ -35,10 +35,7 @@ public class EntityFactory {
 
     // --- CHARACTER CREATION ---
 
-    public Entity createPlayer(float x, float y) {
-        PlayerConfig playerConfig = configService.loadAssetConfig("assets/global/config/player.json", PlayerConfig.class); // fixme ścieżka oraz nazwa pliku konfig `player.json` jest wpisana na sztywno.
-        if (playerConfig == null) playerConfig = new PlayerConfig();
-
+    public Entity createPlayer(float x, float y, PlayerConfig playerConfig, MapConfig.LevelSettings.StartingEquipment equipment) {
         CharacterPrefab character = configService.loadPrefab(playerConfig.characterPrefab, CharacterPrefab.class);
         if (character == null) return null;
 
@@ -60,28 +57,32 @@ public class EntityFactory {
         entityManager.addComponent(entity, new TextureComponent(character));
         entityManager.addComponent(entity, new CharacterRendererComponent(CharacterRendererFactory.create(character)));
         
-        // Setup Inventory with starting equipment
+        // Setup Inventory with starting equipment from MapConfig
         InventoryComponent inv = new InventoryComponent();
-        for (String weaponPath : playerConfig.startingWeapons) {
-            WeaponPrefab wp = configService.loadPrefab(weaponPath, WeaponPrefab.class);
-            if (wp != null) {
-                WeaponComponent wc = new WeaponComponent(wp);
-                // Assign active ammo based on available ammo in inventory or defaults
-                if (wc.allowedAmmoCategories != null && !wc.allowedAmmoCategories.isEmpty()) {
-                    // Try to find the first ammo prefab id in the inventory that matches the weapon category
-                    for (String ammoId : playerConfig.startingAmmo.keySet()) {
-                        AmmoPrefab ap = configService.loadPrefab("ammo/" + ammoId, AmmoPrefab.class);  // fixme fragment ścieżki `ammo/` jest wpisana na sztywno. A powinna być raczej w konfigu
-                        if (ap != null && wc.allowedAmmoCategories.contains(ap.category)) {
-                            wc.activeAmmo = ap;
-                            break;
+        if (equipment != null) {
+            if (equipment.weapons != null) {
+                for (String weaponPath : equipment.weapons) {
+                    WeaponPrefab wp = configService.loadPrefab(weaponPath, WeaponPrefab.class);
+                    if (wp != null) {
+                        WeaponComponent wc = new WeaponComponent(wp);
+                        if (wc.allowedAmmoCategories != null && !wc.allowedAmmoCategories.isEmpty()) {
+                            for (String ammoId : equipment.ammo.keySet()) {
+                                AmmoPrefab ap = configService.loadPrefab("ammo/" + ammoId, AmmoPrefab.class);
+                                if (ap != null && wc.allowedAmmoCategories.contains(ap.category)) {
+                                    wc.activeAmmo = ap;
+                                    break;
+                                }
+                            }
                         }
+                        inv.addWeapon(wc);
                     }
                 }
-                inv.addWeapon(wc);
             }
-        }
-        for (Map.Entry<String, Integer> ammo : playerConfig.startingAmmo.entrySet()) {
-            inv.addAmmo(ammo.getKey(), ammo.getValue());
+            if (equipment.ammo != null) {
+                for (Map.Entry<String, Integer> ammo : equipment.ammo.entrySet()) {
+                    inv.addAmmo(ammo.getKey(), ammo.getValue());
+                }
+            }
         }
         entityManager.addComponent(entity, inv);
         

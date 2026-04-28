@@ -115,9 +115,11 @@ public class MapService {
 
     public void spawnEntities(MapConfig config) {
         if (config.entities == null) return;
+        PlayerConfig playerConfig = configService.loadAssetConfig("assets/global/config/player.json", PlayerConfig.class);
+        
         for (MapConfig.EntityEntry entry : config.entities) {
             switch (entry.role.toUpperCase()) {
-                case "PLAYER" -> entityFactory.createPlayer(entry.x, entry.y);
+                case "PLAYER" -> entityFactory.createPlayer(entry.x, entry.y, playerConfig, config.settings.startingEquipment);
                 case "ENEMY" -> entityFactory.createEnemy(entry.prefabPath, entry.x, entry.y);
                 case "NEUTRAL" -> entityFactory.createNeutral(entry.prefabPath, entry.x, entry.y);
                 case "OBJECT" -> entityFactory.createObject(entry.prefabPath, entry.x, entry.y, entry.pushable, entry.destructible);

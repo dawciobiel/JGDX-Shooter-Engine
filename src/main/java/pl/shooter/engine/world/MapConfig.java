@@ -19,9 +19,15 @@ public class MapConfig {
         public String mapName = "Unnamed Map";
         public String backgroundTexture;
         public AmbientColor ambientColor = new AmbientColor();
+        public StartingEquipment startingEquipment = new StartingEquipment();
         
         public static class AmbientColor {
             public float r = 0.1f, g = 0.1f, b = 0.2f, a = 1.0f;
+        }
+
+        public static class StartingEquipment {
+            public List<String> weapons;
+            public Map<String, Integer> ammo;
         }
     }
 
